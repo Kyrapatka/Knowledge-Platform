@@ -5,12 +5,27 @@ import (
 	"net/http"
 
 	"github.com/Kyrapatka/knowledge-platform/config"
+
 	authhandler "github.com/Kyrapatka/knowledge-platform/internal/auth/handler"
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/password"
 	authpostgres "github.com/Kyrapatka/knowledge-platform/internal/auth/repository/postgres"
 	authservice "github.com/Kyrapatka/knowledge-platform/internal/auth/service"
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/token"
+
+	folderhandler "github.com/Kyrapatka/knowledge-platform/internal/core/folder/handler"
+	folderpostgres "github.com/Kyrapatka/knowledge-platform/internal/core/folder/repository/postgres"
+	folderservice "github.com/Kyrapatka/knowledge-platform/internal/core/folder/service"
+	foldertemplate "github.com/Kyrapatka/knowledge-platform/internal/core/folder/template"
+
+	workshophandler "github.com/Kyrapatka/knowledge-platform/internal/core/folder/workshop/handler"
+	workshopservice "github.com/Kyrapatka/knowledge-platform/internal/core/folder/workshop/service"
+
+	materialhandler "github.com/Kyrapatka/knowledge-platform/internal/core/material/handler"
+	materialpostgres "github.com/Kyrapatka/knowledge-platform/internal/core/material/repository/postgres"
+	materialservice "github.com/Kyrapatka/knowledge-platform/internal/core/material/service"
+
 	"github.com/Kyrapatka/knowledge-platform/internal/platform/database"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +37,9 @@ type App struct {
 	closeDatabase func() error
 }
 
-func New(cfg config.Config) (*App, error) {
+func New(
+	cfg config.Config,
+) (*App, error) {
 	postgresDB, err := database.OpenPostgres(
 		cfg.DatabaseURL,
 	)
@@ -32,6 +49,10 @@ func New(cfg config.Config) (*App, error) {
 			err,
 		)
 	}
+
+	// --------------------
+	// Auth
+	// --------------------
 
 	userRepository := authpostgres.NewUserRepository(
 		postgresDB.GORM,
@@ -69,6 +90,60 @@ func New(cfg config.Config) (*App, error) {
 		authService,
 	)
 
+	// --------------------
+	// Folder
+	// --------------------
+
+	folderRepository := folderpostgres.NewRepository(
+		postgresDB.GORM,
+	)
+
+	templateRegistry := foldertemplate.NewRegistry(
+		foldertemplate.DefaultTemplates(),
+	)
+
+	folderService := folderservice.NewService(
+		folderRepository,
+		templateRegistry,
+	)
+
+	folderHandler := folderhandler.NewHandler(
+		folderService,
+	)
+
+	// --------------------
+	// Workshop
+	// --------------------
+
+	workshopService := workshopservice.NewService(
+		folderRepository,
+	)
+
+	workshopHandler := workshophandler.NewHandler(
+		workshopService,
+	)
+
+	// --------------------
+	// Material
+	// --------------------
+
+	materialRepository := materialpostgres.NewRepository(
+		postgresDB.GORM,
+	)
+
+	materialService := materialservice.NewService(
+		materialRepository,
+		folderRepository,
+	)
+
+	materialHandler := materialhandler.NewHandler(
+		materialService,
+	)
+
+	// --------------------
+	// HTTP
+	// --------------------
+
 	router := gin.New()
 
 	router.Use(
@@ -84,6 +159,9 @@ func New(cfg config.Config) (*App, error) {
 
 	application.registerRoutes(
 		authHandler,
+		folderHandler,
+		workshopHandler,
+		materialHandler,
 		tokenManager,
 	)
 
@@ -111,8 +189,15 @@ func (a *App) Close() error {
 
 func (a *App) registerRoutes(
 	authHandler *authhandler.Handler,
+	folderHandler *folderhandler.Handler,
+	workshopHandler *workshophandler.Handler,
+	materialHandler *materialhandler.Handler,
 	tokenManager *token.JWTManager,
 ) {
+	// --------------------
+	// Health
+	// --------------------
+
 	a.router.GET(
 		"/health",
 		func(c *gin.Context) {
@@ -125,15 +210,25 @@ func (a *App) registerRoutes(
 		},
 	)
 
-	api := a.router.Group("/api/v1")
+	api := a.router.Group(
+		"/api/v1",
+	)
 
-	authGroup := api.Group("/auth")
+	// --------------------
+	// Auth
+	// --------------------
+
+	authGroup := api.Group(
+		"/auth",
+	)
 
 	authHandler.RegisterPublicRoutes(
 		authGroup,
 	)
 
-	protectedAuthGroup := api.Group("/auth")
+	protectedAuthGroup := api.Group(
+		"/auth",
+	)
 
 	protectedAuthGroup.Use(
 		authhandler.AuthMiddleware(
@@ -143,5 +238,82 @@ func (a *App) registerRoutes(
 
 	authHandler.RegisterProtectedRoutes(
 		protectedAuthGroup,
+	)
+
+	// --------------------
+	// Folders
+	// --------------------
+
+	foldersGroup := api.Group(
+		"/folders",
+	)
+
+	foldersGroup.Use(
+		authhandler.AuthMiddleware(
+			tokenManager,
+		),
+	)
+
+	foldersGroup.POST(
+		"",
+		folderHandler.Create,
+	)
+
+	foldersGroup.GET(
+		"",
+		folderHandler.List,
+	)
+
+	foldersGroup.GET(
+		"/:folderID",
+		folderHandler.GetByID,
+	)
+
+	foldersGroup.PATCH(
+		"/:folderID",
+		folderHandler.Update,
+	)
+
+	foldersGroup.DELETE(
+		"/:folderID",
+		folderHandler.Delete,
+	)
+
+	// --------------------
+	// Workshop
+	// --------------------
+
+	foldersGroup.PATCH(
+		"/:folderID/workshop",
+		workshopHandler.UpdateConfig,
+	)
+
+	// --------------------
+	// Materials
+	// --------------------
+
+	foldersGroup.POST(
+		"/:folderID/materials",
+		materialHandler.Create,
+	)
+
+	foldersGroup.GET(
+		"/:folderID/materials",
+		materialHandler.List,
+	)
+
+	foldersGroup.GET(
+		"/:folderID/materials/:materialID",
+		materialHandler.GetByID,
+	)
+
+	foldersGroup.PATCH(
+		"/:folderID/materials/:materialID",
+		materialHandler.Update,
+	)
+
+	foldersGroup.DELETE(
+		"/:folderID/materials/:materialID",
+		materialHandler.Delete,
 	)
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/token"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const userIDContextKey = "user_id"
@@ -101,4 +102,18 @@ func AuthMiddleware(
 
 		c.Next()
 	}
+}
+
+func UserIDFromContext(c *gin.Context) (uuid.UUID, bool) {
+	value, exists := c.Get(userIDContextKey)
+	if !exists {
+		return uuid.Nil, false
+	}
+
+	userID, ok := value.(uuid.UUID)
+	if !ok || userID == uuid.Nil {
+		return uuid.Nil, false
+	}
+
+	return userID, true
 }
