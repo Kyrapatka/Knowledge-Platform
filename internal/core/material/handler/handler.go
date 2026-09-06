@@ -55,12 +55,17 @@ func (h *Handler) Create(
 		return
 	}
 
-	createdMaterial, err := h.service.Create(
+	difficulty := materialmodel.DifficultyMedium
+	if request.Difficulty != nil {
+		difficulty = *request.Difficulty
+	}
+	createdMaterial, err := h.service.CreateWithDifficulty(
 		c.Request.Context(),
 		ownerID,
 		folderID,
 		request.Values,
 		request.Metadata,
+		difficulty,
 	)
 	if err != nil {
 		writeServiceError(
@@ -212,13 +217,14 @@ func (h *Handler) Update(
 		return
 	}
 
-	updatedMaterial, err := h.service.Update(
+	updatedMaterial, err := h.service.UpdateWithDifficulty(
 		c.Request.Context(),
 		ownerID,
 		folderID,
 		materialID,
 		request.Values,
 		request.Metadata,
+		request.Difficulty,
 	)
 	if err != nil {
 		writeServiceError(
@@ -317,6 +323,8 @@ func writeServiceError(
 	err error,
 ) {
 	switch {
+	case errors.Is(err, material.ErrInvalidDifficulty):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_difficulty"})
 	case errors.Is(
 		err,
 		material.ErrFolderNotFound,
@@ -375,11 +383,12 @@ func toResponse(
 	m materialmodel.Material,
 ) MaterialResponse {
 	return MaterialResponse{
-		ID:        m.ID,
-		FolderID:  m.FolderID,
-		Values:    m.Values,
-		Metadata:  m.Metadata,
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
+		ID:         m.ID,
+		FolderID:   m.FolderID,
+		Values:     m.Values,
+		Metadata:   m.Metadata,
+		Difficulty: m.Difficulty,
+		CreatedAt:  m.CreatedAt,
+		UpdatedAt:  m.UpdatedAt,
 	}
 }

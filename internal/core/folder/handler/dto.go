@@ -20,11 +20,13 @@ type UpdateFolderRequest struct {
 }
 
 type FolderResponse struct {
-	ID          uuid.UUID `json:"id"`
-	OwnerID     uuid.UUID `json:"owner_id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	TemplateKey string    `json:"template_key"`
+	TrainingConfig        folderconfig.TrainingConfig `json:"training_config"`
+	TrainingConfigVersion int64                       `json:"training_config_version"`
+	ID                    uuid.UUID                   `json:"id"`
+	OwnerID               uuid.UUID                   `json:"owner_id"`
+	Title                 string                      `json:"title"`
+	Description           string                      `json:"description"`
+	TemplateKey           string                      `json:"template_key"`
 
 	Config        folderconfig.FolderConfig `json:"config"`
 	ConfigVersion int64                     `json:"config_version"`

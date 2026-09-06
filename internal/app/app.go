@@ -2,6 +2,9 @@ package app
 
 import (
 	"fmt"
+	traininghandler "github.com/Kyrapatka/knowledge-platform/internal/core/training/handler"
+	trainingpostgres "github.com/Kyrapatka/knowledge-platform/internal/core/training/repository/postgres"
+	trainingservice "github.com/Kyrapatka/knowledge-platform/internal/core/training/service"
 	"net/http"
 
 	"github.com/Kyrapatka/knowledge-platform/config"
@@ -164,6 +167,9 @@ func New(
 		materialHandler,
 		tokenManager,
 	)
+	trainingAPI := router.Group("/api/v1")
+	trainingAPI.Use(authhandler.AuthMiddleware(tokenManager))
+	traininghandler.NewHandler(trainingservice.NewService(trainingpostgres.NewRuntimeStore(postgresDB.GORM))).RegisterRoutes(trainingAPI)
 
 	return application, nil
 }

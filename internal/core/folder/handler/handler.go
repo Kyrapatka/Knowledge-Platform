@@ -356,14 +356,16 @@ func toResponse(
 	f foldermodel.Folder,
 ) FolderResponse {
 	return FolderResponse{
-		ID:            f.ID,
-		OwnerID:       f.OwnerID,
-		Title:         f.Title,
-		Description:   f.Description,
-		TemplateKey:   f.TemplateKey,
-		Config:        f.Config,
-		ConfigVersion: f.ConfigVersion,
-		CreatedAt:     f.CreatedAt,
-		UpdatedAt:     f.UpdatedAt,
+		ID:                    f.ID,
+		OwnerID:               f.OwnerID,
+		Title:                 f.Title,
+		Description:           f.Description,
+		TemplateKey:           f.TemplateKey,
+		Config:                f.Config,
+		ConfigVersion:         f.ConfigVersion,
+		TrainingConfig:        f.TrainingConfig,
+		TrainingConfigVersion: f.TrainingConfigVersion,
+		CreatedAt:             f.CreatedAt,
+		UpdatedAt:             f.UpdatedAt,
 	}
 }

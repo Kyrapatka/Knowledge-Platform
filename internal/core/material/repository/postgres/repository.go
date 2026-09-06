@@ -146,6 +146,7 @@ func (r *Repository) Update(
 		Updates(map[string]any{
 			"values":     valuesJSON,
 			"metadata":   metadataJSON,
+			"difficulty": m.Difficulty,
 			"updated_at": m.UpdatedAt,
 		})
 
@@ -209,12 +210,13 @@ func toModel(
 	}
 
 	return materialModel{
-		ID:        m.ID,
-		FolderID:  m.FolderID,
-		Values:    valuesJSON,
-		Metadata:  metadataJSON,
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
+		ID:         m.ID,
+		FolderID:   m.FolderID,
+		Values:     valuesJSON,
+		Metadata:   metadataJSON,
+		Difficulty: string(m.Difficulty),
+		CreatedAt:  m.CreatedAt,
+		UpdatedAt:  m.UpdatedAt,
 	}, nil
 }
 
@@ -254,11 +256,12 @@ func toDomain(
 	}
 
 	return materialmodel.Material{
-		ID:        model.ID,
-		FolderID:  model.FolderID,
-		Values:    values,
-		Metadata:  metadata,
-		CreatedAt: model.CreatedAt,
-		UpdatedAt: model.UpdatedAt,
+		ID:         model.ID,
+		FolderID:   model.FolderID,
+		Values:     values,
+		Metadata:   metadata,
+		Difficulty: materialmodel.Difficulty(model.Difficulty),
+		CreatedAt:  model.CreatedAt,
+		UpdatedAt:  model.UpdatedAt,
 	}, nil
 }

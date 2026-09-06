@@ -277,16 +277,22 @@ func toModel(
 		)
 	}
 
+	trainingJSON, err := json.Marshal(f.TrainingConfig)
+	if err != nil {
+		return folderModel{}, err
+	}
 	return folderModel{
-		ID:            f.ID,
-		OwnerID:       f.OwnerID,
-		Title:         f.Title,
-		Description:   f.Description,
-		TemplateKey:   f.TemplateKey,
-		Config:        configJSON,
-		ConfigVersion: f.ConfigVersion,
-		CreatedAt:     f.CreatedAt,
-		UpdatedAt:     f.UpdatedAt,
+		ID:                    f.ID,
+		OwnerID:               f.OwnerID,
+		Title:                 f.Title,
+		Description:           f.Description,
+		TemplateKey:           f.TemplateKey,
+		Config:                configJSON,
+		ConfigVersion:         f.ConfigVersion,
+		TrainingConfig:        trainingJSON,
+		TrainingConfigVersion: f.TrainingConfigVersion,
+		CreatedAt:             f.CreatedAt,
+		UpdatedAt:             f.UpdatedAt,
 	}, nil
 }
 
@@ -305,15 +311,23 @@ func toDomain(
 		)
 	}
 
+	var training folderconfig.TrainingConfig
+	if len(model.TrainingConfig) > 0 {
+		if err := json.Unmarshal(model.TrainingConfig, &training); err != nil {
+			return foldermodel.Folder{}, err
+		}
+	}
 	return foldermodel.Folder{
-		ID:            model.ID,
-		OwnerID:       model.OwnerID,
-		Title:         model.Title,
-		Description:   model.Description,
-		TemplateKey:   model.TemplateKey,
-		Config:        config,
-		ConfigVersion: model.ConfigVersion,
-		CreatedAt:     model.CreatedAt,
-		UpdatedAt:     model.UpdatedAt,
+		ID:                    model.ID,
+		OwnerID:               model.OwnerID,
+		Title:                 model.Title,
+		Description:           model.Description,
+		TemplateKey:           model.TemplateKey,
+		Config:                config,
+		ConfigVersion:         model.ConfigVersion,
+		TrainingConfig:        training,
+		TrainingConfigVersion: model.TrainingConfigVersion,
+		CreatedAt:             model.CreatedAt,
+		UpdatedAt:             model.UpdatedAt,
 	}, nil
 }

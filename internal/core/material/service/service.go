@@ -40,6 +40,16 @@ func (s *Service) Create(
 	values map[string]*string,
 	metadata map[string]*string,
 ) (materialmodel.Material, error) {
+	return s.CreateWithDifficulty(ctx, ownerID, folderID, values, metadata, materialmodel.DifficultyMedium)
+}
+
+func (s *Service) CreateWithDifficulty(
+	ctx context.Context, ownerID, folderID uuid.UUID,
+	values, metadata map[string]*string, difficulty materialmodel.Difficulty,
+) (materialmodel.Material, error) {
+	if !difficulty.Valid() {
+		return materialmodel.Material{}, material.ErrInvalidDifficulty
+	}
 	folderEntity, err := s.getOwnedFolder(
 		ctx,
 		ownerID,
@@ -78,12 +88,13 @@ func (s *Service) Create(
 	now := time.Now().UTC()
 
 	m := materialmodel.Material{
-		ID:        uuid.New(),
-		FolderID:  folderID,
-		Values:    values,
-		Metadata:  metadata,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:         uuid.New(),
+		FolderID:   folderID,
+		Values:     values,
+		Metadata:   metadata,
+		Difficulty: difficulty,
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	}
 
 	if err := s.materialRepository.Create(
@@ -175,6 +186,16 @@ func (s *Service) Update(
 	valuesPatch map[string]*string,
 	metadataPatch map[string]*string,
 ) (materialmodel.Material, error) {
+	return s.UpdateWithDifficulty(ctx, ownerID, folderID, materialID, valuesPatch, metadataPatch, nil)
+}
+
+func (s *Service) UpdateWithDifficulty(
+	ctx context.Context, ownerID, folderID, materialID uuid.UUID,
+	valuesPatch, metadataPatch map[string]*string, difficulty *materialmodel.Difficulty,
+) (materialmodel.Material, error) {
+	if difficulty != nil && !difficulty.Valid() {
+		return materialmodel.Material{}, material.ErrInvalidDifficulty
+	}
 	folderEntity, err := s.getOwnedFolder(
 		ctx,
 		ownerID,
@@ -209,9 +230,12 @@ func (s *Service) Update(
 	}
 
 	if valuesPatch == nil &&
-		metadataPatch == nil {
+		metadataPatch == nil && difficulty == nil {
 
 		return m, nil
+	}
+	if difficulty != nil {
+		m.Difficulty = *difficulty
 	}
 
 	if valuesPatch != nil {

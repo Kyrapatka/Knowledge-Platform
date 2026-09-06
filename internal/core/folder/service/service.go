@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	folderconfig "github.com/Kyrapatka/knowledge-platform/internal/core/folder/config"
 	"time"
 
 	folder "github.com/Kyrapatka/knowledge-platform/internal/core/folder"
@@ -58,15 +59,17 @@ func (s *Service) Create(
 	now := time.Now().UTC()
 
 	f := foldermodel.Folder{
-		ID:            uuid.New(),
-		OwnerID:       ownerID,
-		Title:         title,
-		Description:   description,
-		TemplateKey:   template.Key,
-		Config:        template.Config,
-		ConfigVersion: 1,
-		CreatedAt:     now,
-		UpdatedAt:     now,
+		ID:                    uuid.New(),
+		OwnerID:               ownerID,
+		Title:                 title,
+		Description:           description,
+		TemplateKey:           template.Key,
+		Config:                template.Config,
+		ConfigVersion:         1,
+		TrainingConfig:        folderconfig.DefaultTrainingConfig(template.Key),
+		TrainingConfigVersion: 1,
+		CreatedAt:             now,
+		UpdatedAt:             now,
 	}
 
 	if err := s.repository.Create(
