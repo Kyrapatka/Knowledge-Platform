@@ -20,11 +20,16 @@ type Tx interface {
 	Folder(uuid.UUID) (folder.Folder, error)
 	SaveDefaults(uuid.UUID, folderconfig.TrainingConfig, int64, time.Time) error
 	HasPlanOverlap([]uuid.UUID, model.ProgressTrack) (bool, error)
-	HasIncompatibleProgress([]uuid.UUID, string, int) (bool, error)
+	HasIncompatibleProgress([]uuid.UUID, model.ProgressTrack, string, int) (bool, error)
 	CreatePlan(model.TrainingPlan) error
+	UpdatePlan(model.TrainingPlan, int) error
+	PlanProgress(model.TrainingPlan) ([]model.UserMaterialProgress, error)
+	SavePlanChange(model.PlanChange) error
+	PlanChanges(uuid.UUID, int, int) ([]model.PlanChange, error)
 	Plan(uuid.UUID) (model.TrainingPlan, error)
 	Plans(int, int) ([]model.TrainingPlan, error)
 	CancelPlan(uuid.UUID, time.Time) error
+	CompletePlanIfReady(model.TrainingPlan, time.Time) (bool, error)
 	Session(uuid.UUID) (model.TrainingSession, error)
 	ActiveSession(uuid.UUID) (model.TrainingSession, error)
 	CreateSession(model.TrainingSession) error
@@ -33,6 +38,12 @@ type Tx interface {
 	SaveItem(model.SessionItem) error
 	Candidates(model.TrainingPlan, uuid.UUID, time.Time, int) ([]material.Material, error)
 	Material(uuid.UUID) (material.Material, error)
+	Exercises(uuid.UUID, int, int) ([]model.FormulaExercise, error)
+	Exercise(uuid.UUID, uuid.UUID) (model.FormulaExercise, error)
+	CreateExercise(model.FormulaExercise) error
+	UpdateExercise(model.FormulaExercise, int) error
+	DeleteExercise(uuid.UUID, uuid.UUID, int) error
+	PickExercise(uuid.UUID, uuid.UUID) (model.FormulaExercise, error)
 	Progress() ProgressRepository
 	Receipt(uuid.UUID) (model.CommandReceipt, error)
 	SaveReceipt(model.CommandReceipt) error

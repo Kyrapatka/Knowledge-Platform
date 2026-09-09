@@ -24,7 +24,7 @@ type Service struct {
 
 func NewService(store repository.RuntimeStore) *Service { return NewServiceWithClock(store, time.Now) }
 func NewServiceWithClock(store repository.RuntimeStore, clock func() time.Time) *Service {
-	r, err := algorithm.NewRegistry(algorithm.English{}, algorithm.English{Adaptive: true})
+	r, err := algorithm.NewRegistry(algorithm.English{}, algorithm.English{Adaptive: true}, algorithm.Interview{Cram: true}, algorithm.Interview{}, algorithm.Formula{})
 	if err != nil {
 		panic(err)
 	}
@@ -32,6 +32,7 @@ func NewServiceWithClock(store repository.RuntimeStore, clock func() time.Time) 
 }
 
 type CreatePlanRequest struct {
+	HorizonDays     int         `json:"horizon_days"`
 	SourceFolderIDs []uuid.UUID `json:"source_folder_ids"`
 	AlgorithmKey    *string     `json:"algorithm_key"`
 	PoolSize        *int        `json:"pool_size"`
@@ -122,16 +123,33 @@ func (s *Service) CreatePlan(ctx context.Context, user uuid.UUID, req CreatePlan
 			return fmt.Errorf("%w: pool_size must be 1..50", ErrInvalid)
 		}
 		if _, err := s.registry.Get(key, 1); err != nil {
-			return fmt.Errorf("%w: only English basic/adaptive v1 are available", ErrInvalid)
+			return fmt.Errorf("%w: unsupported algorithm", ErrInvalid)
 		}
-		overlap, err := tx.HasPlanOverlap(req.SourceFolderIDs, model.ProgressTrackDefault)
+		track := model.ProgressTrackDefault
+		switch key {
+		case "interview_cram":
+			track = model.ProgressTrackCram
+			if req.HorizonDays < 1 || req.HorizonDays > 7 {
+				return ErrInvalid
+			}
+		case "interview_long_term":
+			track = model.ProgressTrackLongTerm
+			if req.HorizonDays < 7 || req.HorizonDays > 365 {
+				return ErrInvalid
+			}
+		default:
+			if req.HorizonDays != 0 {
+				return ErrInvalid
+			}
+		}
+		overlap, err := tx.HasPlanOverlap(req.SourceFolderIDs, track)
 		if err != nil {
 			return err
 		}
-		if overlap {
+		if overlap && track != model.ProgressTrackCram {
 			return repository.ErrConflict
 		}
-		incompatible, err := tx.HasIncompatibleProgress(req.SourceFolderIDs, key, 1)
+		incompatible, err := tx.HasIncompatibleProgress(req.SourceFolderIDs, track, key, 1)
 		if err != nil {
 			return err
 		}
@@ -139,8 +157,8 @@ func (s *Service) CreatePlan(ctx context.Context, user uuid.UUID, req CreatePlan
 			return fmt.Errorf("%w: existing progress uses another algorithm", repository.ErrConflict)
 		}
 		now := s.now().UTC()
-		out = model.TrainingPlan{ID: uuid.New(), UserID: user, Track: model.ProgressTrackDefault, AlgorithmKey: key, AlgorithmVersion: 1, Status: model.StatusActive,
-			Config: model.PlanConfig{PoolSize: pool, Cards: cards}, SourceFolderIDs: append([]uuid.UUID(nil), req.SourceFolderIDs...), StartedAt: now, CreatedAt: now, UpdatedAt: now}
+		out = model.TrainingPlan{Version: 1, ID: uuid.New(), UserID: user, Track: track, AlgorithmKey: key, AlgorithmVersion: 1, Status: model.StatusActive,
+			Config: model.PlanConfig{PoolSize: pool, HorizonDays: req.HorizonDays, Cards: cards}, SourceFolderIDs: append([]uuid.UUID(nil), req.SourceFolderIDs...), StartedAt: now, CreatedAt: now, UpdatedAt: now}
 		return tx.CreatePlan(out)
 	})
 	return out, err

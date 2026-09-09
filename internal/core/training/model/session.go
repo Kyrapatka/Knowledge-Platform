@@ -15,6 +15,10 @@ type CardField struct {
 // A presentation snapshots content and difficulty so edits cannot change the
 // meaning of an already displayed question. Answers identify this exact show.
 type Presentation struct {
+	ExerciseID              *uuid.UUID          `json:"exercise_id,omitempty"`
+	ExerciseVersion         int                 `json:"exercise_version,omitempty"`
+	PracticeMode            PracticeMode        `json:"practice_mode,omitempty"`
+	FinalReview             bool                `json:"final_review"`
 	ID                      uuid.UUID           `json:"id"`
 	MaterialID              uuid.UUID           `json:"material_id"`
 	FolderID                uuid.UUID           `json:"folder_id"`
@@ -39,22 +43,24 @@ type SessionItem struct {
 }
 
 type TrainingEvent struct {
-	ID                    uuid.UUID  `json:"id"`
-	CommandID             uuid.UUID  `json:"command_id"`
-	UserID                uuid.UUID  `json:"user_id"`
-	PlanID                uuid.UUID  `json:"plan_id"`
-	SessionID             uuid.UUID  `json:"session_id"`
-	MaterialID            uuid.UUID  `json:"material_id"`
-	PresentationID        *uuid.UUID `json:"presentation_id,omitempty"`
-	Action                string     `json:"action"`
-	Kind                  ReviewKind `json:"kind"`
-	AlgorithmKey          string     `json:"algorithm_key"`
-	AlgorithmVersion      int        `json:"algorithm_version"`
-	StageBefore           int        `json:"stage_before"`
-	StageAfter            int        `json:"stage_after"`
-	ProgressVersionBefore int        `json:"progress_version_before"`
-	ProgressVersionAfter  int        `json:"progress_version_after"`
-	CreatedAt             time.Time  `json:"created_at"`
+	ExerciseID            *uuid.UUID    `json:"exercise_id,omitempty"`
+	PracticeMode          *PracticeMode `json:"practice_mode,omitempty"`
+	ID                    uuid.UUID     `json:"id"`
+	CommandID             uuid.UUID     `json:"command_id"`
+	UserID                uuid.UUID     `json:"user_id"`
+	PlanID                uuid.UUID     `json:"plan_id"`
+	SessionID             uuid.UUID     `json:"session_id"`
+	MaterialID            uuid.UUID     `json:"material_id"`
+	PresentationID        *uuid.UUID    `json:"presentation_id,omitempty"`
+	Action                string        `json:"action"`
+	Kind                  ReviewKind    `json:"kind"`
+	AlgorithmKey          string        `json:"algorithm_key"`
+	AlgorithmVersion      int           `json:"algorithm_version"`
+	StageBefore           int           `json:"stage_before"`
+	StageAfter            int           `json:"stage_after"`
+	ProgressVersionBefore int           `json:"progress_version_before"`
+	ProgressVersionAfter  int           `json:"progress_version_after"`
+	CreatedAt             time.Time     `json:"created_at"`
 }
 
 type CommandReceipt struct {

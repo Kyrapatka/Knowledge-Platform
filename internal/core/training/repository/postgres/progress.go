@@ -31,7 +31,7 @@ func (r *ProgressRepository) Create(ctx context.Context, p model.UserMaterialPro
 	// The current MVP only trains the user's own materials.
 	var count int64
 	if err := r.db.WithContext(ctx).Table("materials m").Joins("JOIN folders f ON f.id = m.folder_id").
-		Where("m.id = ? AND f.owner_id = ?", p.MaterialID, p.UserID).Count(&count).Error; err != nil {
+		Where("m.id = ? AND f.owner_id = ? AND m.deleted_at IS NULL AND f.deleted_at IS NULL", p.MaterialID, p.UserID).Count(&count).Error; err != nil {
 		return err
 	}
 	if count != 1 {
@@ -77,6 +77,7 @@ func (r *ProgressRepository) ListDue(ctx context.Context, userID uuid.UUID, trac
 	var rows []model.UserMaterialProgress
 	err := r.db.WithContext(ctx).Table(progressTable).
 		Where("user_id = ? AND track = ? AND next_review_at <= ?", userID, track, now).
+		Where("EXISTS (SELECT 1 FROM materials m JOIN folders f ON f.id=m.folder_id WHERE m.id=user_material_progress.material_id AND m.deleted_at IS NULL AND f.deleted_at IS NULL)").
 		Order("next_review_at, material_id, plan_id NULLS FIRST").Limit(limit).Find(&rows).Error
 	return rows, translate(err)
 }

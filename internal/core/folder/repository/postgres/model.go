@@ -4,9 +4,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type folderModel struct {
+	DeletedAt             gorm.DeletedAt
 	ID                    uuid.UUID `gorm:"type:uuid;primaryKey"`
 	OwnerID               uuid.UUID `gorm:"type:uuid;not null;index"`
 	Title                 string    `gorm:"not null"`

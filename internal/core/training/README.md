@@ -7,10 +7,16 @@ specification. The current implementation contains:
 - Progress with per-material learning start/target, separate rehab counters and
   separate Stage, rehab and extra-review dates.
 - Pure English basic/adaptive v1 transitions, manual actions and version registry.
-- Long-term day-marker tables and nearest-template selection (not yet its answer algorithm).
+- Interview CRAM/long-term v1, individual deadlines, rollback, difficulty mastery and final review.
+- Formula adaptive v1, exercise CRUD, worked/faded/independent/mixed/maintenance
+  presentations, recovery and yearly maintenance.
 - Folder training defaults, resolved plan/card snapshots and active-source conflict checks.
 - Plans, persistent sessions/pools/presentations, atomic events and command receipts.
-- Authenticated English Training HTTP endpoints, including recovery skip while waiting.
+- Transactional KEEP/RESET/SET algorithm changes, individual horizon updates,
+  plan configuration versions and an accessible change journal.
+- Soft deletion of materials/folders with training history retained.
+- Authenticated English/Interview/Formula HTTP endpoints, including recovery skip,
+  material progress, exercise versions and early Interview final review.
 
 See [TRAINING_API.md](TRAINING_API.md) for endpoint contracts and a frontend flow.
 
@@ -25,8 +31,10 @@ schedule. It can then start recovery without changing that schedule:
    separate extra check ten days after second-day mastery.
 
 Recovery has its own consecutive-correct counter; it never advances Stage
-mastery. Historical correct/wrong totals include recovery answers. A wrong rehab
-answer resets only that day's mastery. A wrong extra check restarts reinforcement.
+mastery. Historical correct/wrong totals include recovery answers. In English and
+Interview, a wrong rehab answer resets only that day's mastery, and a wrong extra
+check restarts reinforcement. Formula additionally rolls back one stage when its
+independent second-day or extra check fails, then restarts the refresher.
 The current English implementation uses its usual 3 or 3/4/5 mastery requirement
 for each rehab learning day and one correct answer for the extra check.
 
@@ -59,24 +67,42 @@ Long-term values 1, 2, 5, ... are day markers; their gaps are 1, 3, ... . Day 90
 after Day 65 is a 25-day gap, not a 90-day interval. English's separate table
 lists Stage cooldowns (1, 1, 1, 6, ...); its final stage repeats yearly.
 
+Formula day markers are 0, 1, 3, 7, 14, 30, 60, 120, 240, 365. Gaps are applied
+from actual mastery; successful Stage 10 reviews repeat every 365 days. Formula
+plans use persistent default-track progress without a deadline or final review.
+Wrong S1-S3 resets mastery; wrong S4-S6 adds a faded refresher until one correct
+answer; wrong S7+ starts recovery. Formula uses the latest two-learning-day Rehab
+rule, superseding the older Formula-specific one-day example. Stage priority,
+the >30-day extra-check threshold and skip semantics remain shared.
+
+For MVP, each Formula practice task requires at least one exercise with a problem,
+answer and full solution. Materials without exercises may exist in the library
+but are excluded from the pool until an exercise is added. Exercise edits/deletion
+do not change a displayed snapshot. New tasks prefer a different exercise from
+the previous answered task when another exists. Correctness is self-reported.
+
 ## Persistence and verification
 
-Migrations 000007, 000008 and 000009 must be applied before running the updated
+Migrations 000007 through 000012 must be applied before running the updated
 API. They have only been exercised against an isolated test cluster, not the
-application database. Deletion of referenced materials/plans is restricted to
-protect progress; a user-facing soft-delete/history policy is still pending.
+application database. Material/folder DELETE marks deleted_at and hides content
+from library reads, exercise access and training. Folder deletion also marks its
+materials. Progress, exercises, plans and events remain stored. Plan cancellation
+retains history; no physical plan-delete API or content-restore API is provided.
 
 The Progress repository increments Version using a conditional update. The
 answer service saves Progress, TrainingEvent, command receipt and pool changes
 in one transaction. PostgreSQL row locks serialize training commands per user;
 this covers plan overlap, absent progress creation, session creation/cancellation
-and concurrent answers. This deliberately simple MVP approach can serialize
+and concurrent answers. Library creation/deletion acquires the same user lock
+to serialize material admission, folder deletion and answers. This approach can serialize
 independent sessions belonging to one user, while different users remain independent.
 
 The runtime candidate query is scoped to the plan's owned source folders and
-filters untrainable cards. Earlier due materials precede new ones; ties use a
-stable creation/ID order. Answered materials move to the end of the pool. Empty
-pools remain resumable and do not complete a continuous English plan. A plan
+filters untrainable cards. English due materials precede new ones, with stable creation/ID ties.
+Interview and Formula randomly select eligible materials across all sources.
+Answered materials move to the end of the pool. Empty pools remain resumable and
+do not complete continuous English/Formula plans. A persistent-track plan
 cannot share a source folder with another active plan of the same track; sources
 are dynamic, so this also covers materials added to those folders later.
 
@@ -91,14 +117,24 @@ uniqueness, CRAM isolation, optimistic-lock conflicts, zero/NULL persistence and
 generated due dates. HTTP tests also exercise restart/resume, card snapshots,
 dynamic pool replenishment, mastery across sessions, two-device conflicts,
 concurrent duplicate requests, event failure rollback, cancellation, defaults,
-Stage priority and manual skip between rehab days.
+Stage priority and manual skip between rehab days. Formula tests also cover all
+day markers, mastery levels, recovery rollback, exercise CRUD ownership/versioning,
+content support by mode, exercise rotation, and edits/deletion during a live task.
+The final-stage tests cover change rollback on journal failure, elapsed-time
+recalculation, horizon updates, retries/versions, deletion during answers, folder
+deletion during material creation, and retained history after deletion.
 
-## Remaining implementation stages
+## MVP handoff
 
-1. Interview CRAM/long-term transitions, per-material final review and plan completion.
-2. Formula exercises, presentation modes and algorithm.
-3. Algorithm switching with KEEP/RESET/SET and the library deletion/history policy.
+The planned Training implementation stages are complete. Apply migrations through
+000012 to the target environment before connecting the frontend; tests do not
+migrate the working application database. Run the documented frontend scenarios
+for English, Interview and Formula when the UI is connected.
 
-The Training API currently enables only English basic/adaptive v1. Existing
-progress with another algorithm causes a conflict instead of silently migrating
-it. Public-folder copying, content deduplication and search are outside this stage.
+The API enables English basic/adaptive, Interview CRAM/long-term and Formula
+adaptive v1 (standard exercise/self-check workflow). Changing an active plan's
+algorithm requires finishing its session and an explicit KEEP/RESET/SET command.
+Creating a plan never silently migrates existing incompatible progress.
+Cross-track changes use a new plan. Public-folder copying, content deduplication,
+search, configurable Formula practice-style weights and automated grading are
+outside this MVP implementation.

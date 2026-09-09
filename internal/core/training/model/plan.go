@@ -23,6 +23,7 @@ type PlanConfig struct {
 }
 
 type TrainingPlan struct {
+	Version          int           `json:"version"`
 	ID               uuid.UUID     `json:"id"`
 	UserID           uuid.UUID     `json:"user_id"`
 	Track            ProgressTrack `json:"track"`

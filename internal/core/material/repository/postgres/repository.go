@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Repository struct {
@@ -34,18 +35,27 @@ func (r *Repository) Create(
 		return err
 	}
 
-	if err := r.db.
-		WithContext(ctx).
-		Create(&model).
-		Error; err != nil {
-
-		return fmt.Errorf(
-			"create material: %w",
-			err,
-		)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var owner struct{ ID uuid.UUID }
+		if err := tx.Table("folders").Select("owner_id AS id").Where("id=? AND deleted_at IS NULL", m.FolderID).Take(&owner).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return material.ErrFolderNotFound
+			}
+			return err
+		}
+		if err := tx.Table("users").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id=?", owner.ID).Take(&owner).Error; err != nil {
+			return err
+		}
+		// Recheck after locking: folder deletion may have committed while we waited.
+		var count int64
+		if err := tx.Table("folders").Where("id=? AND deleted_at IS NULL", m.FolderID).Count(&count).Error; err != nil {
+			return err
+		}
+		if count == 0 {
+			return material.ErrFolderNotFound
+		}
+		return tx.Create(&model).Error
+	})
 }
 
 func (r *Repository) GetByID(
@@ -168,26 +178,28 @@ func (r *Repository) Delete(
 	ctx context.Context,
 	id uuid.UUID,
 ) error {
-	result := r.db.
-		WithContext(ctx).
-		Delete(
-			&materialModel{},
-			"id = ?",
-			id,
-		)
-
-	if result.Error != nil {
-		return fmt.Errorf(
-			"delete material: %w",
-			result.Error,
-		)
-	}
-
-	if result.RowsAffected == 0 {
-		return material.ErrNotFound
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var owner struct{ ID uuid.UUID }
+		if err := tx.Table("folders f").Select("f.owner_id AS id").Joins("JOIN materials m ON m.folder_id=f.id").Where("m.id=? AND m.deleted_at IS NULL AND f.deleted_at IS NULL", id).Take(&owner).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return material.ErrNotFound
+			}
+			return err
+		}
+		// Use the same user lock as answer/plan commands. A deletion and an
+		// answer therefore commit in a definite order without losing history.
+		if err := tx.Table("users").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id=?", owner.ID).Take(&owner).Error; err != nil {
+			return err
+		}
+		result := tx.Delete(&materialModel{}, "id=?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return material.ErrNotFound
+		}
+		return nil
+	})
 }
 
 func toModel(

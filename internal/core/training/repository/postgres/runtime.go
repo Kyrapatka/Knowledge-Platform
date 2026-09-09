@@ -46,7 +46,7 @@ func (s *RuntimeStore) Transact(ctx context.Context, user uuid.UUID, fn func(rep
 
 func (t *runtimeTx) Folder(id uuid.UUID) (folder.Folder, error) {
 	var count int64
-	if err := t.db.Table("folders").Where("id = ? AND owner_id = ?", id, t.user).Count(&count).Error; err != nil {
+	if err := t.db.Table("folders").Where("id = ? AND owner_id = ? AND deleted_at IS NULL", id, t.user).Count(&count).Error; err != nil {
 		return folder.Folder{}, err
 	}
 	if count == 0 {
@@ -78,14 +78,15 @@ func (t *runtimeTx) HasPlanOverlap(ids []uuid.UUID, track model.ProgressTrack) (
 	return n > 0, err
 }
 
-func (t *runtimeTx) HasIncompatibleProgress(ids []uuid.UUID, key string, version int) (bool, error) {
+func (t *runtimeTx) HasIncompatibleProgress(ids []uuid.UUID, track model.ProgressTrack, key string, version int) (bool, error) {
 	var n int64
 	err := t.db.Table("user_material_progress p").Joins("JOIN materials m ON m.id=p.material_id").
-		Where("p.user_id=? AND p.track='default' AND p.plan_id IS NULL AND m.folder_id IN ? AND (p.algorithm_key<>? OR p.algorithm_version<>?)", t.user, ids, key, version).Count(&n).Error
+		Where("p.user_id=? AND p.track=? AND p.plan_id IS NULL AND m.deleted_at IS NULL AND m.folder_id IN ? AND (p.algorithm_key<>? OR p.algorithm_version<>?)", t.user, track, ids, key, version).Count(&n).Error
 	return n > 0, err
 }
 
 type planRow struct {
+	Version          int
 	ID               uuid.UUID
 	UserID           uuid.UUID
 	Track            model.ProgressTrack
@@ -106,7 +107,7 @@ func (t *runtimeTx) CreatePlan(p model.TrainingPlan) error {
 	if err != nil {
 		return err
 	}
-	r := planRow{p.ID, p.UserID, p.Track, p.AlgorithmKey, p.AlgorithmVersion, p.Status, b, p.StartedAt, p.CreatedAt, p.UpdatedAt}
+	r := planRow{p.Version, p.ID, p.UserID, p.Track, p.AlgorithmKey, p.AlgorithmVersion, p.Status, b, p.StartedAt, p.CreatedAt, p.UpdatedAt}
 	if err = t.db.Table("training_plans").Create(&r).Error; err != nil {
 		return err
 	}
@@ -122,7 +123,7 @@ func (t *runtimeTx) CreatePlan(p model.TrainingPlan) error {
 }
 
 func (t *runtimeTx) decodePlan(r planRow) (model.TrainingPlan, error) {
-	p := model.TrainingPlan{ID: r.ID, UserID: r.UserID, Track: r.Track, AlgorithmKey: r.AlgorithmKey, AlgorithmVersion: r.AlgorithmVersion, Status: r.Status, StartedAt: r.StartedAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
+	p := model.TrainingPlan{Version: r.Version, ID: r.ID, UserID: r.UserID, Track: r.Track, AlgorithmKey: r.AlgorithmKey, AlgorithmVersion: r.AlgorithmVersion, Status: r.Status, StartedAt: r.StartedAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
 	if err := json.Unmarshal(r.Config, &p.Config); err != nil {
 		return p, err
 	}
@@ -244,7 +245,7 @@ func (t *runtimeTx) SaveItem(i model.SessionItem) error {
 
 func (t *runtimeTx) Material(id uuid.UUID) (material.Material, error) {
 	var n int64
-	err := t.db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").Where("m.id=? AND f.owner_id=?", id, t.user).Count(&n).Error
+	err := t.db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").Where("m.id=? AND f.owner_id=? AND m.deleted_at IS NULL AND f.deleted_at IS NULL", id, t.user).Count(&n).Error
 	if err != nil {
 		return material.Material{}, err
 	}
@@ -273,12 +274,25 @@ func (t *runtimeTx) Candidates(p model.TrainingPlan, session uuid.UUID, now time
 		return []material.Material{}, nil
 	}
 	var ids []uuid.UUID
-	err := t.db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").
-		Joins("LEFT JOIN user_material_progress p ON p.material_id=m.id AND p.user_id=? AND p.track=? AND p.plan_id IS NULL", t.user, p.Track).
-		Where("f.owner_id=?", t.user).Where("("+strings.Join(alternatives, " OR ")+")", args...).
+	join := "LEFT JOIN user_material_progress p ON p.material_id=m.id AND p.user_id=? AND p.track=? AND p.plan_id IS NULL"
+	joinArgs := []any{t.user, p.Track}
+	if p.Track == model.ProgressTrackCram {
+		join = "LEFT JOIN user_material_progress p ON p.material_id=m.id AND p.user_id=? AND p.track=? AND p.plan_id=?"
+		joinArgs = append(joinArgs, p.ID)
+	}
+	order := "p.next_review_at ASC NULLS LAST, m.created_at, m.id"
+	if p.Track != model.ProgressTrackDefault || p.AlgorithmKey == "formula_adaptive" {
+		order = "random()"
+	}
+	query := t.db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").
+		Joins(join, joinArgs...).
+		Where("f.owner_id=? AND m.deleted_at IS NULL AND f.deleted_at IS NULL", t.user).Where("("+strings.Join(alternatives, " OR ")+")", args...).
 		Where("(p.material_id IS NULL OR (p.algorithm_key=? AND p.algorithm_version=? AND p.next_review_at<=?))", p.AlgorithmKey, p.AlgorithmVersion, now).
-		Where("NOT EXISTS (SELECT 1 FROM training_session_items i WHERE i.session_id=? AND i.material_id=m.id AND i.state='active')", session).
-		Order("p.next_review_at ASC NULLS LAST, m.created_at, m.id").Limit(limit).Pluck("m.id", &ids).Error
+		Where("NOT EXISTS (SELECT 1 FROM training_session_items i WHERE i.session_id=? AND i.material_id=m.id AND i.state='active')", session)
+	if p.AlgorithmKey == "formula_adaptive" {
+		query = query.Where("EXISTS (SELECT 1 FROM formula_exercises e WHERE e.material_id=m.id)")
+	}
+	err := query.Order(order).Limit(limit).Pluck("m.id", &ids).Error
 	if err != nil {
 		return nil, err
 	}

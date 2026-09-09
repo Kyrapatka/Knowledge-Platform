@@ -20,12 +20,18 @@ func NewHandler(s *service.Service) *Handler { return &Handler{s} }
 // RegisterRoutes expects a group protected by AuthMiddleware. Each handler
 // also checks the authenticated context, including for accidental direct use.
 func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
+	api.POST("/materials/:materialID/exercises", h.CreateExercise)
+	api.GET("/materials/:materialID/exercises", h.Exercises)
+	api.PUT("/materials/:materialID/exercises/:exerciseID", h.UpdateExercise)
+	api.DELETE("/materials/:materialID/exercises/:exerciseID", h.DeleteExercise)
 	api.GET("/folders/:folderID/training-config", h.GetDefaults)
 	api.PATCH("/folders/:folderID/training-config", h.UpdateDefaults)
 	api.POST("/training/plans", h.CreatePlan)
 	api.GET("/training/plans", h.ListPlans)
 	api.GET("/training/plans/:planID", h.GetPlan)
 	api.POST("/training/plans/:planID/cancel", h.CancelPlan)
+	api.POST("/training/plans/:planID/algorithm", h.ChangeAlgorithm)
+	api.GET("/training/plans/:planID/changes", h.PlanChanges)
 	api.POST("/training/plans/:planID/sessions", h.StartSession)
 	api.GET("/training/sessions/:sessionID", h.GetSession)
 	api.GET("/training/sessions/:sessionID/current", h.GetSession)
@@ -34,6 +40,8 @@ func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.POST("/training/sessions/:sessionID/cancel", h.CancelSession)
 	api.POST("/training/sessions/:sessionID/actions", h.Act)
 	api.POST("/training/sessions/:sessionID/materials/:materialID/skip-rehab", h.SkipRecovery)
+	api.POST("/training/sessions/:sessionID/materials/:materialID/start-final", h.StartFinal)
+	api.GET("/training/sessions/:sessionID/materials/:materialID/progress", h.MaterialProgress)
 }
 
 func identity(c *gin.Context, param string) (uuid.UUID, uuid.UUID, bool) {
@@ -202,5 +210,37 @@ func (h *Handler) SkipRecovery(c *gin.Context) {
 		return
 	}
 	v, e := h.service.SkipRecovery(c.Request.Context(), u, id, materialID, req)
+	respond(c, 200, v, e)
+}
+
+func (h *Handler) StartFinal(c *gin.Context) {
+	u, id, ok := identity(c, "sessionID")
+	if !ok {
+		return
+	}
+	materialID, err := uuid.Parse(c.Param("materialID"))
+	if err != nil || materialID == uuid.Nil {
+		respond(c, 0, nil, service.ErrInvalid)
+		return
+	}
+	var req service.SkipRequest
+	if !bind(c, &req) {
+		return
+	}
+	v, e := h.service.StartFinal(c.Request.Context(), u, id, materialID, req)
+	respond(c, 200, v, e)
+}
+
+func (h *Handler) MaterialProgress(c *gin.Context) {
+	u, id, ok := identity(c, "sessionID")
+	if !ok {
+		return
+	}
+	materialID, err := uuid.Parse(c.Param("materialID"))
+	if err != nil || materialID == uuid.Nil {
+		respond(c, 0, nil, service.ErrInvalid)
+		return
+	}
+	v, e := h.service.MaterialProgress(c.Request.Context(), u, id, materialID)
 	respond(c, 200, v, e)
 }

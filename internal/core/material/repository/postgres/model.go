@@ -4,11 +4,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type materialModel struct {
-	ID       uuid.UUID `gorm:"type:uuid;primaryKey"`
-	FolderID uuid.UUID `gorm:"type:uuid;not null;index"`
+	DeletedAt gorm.DeletedAt
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
+	FolderID  uuid.UUID `gorm:"type:uuid;not null;index"`
 
 	Values     []byte `gorm:"type:jsonb;not null"`
 	Metadata   []byte `gorm:"type:jsonb;not null"`

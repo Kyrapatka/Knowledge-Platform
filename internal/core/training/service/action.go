@@ -66,6 +66,12 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 			return repository.ErrConflict
 		}
 		i := items[0]
+		if _, err := tx.Material(i.MaterialID); err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				return repository.ErrConflict
+			}
+			return err
+		}
 		shown := i.Presentation
 		if shown.ID != req.PresentationID || shown.ProgressVersion != req.ExpectedVersion {
 			return repository.ErrConflict
@@ -86,6 +92,9 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 		if err != nil {
 			return err
 		}
+		if interview, ok := a.(algorithm.Interview); ok && shown.FinalReview != (kind == model.ReviewStage && interview.IsFinal(progress, now)) {
+			return repository.ErrConflict
+		}
 		next, err := a.Apply(algorithm.Input{Progress: progress, Difficulty: shown.Difficulty, Kind: kind, Action: req.Action, Now: now})
 		if err != nil {
 			return errors.Join(ErrInvalid, err)
@@ -97,6 +106,11 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 		e := model.TrainingEvent{ID: uuid.New(), CommandID: req.CommandID, UserID: user, PlanID: p.ID, SessionID: session.ID, MaterialID: i.MaterialID,
 			PresentationID: &shown.ID, Action: string(req.Action), Kind: kind, AlgorithmKey: a.Key(), AlgorithmVersion: a.Version(),
 			StageBefore: progress.Stage, StageAfter: next.Stage, ProgressVersionBefore: progress.Version, ProgressVersionAfter: next.Version, CreatedAt: now}
+		if shown.ExerciseID != nil {
+			e.ExerciseID = shown.ExerciseID
+			mode := shown.PracticeMode
+			e.PracticeMode = &mode
+		}
 		if err = tx.SaveEvent(e); err != nil {
 			return err
 		}

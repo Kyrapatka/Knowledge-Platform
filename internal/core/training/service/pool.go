@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"github.com/Kyrapatka/knowledge-platform/internal/core/training/algorithm"
 	"time"
 
 	material "github.com/Kyrapatka/knowledge-platform/internal/core/material/model"
@@ -46,6 +47,18 @@ func (s *Service) sessionView(ctx context.Context, tx repository.Tx, p model.Tra
 		if err != nil {
 			return out, err
 		}
+		if len(items) == 0 {
+			completed, err := tx.CompletePlanIfReady(p, s.now().UTC())
+			if err != nil {
+				return out, err
+			}
+			if completed {
+				out.Session, err = tx.Session(session.ID)
+				if err != nil {
+					return out, err
+				}
+			}
+		}
 		out.PoolSize = len(items)
 		if len(items) > 0 {
 			out.Current = items[0].Presentation
@@ -68,11 +81,30 @@ func (s *Service) fillPool(ctx context.Context, tx repository.Tx, p model.Traini
 		if i.Position >= position {
 			position = i.Position + 1
 		}
+		if _, err := tx.Material(i.MaterialID); err != nil {
+			if !errors.Is(err, repository.ErrNotFound) {
+				return nil, err
+			}
+			i.State, i.Presentation = "completed", nil
+			if err = tx.SaveItem(i); err != nil {
+				return nil, err
+			}
+			continue
+		}
 		progress, err := tx.Progress().Get(ctx, keyFor(p, i.MaterialID))
 		if err != nil {
 			return nil, err
 		}
 		kind, due := progress.DueReview(now)
+		if i.Presentation != nil && p.Track != model.ProgressTrackDefault {
+			a, _ := s.registry.Get(p.AlgorithmKey, p.AlgorithmVersion)
+			if interview, ok := a.(algorithm.Interview); ok && i.Presentation.FinalReview != (kind == model.ReviewStage && interview.IsFinal(progress, now)) {
+				i.Presentation = nil
+				if err = tx.SaveItem(i); err != nil {
+					return nil, err
+				}
+			}
+		}
 		if !due {
 			i.State = "completed"
 			i.Presentation = nil
@@ -88,6 +120,19 @@ func (s *Service) fillPool(ctx context.Context, tx repository.Tx, p model.Traini
 			}
 		}
 		if i.Presentation == nil {
+			if p.AlgorithmKey == "formula_adaptive" {
+				exercises, err := tx.Exercises(i.MaterialID, 1, 0)
+				if err != nil {
+					return nil, err
+				}
+				if len(exercises) == 0 {
+					i.State = "completed"
+					if err = tx.SaveItem(i); err != nil {
+						return nil, err
+					}
+					continue
+				}
+			}
 			m, err := tx.Material(i.MaterialID)
 			if err != nil {
 				return nil, err
@@ -158,13 +203,39 @@ func (s *Service) fillPool(ctx context.Context, tx repository.Tx, p model.Traini
 		if err != nil {
 			return nil, err
 		}
+		final := false
+		displayStage, displayCorrect := progress.Stage, progress.ConsecutiveCorrect
+		if interview, ok := a.(algorithm.Interview); ok {
+			final = kind == model.ReviewStage && interview.IsFinal(progress, now)
+			if final {
+				schedule, err := interview.Schedule(progress)
+				if err != nil {
+					return nil, err
+				}
+				displayStage = len(schedule)
+				if displayStage != progress.Stage {
+					displayCorrect = 0
+				}
+			}
+		}
 		if kind == model.ReviewExtra {
 			required = 1
 		}
-		i.Presentation = &model.Presentation{ID: uuid.New(), MaterialID: m.ID, FolderID: m.FolderID, Kind: kind,
-			ProgressVersion: progress.Version, Stage: progress.Stage, ConsecutiveCorrect: progress.ConsecutiveCorrect,
+		i.Presentation = &model.Presentation{FinalReview: final, ID: uuid.New(), MaterialID: m.ID, FolderID: m.FolderID, Kind: kind,
+			ProgressVersion: progress.Version, Stage: displayStage, ConsecutiveCorrect: displayCorrect,
 			RehabConsecutiveCorrect: progress.RehabConsecutiveCorrect, RequiredCorrect: required,
 			Difficulty: difficulty, Question: question, Answer: answer, CreatedAt: now}
+		if formula, ok := a.(algorithm.Formula); ok {
+			exercise, err := tx.PickExercise(m.ID, p.ID)
+			if err != nil {
+				return nil, err
+			}
+			mode := formula.Mode(progress, kind)
+			i.Presentation.ExerciseID = &exercise.ID
+			i.Presentation.ExerciseVersion = exercise.Version
+			i.Presentation.PracticeMode = mode
+			i.Presentation.Question, i.Presentation.Answer = formulaCard(mode, exercise, c, m.Values, question, answer)
+		}
 		if err = tx.SaveItem(*i); err != nil {
 			return nil, err
 		}

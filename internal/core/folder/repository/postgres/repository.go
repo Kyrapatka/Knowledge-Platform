@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	folder "github.com/Kyrapatka/knowledge-platform/internal/core/folder"
 	folderconfig "github.com/Kyrapatka/knowledge-platform/internal/core/folder/config"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Repository struct {
@@ -242,26 +244,28 @@ func (r *Repository) Delete(
 	ctx context.Context,
 	id uuid.UUID,
 ) error {
-	result := r.db.
-		WithContext(ctx).
-		Delete(
-			&folderModel{},
-			"id = ?",
-			id,
-		)
-
-	if result.Error != nil {
-		return fmt.Errorf(
-			"delete folder: %w",
-			result.Error,
-		)
-	}
-
-	if result.RowsAffected == 0 {
-		return folder.ErrNotFound
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var f folderModel
+		if err := tx.Where("id=?", id).Take(&f).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return folder.ErrNotFound
+			}
+			return err
+		}
+		var owner struct{ ID uuid.UUID }
+		if err := tx.Table("users").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id=?", f.OwnerID).Take(&owner).Error; err != nil {
+			return err
+		}
+		result := tx.Delete(&folderModel{}, "id=?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return folder.ErrNotFound
+		}
+		now := time.Now().UTC()
+		return tx.Table("materials").Where("folder_id=? AND deleted_at IS NULL", id).Updates(map[string]any{"deleted_at": now, "updated_at": now}).Error
+	})
 }
 
 func toModel(
