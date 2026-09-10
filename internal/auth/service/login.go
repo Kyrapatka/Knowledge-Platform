@@ -99,9 +99,10 @@ func (s *Service) Login(
 	}
 
 	return AuthResult{
-		User:         user,
-		AccessToken:  accessToken.Value,
-		RefreshToken: refreshToken.Value,
-		ExpiresAt:    accessToken.ExpiresAt,
+		User:             user,
+		AccessToken:      accessToken.Value,
+		RefreshToken:     refreshToken.Value,
+		ExpiresAt:        accessToken.ExpiresAt,
+		RefreshExpiresAt: now.Add(s.refreshTTL),
 	}, nil
 }

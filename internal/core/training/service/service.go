@@ -75,6 +75,16 @@ func (s *Service) UpdateDefaults(ctx context.Context, user, id uuid.UUID, c fold
 
 func (s *Service) CreatePlan(ctx context.Context, user uuid.UUID, req CreatePlanRequest) (model.TrainingPlan, error) {
 	var out model.TrainingPlan
+	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+		var err error
+		out, err = s.createPlan(tx, user, req)
+		return err
+	})
+	return out, err
+}
+
+func (s *Service) createPlan(tx repository.Tx, user uuid.UUID, req CreatePlanRequest) (model.TrainingPlan, error) {
+	var out model.TrainingPlan
 	if len(req.SourceFolderIDs) == 0 || len(req.SourceFolderIDs) > 100 {
 		return out, ErrInvalid
 	}
@@ -85,7 +95,7 @@ func (s *Service) CreatePlan(ctx context.Context, user uuid.UUID, req CreatePlan
 		}
 		seen[id] = true
 	}
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := func() error {
 		cards := make(map[string]folderconfig.FolderConfig, len(seen))
 		var key string
 		var pool int
@@ -160,7 +170,7 @@ func (s *Service) CreatePlan(ctx context.Context, user uuid.UUID, req CreatePlan
 		out = model.TrainingPlan{Version: 1, ID: uuid.New(), UserID: user, Track: track, AlgorithmKey: key, AlgorithmVersion: 1, Status: model.StatusActive,
 			Config: model.PlanConfig{PoolSize: pool, HorizonDays: req.HorizonDays, Cards: cards}, SourceFolderIDs: append([]uuid.UUID(nil), req.SourceFolderIDs...), StartedAt: now, CreatedAt: now, UpdatedAt: now}
 		return tx.CreatePlan(out)
-	})
+	}()
 	return out, err
 }
 

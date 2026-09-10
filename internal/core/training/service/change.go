@@ -16,6 +16,8 @@ import (
 )
 
 type ChangeRequest struct {
+	EndActiveSession bool                 `json:"end_active_session,omitempty"`
+	PoolSize         *int                 `json:"pool_size,omitempty"`
 	CommandID        uuid.UUID            `json:"command_id"`
 	ExpectedVersion  int                  `json:"expected_version"`
 	AlgorithmKey     string               `json:"algorithm_key"`
@@ -40,6 +42,9 @@ type ChangeResult struct {
 func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, req ChangeRequest) (ChangeResult, error) {
 	var out ChangeResult
 	if req.CommandID == uuid.Nil || req.ExpectedVersion < 1 {
+		return out, ErrInvalid
+	}
+	if req.PoolSize != nil && (*req.PoolSize < 1 || *req.PoolSize > 50) {
 		return out, ErrInvalid
 	}
 	if req.Mode != algorithm.KeepStage && req.Mode != algorithm.ResetStage && req.Mode != algorithm.SetStage {
@@ -80,10 +85,15 @@ func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, r
 		if plan.Status != model.StatusActive || plan.Version != req.ExpectedVersion {
 			return repository.ErrConflict
 		}
-		if _, err = tx.ActiveSession(planID); err == nil {
-			return fmt.Errorf("%w: finish or cancel the active session first", repository.ErrConflict)
-		} else if !errors.Is(err, repository.ErrNotFound) {
-			return err
+		if active, activeErr := tx.ActiveSession(planID); activeErr == nil {
+			if !req.EndActiveSession {
+				return fmt.Errorf("%w: finish or cancel the active session first", repository.ErrConflict)
+			}
+			if err = tx.FinishSession(active.ID, model.StatusCancelled, s.now().UTC()); err != nil {
+				return err
+			}
+		} else if !errors.Is(activeErr, repository.ErrNotFound) {
+			return activeErr
 		}
 		if algorithm.TrackFor(a) != plan.Track {
 			return fmt.Errorf("%w: changing tracks requires a new plan", ErrInvalid)
@@ -113,6 +123,10 @@ func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, r
 		out.Changes = make([]ProgressChange, 0, len(progresses))
 		now := s.now().UTC()
 		for _, before := range progresses {
+			// Pool-only changes retain recovery and partial mastery as well as dates.
+			if req.Mode == algorithm.KeepStage && a.Key() == plan.AlgorithmKey && a.Version() == plan.AlgorithmVersion && horizon == plan.Config.HorizonDays {
+				continue
+			}
 			if before.AlgorithmKey != plan.AlgorithmKey || before.AlgorithmVersion != plan.AlgorithmVersion {
 				return repository.ErrConflict
 			}
@@ -129,6 +143,9 @@ func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, r
 		previousKey, previousVersion := plan.AlgorithmKey, plan.AlgorithmVersion
 		plan.AlgorithmKey, plan.AlgorithmVersion = a.Key(), a.Version()
 		plan.Config.HorizonDays = horizon
+		if req.PoolSize != nil {
+			plan.Config.PoolSize = *req.PoolSize
+		}
 		plan.Version++
 		plan.UpdatedAt = now
 		if err = tx.UpdatePlan(plan, req.ExpectedVersion); err != nil {

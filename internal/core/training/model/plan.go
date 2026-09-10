@@ -38,11 +38,13 @@ type TrainingPlan struct {
 }
 
 type TrainingSession struct {
-	ID         uuid.UUID  `json:"id"`
-	PlanID     uuid.UUID  `json:"plan_id"`
-	UserID     uuid.UUID  `json:"user_id"`
-	Status     Status     `json:"status"`
-	StartedAt  time.Time  `json:"started_at"`
-	FinishedAt *time.Time `json:"finished_at"`
-	CreatedAt  time.Time  `json:"created_at"`
+	Combined   bool            `json:"combined"`
+	Selection  []SessionSource `json:"selection" gorm:"serializer:json;type:jsonb"`
+	ID         uuid.UUID       `json:"id"`
+	PlanID     uuid.UUID       `json:"plan_id"`
+	UserID     uuid.UUID       `json:"user_id"`
+	Status     Status          `json:"status"`
+	StartedAt  time.Time       `json:"started_at"`
+	FinishedAt *time.Time      `json:"finished_at"`
+	CreatedAt  time.Time       `json:"created_at"`
 }

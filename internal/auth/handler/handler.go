@@ -56,6 +56,7 @@ func (h *Handler) RegisterPublicRoutes(
 	router.POST("/login", h.Login)
 	router.POST("/refresh", h.Refresh)
 	router.POST("/logout", h.Logout)
+	h.registerBrowserRoutes(router)
 }
 
 func (h *Handler) RegisterProtectedRoutes(

@@ -176,6 +176,9 @@ func (t *runtimeTx) ActiveSession(plan uuid.UUID) (model.TrainingSession, error)
 	return s, translate(err)
 }
 func (t *runtimeTx) CreateSession(s model.TrainingSession) error {
+	if s.Selection == nil {
+		s.Selection = []model.SessionSource{}
+	}
 	if s.UserID != t.user {
 		return repository.ErrNotFound
 	}
@@ -292,7 +295,12 @@ func (t *runtimeTx) Candidates(p model.TrainingPlan, session uuid.UUID, now time
 	if p.AlgorithmKey == "formula_adaptive" {
 		query = query.Where("EXISTS (SELECT 1 FROM formula_exercises e WHERE e.material_id=m.id)")
 	}
-	err := query.Order(order).Limit(limit).Pluck("m.id", &ids).Error
+	scope, err := t.Session(session)
+	if err != nil {
+		return nil, err
+	}
+	query = selectedMaterials(query, scope.Selection)
+	err = query.Order(order).Limit(limit).Pluck("m.id", &ids).Error
 	if err != nil {
 		return nil, err
 	}

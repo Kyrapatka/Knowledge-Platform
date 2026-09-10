@@ -30,8 +30,9 @@ type LogoutInput struct {
 }
 
 type AuthResult struct {
-	User         model.User
-	AccessToken  string
-	RefreshToken string
-	ExpiresAt    time.Time
+	User             model.User
+	AccessToken      string
+	RefreshToken     string
+	ExpiresAt        time.Time
+	RefreshExpiresAt time.Time
 }

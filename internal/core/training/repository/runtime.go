@@ -32,6 +32,9 @@ type Tx interface {
 	CompletePlanIfReady(model.TrainingPlan, time.Time) (bool, error)
 	Session(uuid.UUID) (model.TrainingSession, error)
 	ActiveSession(uuid.UUID) (model.TrainingSession, error)
+	LatestSession(uuid.UUID) (model.TrainingSession, error)
+	Availability(model.TrainingPlan, []model.SessionSource) (model.Availability, error)
+	CombinedSummary([]uuid.UUID) (model.SessionSummary, error)
 	CreateSession(model.TrainingSession) error
 	FinishSession(uuid.UUID, model.Status, time.Time) error
 	Items(uuid.UUID) ([]model.SessionItem, error)

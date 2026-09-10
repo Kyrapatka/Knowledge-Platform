@@ -12,3 +12,9 @@ tmp/
 *.out
 
 coverage.out
+
+node_modules/
+.cache/
+web/playwright-report/
+web/test-results/
+*.tsbuildinfo

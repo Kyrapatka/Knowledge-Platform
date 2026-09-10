@@ -69,7 +69,7 @@ func englishWordsTemplate() Template {
 			},
 
 			MetadataSchema: folderconfig.MetadataSchema{
-				Fields: []folderconfig.FieldDefinition{},
+				Fields: []folderconfig.FieldDefinition{{Key: "topic", Label: "Topic", Active: true}},
 			},
 
 			Card: folderconfig.CardConfig{
@@ -151,6 +151,7 @@ func interviewQuestionsTemplate() Template {
 
 			MetadataSchema: folderconfig.MetadataSchema{
 				Fields: []folderconfig.FieldDefinition{
+					{Key: "topic", Label: "Topic", Active: true},
 					{
 						Key:      "company",
 						Label:    "Company",
@@ -256,7 +257,7 @@ func formulasTemplate() Template {
 			},
 
 			MetadataSchema: folderconfig.MetadataSchema{
-				Fields: []folderconfig.FieldDefinition{},
+				Fields: []folderconfig.FieldDefinition{{Key: "topic", Label: "Topic", Active: true}},
 			},
 
 			Card: folderconfig.CardConfig{

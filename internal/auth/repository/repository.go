@@ -78,3 +78,9 @@ type SessionRepository interface {
 		now time.Time,
 	) (int64, error)
 }
+
+// BrowserSessionRotator is optional for existing clients, but required by the
+// browser adapter. The old hash and active-session checks must be atomic.
+type BrowserSessionRotator interface {
+	RotateRefreshToken(ctx context.Context, sessionID uuid.UUID, oldHash, newHash string, now time.Time) error
+}

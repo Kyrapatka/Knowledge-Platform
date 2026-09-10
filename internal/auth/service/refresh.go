@@ -8,12 +8,23 @@ import (
 
 	autherrors "github.com/Kyrapatka/knowledge-platform/internal/auth"
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/model"
+	"github.com/Kyrapatka/knowledge-platform/internal/auth/repository"
 )
 
 func (s *Service) Refresh(
 	ctx context.Context,
 	input RefreshInput,
 ) (AuthResult, error) {
+	return s.refresh(ctx, input, false)
+}
+
+// RefreshBrowser rotates the browser's credential atomically while retaining
+// the session's original expiry. JSON API clients retain their existing contract.
+func (s *Service) RefreshBrowser(ctx context.Context, input RefreshInput) (AuthResult, error) {
+	return s.refresh(ctx, input, true)
+}
+
+func (s *Service) refresh(ctx context.Context, input RefreshInput, rotate bool) (AuthResult, error) {
 	if input.RefreshToken == "" {
 		return AuthResult{}, ErrInvalidRefreshToken
 	}
@@ -78,11 +89,24 @@ func (s *Service) Refresh(
 		)
 	}
 
-	err = s.sessions.UpdateLastUsedAt(
-		ctx,
-		session.ID,
-		now,
-	)
+	refreshValue := input.RefreshToken
+	if rotate {
+		rotator, ok := s.sessions.(repository.BrowserSessionRotator)
+		if !ok {
+			return AuthResult{}, fmt.Errorf("browser refresh rotation is unavailable")
+		}
+		next, createErr := s.tokens.CreateRefreshToken(ctx)
+		if createErr != nil {
+			return AuthResult{}, fmt.Errorf("create refresh token: %w", createErr)
+		}
+		err = rotator.RotateRefreshToken(ctx, session.ID, refreshTokenHash, next.Hash, now)
+		if errors.Is(err, autherrors.ErrSessionNotFound) {
+			return AuthResult{}, ErrInvalidRefreshToken
+		}
+		refreshValue = next.Value
+	} else {
+		err = s.sessions.UpdateLastUsedAt(ctx, session.ID, now)
+	}
 	if err != nil {
 		return AuthResult{}, fmt.Errorf(
 			"update auth session: %w",
@@ -91,9 +115,10 @@ func (s *Service) Refresh(
 	}
 
 	return AuthResult{
-		User:         user,
-		AccessToken:  accessToken.Value,
-		RefreshToken: input.RefreshToken,
-		ExpiresAt:    accessToken.ExpiresAt,
+		User:             user,
+		AccessToken:      accessToken.Value,
+		RefreshToken:     refreshValue,
+		ExpiresAt:        accessToken.ExpiresAt,
+		RefreshExpiresAt: session.ExpiresAt,
 	}, nil
 }

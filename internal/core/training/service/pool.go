@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/algorithm"
+	"sort"
 	"time"
 
 	material "github.com/Kyrapatka/knowledge-platform/internal/core/material/model"
@@ -70,6 +71,10 @@ func (s *Service) sessionView(ctx context.Context, tx repository.Tx, p model.Tra
 }
 
 func (s *Service) fillPool(ctx context.Context, tx repository.Tx, p model.TrainingPlan, session model.TrainingSession) ([]model.SessionItem, error) {
+	return s.preparePool(ctx, tx, p, session, !session.Combined)
+}
+
+func (s *Service) preparePool(ctx context.Context, tx repository.Tx, p model.TrainingPlan, session model.TrainingSession, present bool) ([]model.SessionItem, error) {
 	now := s.now().UTC()
 	items, err := tx.Items(session.ID)
 	if err != nil {
@@ -81,10 +86,18 @@ func (s *Service) fillPool(ctx context.Context, tx repository.Tx, p model.Traini
 		if i.Position >= position {
 			position = i.Position + 1
 		}
-		if _, err := tx.Material(i.MaterialID); err != nil {
+		material, err := tx.Material(i.MaterialID)
+		if err != nil {
 			if !errors.Is(err, repository.ErrNotFound) {
 				return nil, err
 			}
+			i.State, i.Presentation = "completed", nil
+			if err = tx.SaveItem(i); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if i.Presentation == nil && !selectedMaterial(material, session.Selection) {
 			i.State, i.Presentation = "completed", nil
 			if err = tx.SaveItem(i); err != nil {
 				return nil, err
@@ -164,6 +177,29 @@ func (s *Service) fillPool(ctx context.Context, tx repository.Tx, p model.Traini
 			}
 			active = append(active, i)
 		}
+	}
+	if session.Combined && len(active) > 1 {
+		ranks := make(map[uuid.UUID]int, len(active))
+		for _, item := range active {
+			progress, err := tx.Progress().Get(ctx, keyFor(p, item.MaterialID))
+			if err != nil {
+				return nil, err
+			}
+			kind, _ := progress.DueReview(now)
+			ranks[item.MaterialID] = reviewRank(kind)
+		}
+		if !sort.SliceIsSorted(active, func(i, j int) bool { return ranks[active[i].MaterialID] < ranks[active[j].MaterialID] }) {
+			sort.SliceStable(active, func(i, j int) bool { return ranks[active[i].MaterialID] < ranks[active[j].MaterialID] })
+			for index := range active {
+				active[index].Position = position + int64(index)
+				if err = tx.SaveItem(active[index]); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	if !present {
+		return active, nil
 	}
 	// Only the head is a presented task. Other pool items receive fresh content
 	// snapshots when they actually reach the head, not when the pool is filled.

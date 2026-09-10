@@ -263,3 +263,18 @@ func parseIPAddress(
 }
 
 var _ repository.SessionRepository = (*SessionRepository)(nil)
+
+func (r *SessionRepository) RotateRefreshToken(ctx context.Context, sessionID uuid.UUID, oldHash, newHash string, now time.Time) error {
+	result := r.db.WithContext(ctx).Model(&AuthSessionModel{}).
+		Where("id = ? AND refresh_token_hash = ? AND revoked_at IS NULL AND expires_at > ?", sessionID, oldHash, now).
+		Updates(map[string]any{"refresh_token_hash": newHash, "last_used_at": now})
+	if result.Error != nil {
+		return fmt.Errorf("rotate auth session refresh token: %w", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return autherrors.ErrSessionNotFound
+	}
+	return nil
+}
+
+var _ repository.BrowserSessionRotator = (*SessionRepository)(nil)
