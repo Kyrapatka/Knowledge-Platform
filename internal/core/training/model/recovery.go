@@ -72,13 +72,13 @@ func (p *UserMaterialProgress) ApplyRecovery(kind ReviewKind, correct bool, requ
 	if p.RehabStep == 1 {
 		// Today is the first learning day, tomorrow is skipped, and the second
 		// learning day is the day after tomorrow. Anchor to actual mastery.
-		p.ScheduleRehab(2, now.UTC().AddDate(0, 0, 2))
+		p.ScheduleRehab(2, EarlierReview(now.UTC(), now.UTC().AddDate(0, 0, 2)))
 		return nil
 	}
 	p.EndRehab()
 	if p.StageLastReviewAt != nil && p.StageReviewAt != nil &&
 		p.StageReviewAt.Sub(*p.StageLastReviewAt) > 30*24*time.Hour {
-		extra := now.UTC().AddDate(0, 0, 10)
+		extra := EarlierReview(now.UTC(), now.UTC().AddDate(0, 0, 10))
 		p.ExtraReviewAt = &extra
 	}
 	return nil

@@ -139,6 +139,6 @@ func (a English) Apply(in Input) (model.UserMaterialProgress, error) {
 
 func scheduleEnglish(p *model.UserMaterialProgress, now time.Time) {
 	anchor := now.UTC()
-	next := anchor.AddDate(0, 0, englishIntervals[p.Stage-1])
+	next := model.EarlierReview(anchor, anchor.AddDate(0, 0, englishIntervals[p.Stage-1]))
 	p.StageLastReviewAt, p.StageReviewAt = &anchor, &next
 }

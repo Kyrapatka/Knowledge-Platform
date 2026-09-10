@@ -84,7 +84,10 @@ test("desktop: real auth, CRUD, topic filtering, recall, persistence and statist
     .getByRole("dialog")
     .getByRole("button", { name: "Start training", exact: true })
     .click();
-  await expect(page.locator(".lead-question")).toContainText("serendipity");
+  await expect(page.locator(".lead-question")).toHaveText(
+    /serendipity|A fortunate discovery by chance/,
+  );
+  const firstQuestion = await page.locator(".lead-question").innerText();
   await page.getByRole("button", { name: "Edit current material" }).click();
   await page
     .getByRole("dialog")
@@ -94,23 +97,29 @@ test("desktop: real auth, CRUD, topic filtering, recall, persistence and statist
     .getByRole("dialog")
     .getByRole("button", { name: "Save material", exact: true })
     .click();
-  await expect(page.locator(".lead-question")).toHaveText("serendipity");
+  await expect(page.locator(".lead-question")).toHaveText(firstQuestion);
   await page.reload();
-  await expect(page.locator(".lead-question")).toHaveText("serendipity");
-  await page.getByRole("button", { name: "Show answer", exact: true }).click();
+  await expect(page.locator(".lead-question")).toHaveText(firstQuestion);
+  await page
+    .getByRole("button", { name: "Flip to answer", exact: true })
+    .click();
   await expect(page.locator(".answer-fields")).toContainText(
-    "A fortunate discovery by chance",
+    firstQuestion === "serendipity"
+      ? "A fortunate discovery by chance"
+      : "serendipity",
   );
   await page.getByRole("button", { name: /Correct/ }).click();
   for (let i = 0; i < 2; i++) {
     await expect(
-      page.getByRole("button", { name: "Show answer", exact: true }),
+      page.getByRole("button", { name: "Flip to answer", exact: true }),
     ).toBeEnabled();
     await expect(page.locator(".lead-question")).toHaveText(
-      "serendipity (updated)",
+      (i === 0) === (firstQuestion === "serendipity")
+        ? "A fortunate discovery by chance"
+        : "serendipity (updated)",
     );
     await page
-      .getByRole("button", { name: "Show answer", exact: true })
+      .getByRole("button", { name: "Flip to answer", exact: true })
       .click();
     await page.getByRole("button", { name: /Correct/ }).click();
   }
@@ -135,7 +144,7 @@ test("desktop: real auth, CRUD, topic filtering, recall, persistence and statist
     page,
     {
       Question: "What is an index?",
-      Answer: "A data structure that speeds up retrieval.",
+      "Detailed answer": "A data structure that speeds up retrieval.",
     },
     "SQL",
   );
@@ -158,11 +167,11 @@ test("desktop: real auth, CRUD, topic filtering, recall, persistence and statist
   const questions: string[] = [];
   for (let i = 0; i < 4; i++) {
     await expect(
-      page.getByRole("button", { name: "Show answer", exact: true }),
+      page.getByRole("button", { name: "Flip to answer", exact: true }),
     ).toBeEnabled();
     questions.push(await page.locator(".lead-question").innerText());
     await page
-      .getByRole("button", { name: "Show answer", exact: true })
+      .getByRole("button", { name: "Flip to answer", exact: true })
       .click();
     await page.screenshot({
       path: `test-results/training-desktop-${i}.png`,
@@ -215,7 +224,9 @@ test("mobile: formula exercise, no layout overflow, login survives reload", asyn
     .getByRole("button", { name: "Start training", exact: true })
     .click();
   await expect(page.locator(".question-fields")).toContainText("A car travels");
-  await page.getByRole("button", { name: "Show answer", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Flip to answer", exact: true })
+    .click();
   await expect(page.locator(".answer-fields")).toContainText("50 km/h");
   const noOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth <= window.innerWidth,

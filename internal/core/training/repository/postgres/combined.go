@@ -80,7 +80,7 @@ func (t *runtimeTx) CombinedSummary(sessions []uuid.UUID) (model.SessionSummary,
 	if len(sessions) == 0 {
 		return result, nil
 	}
-	err := t.db.Table("training_events").Where("user_id=? AND session_id IN ?", t.user, sessions).Select(`
+	err := t.db.Table("training_events").Where("user_id=? AND session_id IN ? AND undone_at IS NULL", t.user, sessions).Select(`
 		COUNT(*) FILTER (WHERE action='correct') AS correct,
 		COUNT(*) FILTER (WHERE action='wrong') AS wrong,
 		COUNT(*) FILTER (WHERE action='advance') AS advance,

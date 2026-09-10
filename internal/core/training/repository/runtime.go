@@ -17,6 +17,10 @@ type RuntimeStore interface {
 }
 
 type Tx interface {
+	SaveUndo(model.UndoSnapshot) error
+	UndoHistory() ([]model.UndoSnapshot, error)
+	RestoreUndo(model.UndoSnapshot, int, time.Time) error
+	LastEnglishDirection(uuid.UUID) (string, error)
 	Folder(uuid.UUID) (folder.Folder, error)
 	SaveDefaults(uuid.UUID, folderconfig.TrainingConfig, int64, time.Time) error
 	HasPlanOverlap([]uuid.UUID, model.ProgressTrack) (bool, error)

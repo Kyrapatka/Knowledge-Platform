@@ -91,6 +91,9 @@ func ChangeProgress(p model.UserMaterialProgress, a Algorithm, mode ChangeMode, 
 			next = *p.TargetAt
 		}
 	}
+	if mode != ResetStage && !(p.Stage == 1 && p.StageLastReviewAt == nil) {
+		next = model.EarlierReview(anchor, next)
+	}
 	p.StageReviewAt = &next
 	return p, nil
 }

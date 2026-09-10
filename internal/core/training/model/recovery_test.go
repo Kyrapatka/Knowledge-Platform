@@ -25,7 +25,7 @@ func TestRecoveryTwoLearningDaysAndSeparateFollowUp(t *testing.T) {
 	answer(start, ReviewRehab, false)
 	answer(start, ReviewRehab, true)
 	answer(start, ReviewRehab, true)
-	day2 := start.AddDate(0, 0, 2)
+	day2 := start.AddDate(0, 0, 2).Add(-30 * time.Minute)
 	assertReviewAt(t, p.RehabReviewAt, &day2)
 	before := p
 	if err := p.ApplyRecovery(ReviewRehab, true, 2, start.AddDate(0, 0, 1)); !errors.Is(err, ErrReviewNotDue) {
@@ -36,7 +36,7 @@ func TestRecoveryTwoLearningDaysAndSeparateFollowUp(t *testing.T) {
 	}
 	answer(day2, ReviewRehab, true)
 	answer(day2, ReviewRehab, true)
-	day12 := start.AddDate(0, 0, 12)
+	day12 := start.AddDate(0, 0, 12).Add(-time.Hour)
 	if p.RehabActive {
 		t.Fatal("rehab not completed")
 	}

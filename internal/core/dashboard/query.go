@@ -257,7 +257,7 @@ func (s *Store) Statistics(ctx context.Context, user uuid.UUID, days int, timezo
  COUNT(DISTINCT material_id) AS materials_reviewed,
  COUNT(DISTINCT session_id) AS sessions,
  COUNT(*) FILTER (WHERE action='correct' AND stage_after>stage_before) AS stage_promotions`
-	const where = ` FROM training_events WHERE user_id=? AND action IN ('correct','wrong') AND created_at>=? AND created_at<=?`
+	const where = ` FROM training_events WHERE user_id=? AND undone_at IS NULL AND action IN ('correct','wrong') AND created_at>=? AND created_at<=?`
 	err = s.db.WithContext(ctx).Transaction(func(db *gorm.DB) error {
 		if err := db.Raw(`SELECT `+fields+`,COUNT(DISTINCT timezone(?,created_at)::date) AS active_days`+where,
 			timezone, user, out.From, out.To).Scan(&out.Totals).Error; err != nil {

@@ -187,6 +187,7 @@ func scheduleInterview(p *model.UserMaterialProgress, schedule []time.Duration, 
 	if p.Stage == len(schedule) || next.After(*p.TargetAt) {
 		next = *p.TargetAt
 	}
+	next = model.EarlierReview(anchor, next)
 	p.StageLastReviewAt = &anchor
 	p.StageReviewAt = &next
 }

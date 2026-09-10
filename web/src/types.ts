@@ -98,6 +98,9 @@ export type Plan = {
 };
 export type CardField = { key: string; label: string; value: string };
 export type Presentation = {
+  direction?: "foreign" | "native";
+  example?: string;
+  foreign_word?: string;
   id: string;
   material_id: string;
   folder_id: string;
@@ -127,6 +130,7 @@ export type SessionView = {
   pool_size: number;
 };
 export type CombinedView = {
+  undo_actions?: string[];
   sessions: (SessionView & { plan: Plan })[];
   current: {
     session_id: string;
@@ -168,6 +172,7 @@ export type Statistics = {
     active_days: number;
   };
   daily: {
+    stage_promotions: number;
     date: string;
     answers: number;
     correct: number;

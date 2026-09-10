@@ -106,6 +106,7 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 		e := model.TrainingEvent{ID: uuid.New(), CommandID: req.CommandID, UserID: user, PlanID: p.ID, SessionID: session.ID, MaterialID: i.MaterialID,
 			PresentationID: &shown.ID, Action: string(req.Action), Kind: kind, AlgorithmKey: a.Key(), AlgorithmVersion: a.Version(),
 			StageBefore: progress.Stage, StageAfter: next.Stage, ProgressVersionBefore: progress.Version, ProgressVersionAfter: next.Version, CreatedAt: now}
+		e.Direction = shown.Direction
 		if shown.ExerciseID != nil {
 			e.ExerciseID = shown.ExerciseID
 			mode := shown.PracticeMode
@@ -113,6 +114,11 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 		}
 		if err = tx.SaveEvent(e); err != nil {
 			return err
+		}
+		if req.Action == algorithm.Correct || req.Action == algorithm.Wrong {
+			if err = tx.SaveUndo(model.UndoSnapshot{EventID: e.ID, PlanID: p.ID, SessionID: session.ID, MaterialID: i.MaterialID, ExpectedVersion: next.Version, PlanVersion: p.Version, Before: progress, Items: items}); err != nil {
+				return err
+			}
 		}
 		i.Presentation = nil
 		i.Position = items[len(items)-1].Position + 1

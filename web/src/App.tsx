@@ -161,6 +161,7 @@ function Shell({ children }: { children: ReactNode }) {
   const { data, notify } = useLibrary();
   const location = useLocation();
   const today = new Date().toLocaleDateString("en", {
+    timeZone: "Europe/Moscow",
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -545,9 +546,14 @@ function FolderCard({
   toggle: () => void;
 }) {
   const { launch } = useLibrary();
+  const navigate = useNavigate();
   return (
     <article
       className={`folder-card ${folder.template_key} ${selected ? "selected" : ""}`}
+      onClick={(e) => {
+        if (!(e.target as HTMLElement).closest("a, button, input, label"))
+          navigate(`/folders/${folder.id}`);
+      }}
     >
       <div className="folder-card-top">
         <span className="folder-icon">
@@ -820,6 +826,7 @@ function FolderPage() {
                   {p.horizon_days ? ` · ${p.horizon_days} days` : ""}
                   {p.status !== "active" ? ` · ${p.status}` : ""} ·{" "}
                   {new Date(p.created_at).toLocaleDateString("en", {
+                    timeZone: "Europe/Moscow",
                     month: "short",
                     day: "numeric",
                   })}

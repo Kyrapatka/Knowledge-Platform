@@ -22,6 +22,7 @@ func NewHandler(s *service.Service) *Handler { return &Handler{s} }
 func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.POST("/training/combined", h.StartCombined)
 	api.POST("/training/combined/current", h.CurrentCombined)
+	api.POST("/training/combined/undo", h.Undo)
 	api.POST("/materials/:materialID/exercises", h.CreateExercise)
 	api.GET("/materials/:materialID/exercises", h.Exercises)
 	api.PUT("/materials/:materialID/exercises/:exerciseID", h.UpdateExercise)

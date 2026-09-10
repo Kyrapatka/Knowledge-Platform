@@ -331,6 +331,11 @@ func (t *runtimeTx) SaveEvent(e model.TrainingEvent) error {
 	if e.UserID != t.user {
 		return repository.ErrNotFound
 	}
+	if e.Action != "correct" && e.Action != "wrong" {
+		if err := t.db.Exec("DELETE FROM training_undo WHERE user_id=?", t.user).Error; err != nil {
+			return err
+		}
+	}
 	return t.db.Table("training_events").Create(&e).Error
 }
 func (t *runtimeTx) Summary(session uuid.UUID) (model.SessionSummary, error) {
@@ -338,13 +343,13 @@ func (t *runtimeTx) Summary(session uuid.UUID) (model.SessionSummary, error) {
 	if _, err := t.Session(session); err != nil {
 		return s, err
 	}
-	err := t.db.Table("training_events").Where("user_id=? AND session_id=?", t.user, session).Select(`
+	err := t.db.Table("training_events").Where("user_id=? AND session_id=? AND undone_at IS NULL", t.user, session).Select(`
 		COUNT(*) FILTER (WHERE action='correct') AS correct,
 		COUNT(*) FILTER (WHERE action='wrong') AS wrong,
 		COUNT(*) FILTER (WHERE action='advance') AS advance,
 		COUNT(*) FILTER (WHERE action='rollback') AS rollback,
 		COUNT(*) FILTER (WHERE action='skip_rehab') AS skip_rehab,
-		COUNT(DISTINCT material_id) AS materials_reviewed,
+		COUNT(DISTINCT material_id) FILTER (WHERE action IN ('correct','wrong')) AS materials_reviewed,
 		COUNT(*) FILTER (WHERE action='correct' AND stage_after>stage_before) AS stage_promotions`).Scan(&s).Error
 	return s, err
 }

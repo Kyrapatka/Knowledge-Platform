@@ -59,7 +59,7 @@ func TestInterviewAllSchedulesReachIndividualTarget(t *testing.T) {
 					t.Fatal("target moved", h)
 				}
 			}
-			if !p.CompletedAt.Equal(target) || p.NextReviewAt() != nil {
+			if !p.CompletedAt.Equal(target.Add(-30*time.Minute)) || p.NextReviewAt() != nil {
 				t.Fatal("wrong completion", h, p)
 			}
 		}
@@ -70,7 +70,7 @@ func TestCramSpacingWrongAndDifficulty(t *testing.T) {
 	p := interviewProgress(t, a, 1)
 	start := p.LearningStartedAt
 	p = answerInterview(t, a, p, Correct, start)
-	if p.Stage != 2 || p.StageReviewAt.Sub(start) != 8*time.Hour {
+	if p.Stage != 2 || p.StageReviewAt.Sub(start) != 8*time.Hour-30*time.Minute {
 		t.Fatal(p)
 	}
 	now := *p.StageReviewAt
@@ -85,7 +85,7 @@ func TestCramSpacingWrongAndDifficulty(t *testing.T) {
 		t.Fatal("mastery must now require two answers")
 	}
 	p = answerInterview(t, a, p, Correct, now)
-	if p.Stage != 3 || !p.StageReviewAt.Equal(*p.TargetAt) {
+	if p.Stage != 3 || !p.StageReviewAt.Equal(p.TargetAt.Add(-30*time.Minute)) {
 		t.Fatal(p)
 	}
 	_, err := a.Apply(Input{Progress: p, Action: Advance, Now: now, Difficulty: material.DifficultyEasy})
@@ -113,15 +113,15 @@ func TestInterviewRehabExtraAndStagePriority(t *testing.T) {
 	start := p.LearningStartedAt
 	p = answerInterview(t, a, p, Wrong, start)
 	main := *p.StageReviewAt
-	if main.Sub(start) != 50*24*time.Hour {
+	if main.Sub(start) != 50*24*time.Hour-30*time.Minute {
 		t.Fatal("rollback gap", p)
 	}
 	p = answerInterview(t, a, p, Correct, start)
-	if p.RehabStep != 2 || p.RehabReviewAt.Sub(start) != 2*24*time.Hour {
+	if p.RehabStep != 2 || p.RehabReviewAt.Sub(start) != 2*24*time.Hour-30*time.Minute {
 		t.Fatal(p)
 	}
 	p = answerInterview(t, a, p, Correct, start.AddDate(0, 0, 2))
-	if p.ExtraReviewAt == nil || p.ExtraReviewAt.Sub(start) != 12*24*time.Hour || !p.StageReviewAt.Equal(main) {
+	if p.ExtraReviewAt == nil || p.ExtraReviewAt.Sub(start) != 12*24*time.Hour-30*time.Minute || !p.StageReviewAt.Equal(main) {
 		t.Fatal(p)
 	}
 	p = answerInterview(t, a, p, Correct, main)

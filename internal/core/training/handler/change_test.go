@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestChangeAlgorithmHTTP(t *testing.T) {
@@ -21,7 +22,7 @@ func TestChangeAlgorithmHTTP(t *testing.T) {
 	anchor := f.now.AddDate(0, 0, -5)
 	f.exec(t, "UPDATE user_material_progress SET stage=5,stage_last_review_at=?,stage_review_at=?,correct_count=17,wrong_count=4,consecutive_correct=2 WHERE user_id=? AND material_id=?", anchor, anchor.AddDate(0, 0, 10), f.user, m)
 	result := decode[service.ChangeResult](t, f.request(f.user, "POST", path, req), 200)
-	if result.Plan.Version != 2 || len(result.Changes) != 1 || result.Changes[0].StageAfter != 5 || !result.Changes[0].NextReviewAt.Equal(anchor.AddDate(0, 0, 10)) {
+	if result.Plan.Version != 2 || len(result.Changes) != 1 || result.Changes[0].StageAfter != 5 || !result.Changes[0].NextReviewAt.Equal(anchor.AddDate(0, 0, 10).Add(-30*time.Minute)) {
 		t.Fatal(result)
 	}
 	retry := decode[service.ChangeResult](t, f.request(f.user, "POST", path, req), 200)

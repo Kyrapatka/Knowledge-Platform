@@ -28,7 +28,9 @@ type CombinedRequest struct {
 	Sources []CombinedSource `json:"sources"`
 }
 type CombinedCurrentRequest struct {
-	SessionIDs []uuid.UUID `json:"session_ids"`
+	SessionIDs  []uuid.UUID `json:"session_ids"`
+	ReviewEarly bool        `json:"review_early,omitempty"`
+	CommandID   uuid.UUID   `json:"command_id,omitempty"`
 }
 
 func selectedMaterial(m material.Material, sources []model.SessionSource) bool {
@@ -218,6 +220,11 @@ func (s *Service) StartCombined(ctx context.Context, user uuid.UUID, req Combine
 // scopedSession preserves a matching active run. A changed selection replaces
 // only its internal run; persistent material progress and dates remain untouched.
 func (s *Service) scopedSession(ctx context.Context, tx repository.Tx, plan model.TrainingPlan, selection []model.SessionSource, replace bool) (model.TrainingSession, error) {
+	var configErr error
+	plan, configErr = currentCardConfig(tx, plan)
+	if configErr != nil {
+		return model.TrainingSession{}, configErr
+	}
 	active, err := tx.ActiveSession(plan.ID)
 	if err == nil {
 		if active.Combined && reflect.DeepEqual(active.Selection, selection) {
@@ -262,6 +269,9 @@ func (s *Service) scopedSession(ctx context.Context, tx repository.Tx, plan mode
 }
 
 func (s *Service) CurrentCombined(ctx context.Context, user uuid.UUID, req CombinedCurrentRequest) (model.CombinedView, error) {
+	if req.ReviewEarly {
+		return s.reviewEarly(ctx, user, req)
+	}
 	var result model.CombinedView
 	if len(req.SessionIDs) == 0 || len(req.SessionIDs) > 100 {
 		return result, ErrInvalid
@@ -319,6 +329,10 @@ func (s *Service) combinedView(ctx context.Context, tx repository.Tx, sessions [
 		if err != nil {
 			return result, err
 		}
+		plan, err = currentCardConfig(tx, plan)
+		if err != nil {
+			return result, err
+		}
 		var items []model.SessionItem
 		if session.Status == model.StatusActive && plan.Status == model.StatusActive {
 			items, err = s.preparePool(ctx, tx, plan, session, false)
@@ -371,6 +385,10 @@ func (s *Service) combinedView(ctx context.Context, tx repository.Tx, sessions [
 	}
 	var err error
 	result.Summary, err = tx.CombinedSummary(ids)
+	if err != nil {
+		return result, err
+	}
+	result.UndoActions, err = availableUndos(ctx, tx, sessions)
 	if err != nil {
 		return result, err
 	}

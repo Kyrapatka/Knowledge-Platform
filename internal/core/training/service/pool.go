@@ -75,6 +75,11 @@ func (s *Service) fillPool(ctx context.Context, tx repository.Tx, p model.Traini
 }
 
 func (s *Service) preparePool(ctx context.Context, tx repository.Tx, p model.TrainingPlan, session model.TrainingSession, present bool) ([]model.SessionItem, error) {
+	var err error
+	p, err = currentCardConfig(tx, p)
+	if err != nil {
+		return nil, err
+	}
 	now := s.now().UTC()
 	items, err := tx.Items(session.ID)
 	if err != nil {
@@ -261,6 +266,9 @@ func (s *Service) preparePool(ctx context.Context, tx repository.Tx, p model.Tra
 			ProgressVersion: progress.Version, Stage: displayStage, ConsecutiveCorrect: displayCorrect,
 			RehabConsecutiveCorrect: progress.RehabConsecutiveCorrect, RequiredCorrect: required,
 			Difficulty: difficulty, Question: question, Answer: answer, CreatedAt: now}
+		if _, ok := a.(algorithm.English); ok {
+			if err := englishCard(tx, i.Presentation, c, m); err != nil { return nil, err }
+		}
 		if formula, ok := a.(algorithm.Formula); ok {
 			exercise, err := tx.PickExercise(m.ID, p.ID)
 			if err != nil {
@@ -277,4 +285,20 @@ func (s *Service) preparePool(ctx context.Context, tx repository.Tx, p model.Tra
 		}
 	}
 	return active, nil
+}
+
+// Folder field edits apply to future presentations; an already shown snapshot
+// remains stable until the user answers it.
+func currentCardConfig(tx repository.Tx, p model.TrainingPlan) (model.TrainingPlan, error) {
+	for _, id := range p.SourceFolderIDs {
+		folder, err := tx.Folder(id)
+		if errors.Is(err, repository.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return p, err
+		}
+		p.Config.Cards[id.String()] = folder.Config
+	}
+	return p, nil
 }

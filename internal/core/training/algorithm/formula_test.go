@@ -38,7 +38,7 @@ func TestFormulaScheduleMasteryAndMaintenance(t *testing.T) {
 		p := formulaProgress(t)
 		start := p.LearningStartedAt
 		for stage, day := range []int{0, 1, 3, 7, 14, 30, 60, 120, 240, 365} {
-			if p.Stage != stage+1 || !p.StageReviewAt.Equal(start.AddDate(0, 0, day)) {
+			if p.Stage != stage+1 || !p.StageReviewAt.Equal(start.AddDate(0, 0, day).Add(-time.Duration(stage)*30*time.Minute)) {
 				t.Fatal(stage, p)
 			}
 			now := *p.StageReviewAt
@@ -49,7 +49,7 @@ func TestFormulaScheduleMasteryAndMaintenance(t *testing.T) {
 				}
 			}
 		}
-		if p.CompletedAt != nil || p.TargetAt != nil || p.Stage != 10 || !p.StageReviewAt.Equal(start.AddDate(0, 0, 730)) {
+		if p.CompletedAt != nil || p.TargetAt != nil || p.Stage != 10 || !p.StageReviewAt.Equal(start.AddDate(0, 0, 730).Add(-10*30*time.Minute)) {
 			t.Fatal("maintenance must repeat yearly", p)
 		}
 	}
@@ -82,15 +82,15 @@ func TestFormulaRecoveryAndIndependentFailure(t *testing.T) {
 	start := p.LearningStartedAt
 	p = formulaAnswer(t, p, Wrong, start, material.DifficultyEasy)
 	main := *p.StageReviewAt
-	if main.Sub(start) != 60*24*time.Hour || (Formula{}).Mode(p, model.ReviewRehab) != model.PracticeWorked {
+	if main.Sub(start) != 60*24*time.Hour-30*time.Minute || (Formula{}).Mode(p, model.ReviewRehab) != model.PracticeWorked {
 		t.Fatal(p)
 	}
 	p = formulaAnswer(t, p, Correct, start, material.DifficultyEasy)
-	if !p.RehabReviewAt.Equal(start.AddDate(0, 0, 2)) || (Formula{}).Mode(p, model.ReviewRehab) != model.PracticeIndependent {
+	if !p.RehabReviewAt.Equal(start.AddDate(0, 0, 2).Add(-30*time.Minute)) || (Formula{}).Mode(p, model.ReviewRehab) != model.PracticeIndependent {
 		t.Fatal(p)
 	}
 	failed := formulaAnswer(t, p, Wrong, *p.RehabReviewAt, material.DifficultyEasy)
-	if failed.Stage != 7 || failed.RehabStep != 1 || failed.WrongCount != 2 || failed.StageReviewAt.Sub(*failed.StageLastReviewAt) != 30*24*time.Hour {
+	if failed.Stage != 7 || failed.RehabStep != 1 || failed.WrongCount != 2 || failed.StageReviewAt.Sub(*failed.StageLastReviewAt) != 30*24*time.Hour-30*time.Minute {
 		t.Fatal(failed)
 	}
 	failed = formulaAnswer(t, failed, Correct, *failed.RehabReviewAt, material.DifficultyEasy)
@@ -99,7 +99,7 @@ func TestFormulaRecoveryAndIndependentFailure(t *testing.T) {
 		t.Fatal("a 30-day interval must not schedule an extra check", failed)
 	}
 	p = formulaAnswer(t, p, Correct, *p.RehabReviewAt, material.DifficultyEasy)
-	if p.ExtraReviewAt == nil || !p.ExtraReviewAt.Equal(start.AddDate(0, 0, 12)) || !p.StageReviewAt.Equal(main) || p.ConsecutiveCorrect != 0 {
+	if p.ExtraReviewAt == nil || !p.ExtraReviewAt.Equal(start.AddDate(0, 0, 12).Add(-time.Hour)) || !p.StageReviewAt.Equal(main) || p.ConsecutiveCorrect != 0 {
 		t.Fatal(p)
 	}
 	p = formulaAnswer(t, p, Correct, main, material.DifficultyEasy)

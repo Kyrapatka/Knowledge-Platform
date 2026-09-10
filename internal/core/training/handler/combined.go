@@ -6,6 +6,19 @@ import (
 	"net/http"
 )
 
+func (h *Handler) Undo(c *gin.Context) {
+	user, _, ok := identity(c, "")
+	if !ok {
+		return
+	}
+	var req service.UndoRequest
+	if !bind(c, &req) {
+		return
+	}
+	result, err := h.service.Undo(c.Request.Context(), user, req)
+	respond(c, http.StatusOK, result, err)
+}
+
 func (h *Handler) StartCombined(c *gin.Context) {
 	user, _, ok := identity(c, "")
 	if !ok {

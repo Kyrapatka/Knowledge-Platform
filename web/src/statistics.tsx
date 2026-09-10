@@ -16,11 +16,12 @@ export function StatisticsPage() {
   const [data, setData] = useState<Statistics | null>(null);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
+  const [hovered, setHovered] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     setError("");
     setData(null);
-    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const zone = "Europe/Moscow";
     void api<Statistics>(
       `/statistics?days=${days}&timezone=${encodeURIComponent(zone)}`,
       { signal: controller.signal },
@@ -60,7 +61,7 @@ export function StatisticsPage() {
         <>
           <div className="library-metrics stats-metrics">
             <Metric
-              label="Answers given"
+              label="Total reviews"
               value={data.totals.answers}
               icon={<Check size={17} />}
             />
@@ -71,12 +72,17 @@ export function StatisticsPage() {
               accent
             />
             <Metric
-              label="Active days"
-              value={data.totals.active_days}
+              label="Correct"
+              value={data.totals.correct}
               icon={<Clock3 size={17} />}
             />
             <Metric
-              label="Stage promotions"
+              label="Wrong"
+              value={data.totals.wrong}
+              icon={<BookOpen size={17} />}
+            />
+            <Metric
+              label="Next stage reached"
               value={data.totals.stage_promotions}
               icon={<TrendingUp size={17} />}
             />
@@ -91,6 +97,39 @@ export function StatisticsPage() {
                 <span className="status-dot" /> Answers per day
               </span>
             </div>
+            <div className="chart-inspector" aria-live="polite">
+              {data.daily
+                .filter((d) => d.date === hovered)
+                .map((d) => (
+                  <div
+                    key={d.date}
+                    role="tooltip"
+                    className="chart-day-details"
+                  >
+                    <strong>
+                      {d.date}
+                      <small>Moscow · MSK</small>
+                    </strong>
+                    <span>
+                      Total reviews<b>{d.answers}</b>
+                    </span>
+                    <span>
+                      Correct<b className="text-accent">{d.correct}</b>
+                    </span>
+                    <span>
+                      Wrong<b className="danger-text">{d.wrong}</b>
+                    </span>
+                    <span>
+                      Next stage<b>{d.stage_promotions}</b>
+                    </span>
+                  </div>
+                ))}
+              {!hovered && (
+                <span className="muted">
+                  Hover, focus or tap a day to see its reviews.
+                </span>
+              )}
+            </div>
             <div
               className="bar-chart"
               role="img"
@@ -100,7 +139,16 @@ export function StatisticsPage() {
                 <div
                   className="bar-column"
                   key={d.date}
-                  title={`${d.date}: ${d.answers} answers, ${d.correct} correct`}
+                  tabIndex={0}
+                  onMouseEnter={() => setHovered(d.date)}
+                  onMouseLeave={() => setHovered(null)}
+                  onFocus={() => setHovered(d.date)}
+                  onBlur={() => setHovered(null)}
+                  onClick={() => setHovered(hovered === d.date ? null : d.date)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setHovered(null);
+                  }}
+                  aria-label={`${d.date}: ${d.answers} reviews, ${d.correct} correct, ${d.wrong} wrong, ${d.stage_promotions} stage promotions`}
                 >
                   <div
                     className={`chart-bar ${d.answers ? "has-value" : ""}`}
@@ -124,6 +172,45 @@ export function StatisticsPage() {
                 Your story starts with your first answer. A little practice will
                 bring this chart to life.
               </p>
+            )}
+          </section>
+          <section className="activity-panel">
+            <h2>
+              Daily breakdown{" "}
+              <span className="muted small-text">Moscow time · MSK</span>
+            </h2>
+            <div className="activity-table-wrap">
+              <table className="activity-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Total reviews</th>
+                    <th>Unique cards</th>
+                    <th>Correct</th>
+                    <th>Wrong</th>
+                    <th>Next stage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.daily
+                    .filter((d) => d.answers > 0)
+                    .slice()
+                    .reverse()
+                    .map((d) => (
+                      <tr key={d.date}>
+                        <th>{d.date}</th>
+                        <td>{d.answers}</td>
+                        <td>{d.materials_reviewed}</td>
+                        <td className="text-accent">{d.correct}</td>
+                        <td className="danger-text">{d.wrong}</td>
+                        <td>{d.stage_promotions}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            {!data.totals.answers && (
+              <p className="muted">Your reviews will appear here.</p>
             )}
           </section>
           <div className="stats-bottom">

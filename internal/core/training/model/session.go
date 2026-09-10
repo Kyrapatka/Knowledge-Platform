@@ -15,6 +15,9 @@ type CardField struct {
 // A presentation snapshots content and difficulty so edits cannot change the
 // meaning of an already displayed question. Answers identify this exact show.
 type Presentation struct {
+	Direction               string              `json:"direction,omitempty"`
+	Example                 string              `json:"example,omitempty"`
+	ForeignWord             string              `json:"foreign_word,omitempty"`
 	ExerciseID              *uuid.UUID          `json:"exercise_id,omitempty"`
 	ExerciseVersion         int                 `json:"exercise_version,omitempty"`
 	PracticeMode            PracticeMode        `json:"practice_mode,omitempty"`
@@ -43,6 +46,7 @@ type SessionItem struct {
 }
 
 type TrainingEvent struct {
+	Direction             string        `json:"direction,omitempty"`
 	ExerciseID            *uuid.UUID    `json:"exercise_id,omitempty"`
 	PracticeMode          *PracticeMode `json:"practice_mode,omitempty"`
 	ID                    uuid.UUID     `json:"id"`

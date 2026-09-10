@@ -27,6 +27,7 @@ type CombinedCurrent struct {
 }
 
 type CombinedView struct {
+	UndoActions  []uuid.UUID         `json:"undo_actions"`
 	Sessions     []CombinedComponent `json:"sessions"`
 	Current      *CombinedCurrent    `json:"current"`
 	Summary      SessionSummary      `json:"summary"`

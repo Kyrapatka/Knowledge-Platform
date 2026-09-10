@@ -169,34 +169,43 @@ export function dateLabel(value?: string | null) {
   const date = new Date(value);
   const now = new Date();
   if (date <= now) return "Ready now";
-  const day = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-  ).getTime();
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  const time = date.toLocaleTimeString("en", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const moscowDay = (d: Date) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Moscow",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(d);
+  const day = moscowDay(date);
+  const today = moscowDay(now);
+  const time =
+    date.toLocaleTimeString("en-GB", {
+      timeZone: "Europe/Moscow",
+      hour: "2-digit",
+      minute: "2-digit",
+    }) + " MSK";
   if (day === today) return `Today, ${time}`;
-  if (day === today + 86400000) return `Tomorrow, ${time}`;
-  return date.toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
-    ...(date.getFullYear() !== now.getFullYear()
-      ? { year: "numeric" as const }
-      : {}),
-  });
+  if (day === moscowDay(new Date(now.getTime() + 86400000)))
+    return `Tomorrow, ${time}`;
+  return (
+    date.toLocaleDateString("en-GB", {
+      timeZone: "Europe/Moscow",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }) + `, ${time}`
+  );
 }
 export function DateValue({ value }: { value?: string | null }) {
   return (
     <span
-      title={value ? new Date(value).toLocaleString("en") : undefined}
+      title={
+        value
+          ? new Date(value).toLocaleString("en-GB", {
+              timeZone: "Europe/Moscow",
+            }) + " MSK"
+          : undefined
+      }
       className={value && new Date(value) <= new Date() ? "text-accent" : ""}
     >
       {dateLabel(value)}

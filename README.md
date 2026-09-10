@@ -49,6 +49,18 @@ The last training selection is remembered in this browser, separately for each a
 
 Folder copying from other users, global discovery/search, Russian localization and advanced analytics are outside this first frontend version.
 
+### Training refinements
+
+- Correct/Wrong are available before revealing the answer; cards swipe right/left after a confirmed response.
+- English starts with a random foreign/native side and alternates after each answer. Direction is recorded on the server and survives reloads.
+- Examples have a separate reveal control. Exact occurrences of the foreign word or phrase are masked (case insensitive, whole-word boundaries) until clicked.
+- Folder settings define active content/organization fields and which appear as questions or answers. Existing shown cards keep their snapshot; future presentations use updated folder fields.
+- All displayed times and statistics use Europe/Moscow. Charts support hover, focus and tap details, alongside daily counts.
+- Explicit early review is available when the nearest review is less than three hours away. It counts as an ordinary review and moves only that event, preserving other timers.
+- Future review intervals are shortened by 30 minutes, including recovery and final reviews. Individual target dates stay intact. Immediate reviews stay immediate. Migration 17 adjusts existing future review dates once; it never repeatedly shifts dates on refresh.
+
+Apply migrations 15–17 and restart the API before testing these server features. Frontend-only checks with mocked API responses: `npm.cmd --prefix web run test:e2e -- refinement.spec.ts`.
+
 ## Verification
 
 ```powershell

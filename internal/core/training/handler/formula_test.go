@@ -47,7 +47,7 @@ func TestFormulaHTTPModesAndExerciseRotation(t *testing.T) {
 		t.Fatal("exercise must rotate and be recorded", result)
 	}
 	result = decode[model.ActionResult](t, f.request(f.user, "POST", path+"/actions", actionFor(result.Session.Current, algorithm.Correct)), 200)
-	if result.NextReviewAt.Sub(start) != 24*time.Hour {
+	if result.NextReviewAt.Sub(start) != 24*time.Hour-30*time.Minute {
 		t.Fatal(result)
 	}
 	f.now = *result.NextReviewAt
@@ -68,7 +68,7 @@ func TestFormulaHTTPModesAndExerciseRotation(t *testing.T) {
 		result = decode[model.ActionResult](t, f.request(f.user, "POST", path+"/actions", actionFor(view.Current, algorithm.Correct)), 200)
 		view = result.Session
 	}
-	if result.NextReviewAt.Sub(start) != 7*24*time.Hour {
+	if result.NextReviewAt.Sub(start) != 7*24*time.Hour-3*30*time.Minute {
 		t.Fatal(result)
 	}
 	f.now = *result.NextReviewAt
@@ -173,7 +173,7 @@ func TestFormulaLateRecoveryHTTP(t *testing.T) {
 		t.Fatal(result)
 	}
 	result = decode[model.ActionResult](t, f.request(f.user, "POST", path+"/actions", actionFor(result.Session.Current, algorithm.Correct)), 200)
-	if result.NextReviewAt.Sub(start) != 48*time.Hour {
+	if result.NextReviewAt.Sub(start) != 48*time.Hour-30*time.Minute {
 		t.Fatal(result)
 	}
 	f.now = *result.NextReviewAt
@@ -186,7 +186,7 @@ func TestFormulaLateRecoveryHTTP(t *testing.T) {
 		t.Fatal(result)
 	}
 	progress := decode[service.MaterialProgressView](t, f.request(f.user, "GET", path+"/materials/"+m.String()+"/progress", nil), 200)
-	if progress.StageReviewAt.Sub(f.now) != 30*24*time.Hour {
+	if progress.StageReviewAt.Sub(f.now) != 30*24*time.Hour-30*time.Minute {
 		t.Fatal(progress)
 	}
 }

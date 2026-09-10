@@ -141,6 +141,6 @@ func scheduleFormula(p *model.UserMaterialProgress, now time.Time, maintenance b
 		gap = 365
 	}
 	anchor := now.UTC()
-	next := anchor.AddDate(0, 0, gap)
+	next := model.EarlierReview(anchor, anchor.AddDate(0, 0, gap))
 	p.StageLastReviewAt, p.StageReviewAt = &anchor, &next
 }

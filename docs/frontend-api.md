@@ -12,7 +12,7 @@ All learning/library routes are under `/api/v1` and require a Bearer access toke
 
 `GET /library/folders/:folderID/materials` accepts `q`, `topic`, `plan_id`, `sort`, `direction`, `limit`, `offset`. Sort keys: `created_at`, `question`, `topic`, `stage`, `next_review_at`. The response is `{items,total,limit,offset,topics,selected_plan,plans}`. Items contain material fields plus `topic` and nullable `progress`. No progress is created by reading a library page. A selected CRAM plan reads its own progress; persistent plans read their own track.
 
-Topics use `metadata.topic`; legacy `metadata.category` is a fallback. One material has one topic. Empty topic selection means all topics; `__none__` selects materials with no topic. The UI edits `topic` and clears legacy category when both are present.
+Topics use `metadata.topic`; legacy `metadata.category` is a fallback. One material has one topic. Empty topic selection means all topics; `__none__` selects materials with no topic. The material editor shows only active metadata fields configured by the folder.
 
 ## Combined training
 
@@ -52,3 +52,8 @@ The existing `/training/plans/:id/algorithm` endpoint additionally accepts `pool
 ## Statistics
 
 `GET /statistics?days=30&timezone=Europe/Moscow` returns `{days,timezone,from,to,totals,daily}`. Answer counts include only `correct`/`wrong`, not administrative actions. Material counts are distinct. Sessions count sessions containing answers; empty technical runs are excluded. No elapsed active study time is inferred from session timestamps. History remains in statistics after content deletion.
+# Training refinement additions
+
+`POST /training/combined/current` accepts `review_early: true` with a stable `command_id` and the existing `session_ids`. The server validates ownership, current sessions and the strictly less than three-hour window. Replaying the command returns its receipt. The selected event is brought forward; other Stage/recovery dates are preserved.
+
+English presentations optionally include `direction` (`foreign` or `native`), `example` and `foreign_word`. The first direction is random and subsequent answered presentations alternate per material, including after Wrong. Reloading an unanswered presentation preserves it. The direction is included in answer history.

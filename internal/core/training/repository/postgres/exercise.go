@@ -68,7 +68,7 @@ func (t *runtimeTx) PickExercise(materialID, planID uuid.UUID) (model.FormulaExe
 	}
 	err := t.db.Raw(`SELECT e.* FROM formula_exercises e WHERE e.material_id=?
  ORDER BY COALESCE(e.id=(SELECT exercise_id FROM training_events
- WHERE user_id=? AND plan_id=? AND material_id=? AND exercise_id IS NOT NULL AND action IN ('correct','wrong')
+ WHERE user_id=? AND plan_id=? AND material_id=? AND undone_at IS NULL AND exercise_id IS NOT NULL AND action IN ('correct','wrong')
  ORDER BY created_at DESC,progress_version_after DESC LIMIT 1),false),random() LIMIT 1`, materialID, t.user, planID, materialID).Scan(&out).Error
 	if err == nil && out.ID == uuid.Nil {
 		err = repository.ErrNotFound

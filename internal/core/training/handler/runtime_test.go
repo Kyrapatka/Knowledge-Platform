@@ -462,7 +462,7 @@ func TestSkipBetweenRehabDaysPreservesStageTimer(t *testing.T) {
 	req := service.SkipRequest{CommandID: uuid.New(), ExpectedVersion: r.Event.ProgressVersionAfter}
 	skipPath := path + "/materials/" + mat.String() + "/skip-rehab"
 	skipped := decode[model.ActionResult](t, f.request(f.user, "POST", skipPath, req), 200)
-	want := f.now.AddDate(0, 0, 46)
+	want := f.now.AddDate(0, 0, 46).Add(-30 * time.Minute)
 	if skipped.NextReviewAt == nil || !skipped.NextReviewAt.Equal(want) || skipped.Event.PresentationID != nil {
 		t.Fatal("manual skip changed Stage schedule or invented a presentation")
 	}

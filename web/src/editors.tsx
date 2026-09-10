@@ -5,6 +5,7 @@ import { useLibrary, TypeIcon } from "./App";
 import type { Exercise, Folder, Material, SessionView, Topic } from "./types";
 import { algorithmNames, materialTitle, templateNames, topicOf } from "./types";
 import { DateValue, ErrorBox, Markdown, Modal, Spinner } from "./ui";
+import { CardFields, initialConfig } from "./fields";
 
 export function FolderEditor({
   folder,
@@ -20,13 +21,19 @@ export function FolderEditor({
   const [title, setTitle] = useState(folder?.title || "");
   const [description, setDescription] = useState(folder?.description || "");
   const [kind, setKind] = useState(folder?.template_key || "english_words");
+  const [config, setConfig] = useState(() =>
+    structuredClone(folder?.config || initialConfig("english_words")),
+  );
+  const [savedFolder, setSavedFolder] = useState(folder);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const dirty =
     title !== (folder?.title || "") ||
     description !== (folder?.description || "") ||
-    kind !== (folder?.template_key || "english_words");
+    kind !== (folder?.template_key || "english_words") ||
+    JSON.stringify(config) !==
+      JSON.stringify(folder?.config || initialConfig(kind));
   function close() {
     if (
       !busy &&
@@ -39,13 +46,42 @@ export function FolderEditor({
     setBusy(true);
     setError("");
     try {
-      await api(`/folders${folder ? `/${folder.id}` : ""}`, {
-        method: folder ? "PATCH" : "POST",
-        body: {
-          title: title.trim(),
-          description: description.trim(),
-          ...(!folder ? { template_key: kind } : {}),
+      const enabled = new Set(
+        config.schema.fields.filter((f) => f.active).map((f) => f.key),
+      );
+      const nextConfig = {
+        ...config,
+        card: {
+          question_fields: config.card.question_fields.filter((k) =>
+            enabled.has(k),
+          ),
+          answer_fields: config.card.answer_fields.filter((k) =>
+            enabled.has(k),
+          ),
         },
+      };
+      if (
+        !nextConfig.card.question_fields.length ||
+        !nextConfig.card.answer_fields.length
+      )
+        throw new Error(
+          "Choose at least one active question field and one active answer field.",
+        );
+      const updated = await api<Folder>(
+        `/folders${savedFolder ? `/${savedFolder.id}` : ""}`,
+        {
+          method: savedFolder ? "PATCH" : "POST",
+          body: {
+            title: title.trim(),
+            description: description.trim(),
+            ...(!savedFolder ? { template_key: kind } : {}),
+          },
+        },
+      );
+      setSavedFolder(updated);
+      await api(`/folders/${updated.id}/workshop`, {
+        method: "PATCH",
+        body: { expected_version: updated.config_version, config: nextConfig },
       });
       onSaved();
     } catch (err) {
@@ -76,16 +112,20 @@ export function FolderEditor({
           : "Choose what you’re collecting. We’ll take care of the structure."
       }
       onClose={close}
+      wide
     >
       <form onSubmit={save} className="form-body">
-        {!folder && (
+        {!savedFolder && (
           <div className="template-options">
             {Object.entries(templateNames).map(([key, label]) => (
               <button
                 key={key}
                 type="button"
                 className={`template-option ${key === kind ? "selected" : ""}`}
-                onClick={() => setKind(key)}
+                onClick={() => {
+                  setKind(key);
+                  setConfig(initialConfig(key));
+                }}
               >
                 <TypeIcon kind={key} />
                 <strong>{label}</strong>
@@ -121,6 +161,7 @@ export function FolderEditor({
             onChange={(e) => setDescription(e.target.value)}
           />
         </label>
+        <CardFields value={config} onChange={setConfig} />
         {error && <ErrorBox error={error} />}
         {deleting && (
           <div className="delete-confirm">
@@ -221,8 +262,6 @@ export function MaterialEditor({
           .filter((f) => f.active)
           .map((f) => [f.key, metadata[f.key]?.trim() || null]),
       );
-      if ("topic" in activeMetadata && "category" in activeMetadata)
-        activeMetadata.category = null;
       await api(
         `/folders/${folder.id}/materials${material ? `/${material.id}` : ""}`,
         {
@@ -297,26 +336,37 @@ export function MaterialEditor({
           ))}
         <div className="form-divider" />
         <div className="form-columns">
-          <label>
-            Topic
-            <input
-              list="material-topics"
-              placeholder="e.g. SQL"
-              maxLength={200}
-              value={metadata.topic || ""}
-              onChange={(e) => {
-                setMetadata((m) => ({ ...m, topic: e.target.value }));
-                setDirty(true);
-              }}
-            />
-            <datalist id="material-topics">
-              {topics
-                .filter((t) => t.name)
-                .map((t) => (
-                  <option key={t.name} value={t.name} />
-                ))}
-            </datalist>
-          </label>
+          {folder.config.metadata_schema.fields.some(
+            (f) => f.key === "topic" && f.active,
+          ) && (
+            <label>
+              {folder.config.metadata_schema.fields.find(
+                (f) => f.key === "topic",
+              )?.label || "Topic"}
+              <input
+                required={
+                  folder.config.metadata_schema.fields.find(
+                    (f) => f.key === "topic",
+                  )?.required
+                }
+                list="material-topics"
+                placeholder="e.g. SQL"
+                maxLength={200}
+                value={metadata.topic || ""}
+                onChange={(e) => {
+                  setMetadata((m) => ({ ...m, topic: e.target.value }));
+                  setDirty(true);
+                }}
+              />
+              <datalist id="material-topics">
+                {topics
+                  .filter((t) => t.name)
+                  .map((t) => (
+                    <option key={t.name} value={t.name} />
+                  ))}
+              </datalist>
+            </label>
+          )}
           <label>
             Difficulty
             <select
@@ -333,7 +383,7 @@ export function MaterialEditor({
           </label>
         </div>
         {folder.config.metadata_schema.fields
-          .filter((f) => f.active && f.key !== "topic" && f.key !== "category")
+          .filter((f) => f.active && f.key !== "topic")
           .map((field) => (
             <label key={field.key}>
               {field.label}

@@ -36,6 +36,8 @@ import {
 } from "./ui";
 import { MaterialEditor } from "./editors";
 import { algorithmsFor } from "./settings";
+import { WordExample } from "./example";
+import { RecallCard } from "./recall-card";
 
 export type SavedTraining = { sources: Source[]; session_ids: string[] };
 type PendingAnswer = {
@@ -338,15 +340,26 @@ export function TrainingPage() {
   const { data, reload, notify } = useLibrary();
   const storageKey = `knowledge:training:${user.id}`;
   const pendingKey = `knowledge:pending:${user.id}`;
+  const undoKey = `knowledge:undo:${user.id}`;
+  const undoPending = useRef(
+    readStored<{ command_id: string; event_id: string; session_ids: string[] }>(
+      undoKey,
+    ),
+  );
   const savedRef = useRef(readStored<SavedTraining>(storageKey));
   const [view, setView] = useState<CombinedView | null>(null);
   const [busy, setBusy] = useState(true);
   const busyRef = useRef(true);
   const [error, setError] = useState("");
   const [shown, setShown] = useState(false);
+  const [swipe, setSwipe] = useState("");
+  const [clock, setClock] = useState(Date.now());
   const [editor, setEditor] = useState<Material | null>(null);
   const pending = useRef(readStored<PendingAnswer>(pendingKey));
-  const [uncertain, setUncertain] = useState(!!pending.current);
+  const earlyCommand = useRef<string | null>(null);
+  const [uncertain, setUncertain] = useState(
+    !!pending.current || !!undoPending.current,
+  );
   const [editBusy, setEditBusy] = useState(false);
   function apply(next: CombinedView) {
     setView(next);
@@ -358,7 +371,7 @@ export function TrainingPage() {
       saveStored(storageKey, savedRef.current);
     }
   }
-  async function refresh() {
+  async function refresh(early = false) {
     const saved = savedRef.current;
     if (!saved) {
       setBusy(false);
@@ -369,6 +382,20 @@ export function TrainingPage() {
     setBusy(true);
     setError("");
     try {
+      if (undoPending.current) {
+        const restored = await post<CombinedView>(
+          "/training/combined/undo",
+          undoPending.current,
+        );
+        apply(restored);
+        undoPending.current = null;
+        saveStored(undoKey, null);
+        setUncertain(false);
+        setShown(false);
+        return;
+      }
+      if (early && !earlyCommand.current)
+        earlyCommand.current = crypto.randomUUID();
       if (pending.current) {
         await post(
           `/training/sessions/${pending.current.sessionId}/actions`,
@@ -381,13 +408,18 @@ export function TrainingPage() {
       const next = saved.session_ids.length
         ? await post<CombinedView>("/training/combined/current", {
             session_ids: saved.session_ids,
+            review_early: early,
+            ...(early ? { command_id: earlyCommand.current } : {}),
           })
         : await post<CombinedView>("/training/combined", {
             sources: saved.sources,
           });
       apply(next);
+      earlyCommand.current = null;
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
+        undoPending.current = null;
+        saveStored(undoKey, null);
         pending.current = null;
         saveStored(pendingKey, null);
         setUncertain(false);
@@ -413,8 +445,13 @@ export function TrainingPage() {
   useEffect(() => {
     setShown(false);
   }, [card?.id]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
   async function answer(action: string) {
-    if (!current || !card || busyRef.current || editor || !shown) return;
+    if (!current || !card || busyRef.current || editor || uncertain || error)
+      return;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -440,6 +477,15 @@ export function TrainingPage() {
       const next = await post<CombinedView>("/training/combined/current", {
         session_ids: savedRef.current!.session_ids,
       });
+      setSwipe(action);
+      await new Promise((resolve) =>
+        window.setTimeout(
+          resolve,
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? 0
+            : 260,
+        ),
+      );
       apply(next);
     } catch (e) {
       if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
@@ -458,9 +504,22 @@ export function TrainingPage() {
         );
       }
     } finally {
+      setSwipe("");
       busyRef.current = false;
       setBusy(false);
     }
+  }
+  async function undo() {
+    if (busyRef.current || !view?.undo_actions?.length || !savedRef.current)
+      return;
+    undoPending.current = {
+      command_id: crypto.randomUUID(),
+      event_id: view.undo_actions[0],
+      session_ids: savedRef.current.session_ids,
+    };
+    saveStored(undoKey, undoPending.current);
+    setUncertain(true);
+    await refresh();
   }
   useEffect(() => {
     function keydown(e: KeyboardEvent) {
@@ -479,10 +538,10 @@ export function TrainingPage() {
           ))
       )
         return;
-      if (e.code === "Space" && !shown && card) {
+      if (e.code === "Space" && card) {
         e.preventDefault();
-        setShown(true);
-      } else if (shown && (e.key === "1" || e.key === "2")) {
+        setShown((s) => !s);
+      } else if (card && (e.key === "1" || e.key === "2")) {
         e.preventDefault();
         void answer(e.key === "1" ? "wrong" : "correct");
       }
@@ -561,6 +620,21 @@ export function TrainingPage() {
         </div>
       </header>
       <main className="training-main">
+        {view && (
+          <div className="training-history">
+            <button
+              className="undo-button"
+              aria-label="Undo last answer"
+              title="Restore up to your last three answers"
+              disabled={
+                busy || uncertain || !!error || !view.undo_actions?.length
+              }
+              onClick={undo}
+            >
+              <RotateCcw size={16} /> Undo · {view.undo_actions?.length || 0}
+            </button>
+          </div>
+        )}
         {!savedRef.current ? (
           <Empty
             icon={<Layers3 size={28} />}
@@ -578,7 +652,7 @@ export function TrainingPage() {
           <Spinner label="Bringing your knowledge into focus…" />
         ) : (
           <>
-            {error && <ErrorBox error={error} retry={refresh} />}
+            {error && <ErrorBox error={error} retry={() => refresh()} />}
             {card && current ? (
               <>
                 <div className="training-context">
@@ -610,105 +684,17 @@ export function TrainingPage() {
                     <Edit3 size={17} />
                   </button>
                 </div>
-                <article
-                  className={`training-card ${shown ? "answer-shown" : ""}`}
+                <RecallCard
                   key={card.id}
-                >
-                  <div className="training-card-kicker">
-                    <span>
-                      {card.practice_mode === "worked"
-                        ? "WORKED EXAMPLE"
-                        : "TAKE A MOMENT. YOU KNOW THIS."}
-                    </span>
-                    <span className="card-decoration">✧</span>
-                  </div>
-                  <div className="question-fields">
-                    {card.question?.map((field, index) => (
-                      <div
-                        className={`question-field ${index === 0 ? "lead-question" : ""}`}
-                        key={`${field.key}-${index}`}
-                      >
-                        {index > 0 && (
-                          <span className="eyebrow">{field.label}</span>
-                        )}
-                        <Markdown value={field.value} field={field.key} />
-                      </div>
-                    ))}
-                  </div>
-                  {shown && (
-                    <div className="answer-fields">
-                      <span className="answer-divider">
-                        <span />
-                        THE ANSWER
-                        <span />
-                      </span>
-                      {card.answer?.map((field, i) => (
-                        <div className="answer-field" key={`${field.key}-${i}`}>
-                          <span className="eyebrow">{field.label}</span>
-                          <Markdown value={field.value} field={field.key} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="card-bottom-meta">
-                    <span>{algorithmNames[current.algorithm_key]}</span>
-                    <span>
-                      {card.required_correct > 1
-                        ? `${card.kind === "rehab" ? card.rehab_consecutive_correct : card.consecutive_correct} / ${card.required_correct} consecutive correct`
-                        : "One good recall at a time"}
-                    </span>
-                  </div>
-                </article>
-                <div className="training-actions">
-                  {shown ? (
-                    <>
-                      <span className="self-check-label">How did you do?</span>
-                      <div className="answer-buttons">
-                        <button
-                          className="button answer-wrong"
-                          disabled={busy || uncertain || !!error}
-                          onClick={() => answer("wrong")}
-                        >
-                          <RotateCcw size={18} />
-                          <span>Wrong</span>
-                          <kbd>1</kbd>
-                        </button>
-                        <button
-                          className="button answer-correct"
-                          disabled={busy || uncertain || !!error}
-                          onClick={() => answer("correct")}
-                        >
-                          <Check size={19} />
-                          <span>Correct</span>
-                          <kbd>2</kbd>
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="button reveal-button"
-                        disabled={busy || uncertain || !!error}
-                        onClick={() => setShown(true)}
-                      >
-                        Show answer
-                        <ArrowRight size={18} />
-                      </button>
-                      <span className="keyboard-hint">
-                        or press <kbd>space</kbd>
-                      </span>
-                    </>
-                  )}
-                  {(card.kind === "rehab" || card.kind === "extra") && (
-                    <button
-                      className="text-button muted"
-                      disabled={busy || uncertain}
-                      onClick={skipRehab}
-                    >
-                      Skip rehab
-                    </button>
-                  )}
-                </div>
+                  card={card}
+                  algorithm={current.algorithm_key}
+                  shown={shown}
+                  flip={() => setShown((s) => !s)}
+                  answer={answer}
+                  busy={busy || uncertain || !!error}
+                  swipe={swipe}
+                  skipRehab={skipRehab}
+                />
               </>
             ) : (
               view && (
@@ -733,6 +719,28 @@ export function TrainingPage() {
                       </span>
                     </div>
                   )}
+                  {view.next_review_at &&
+                    new Date(view.next_review_at).getTime() > clock &&
+                    new Date(view.next_review_at).getTime() - clock <
+                      3 * 3600000 && (
+                      <div className="early-review-panel">
+                        <Zap size={22} />
+                        <div>
+                          <strong>A little ahead of schedule</strong>
+                          <p>
+                            Your next card is ready for an early review. This
+                            counts as a regular review.
+                          </p>
+                        </div>
+                        <button
+                          className="button primary"
+                          disabled={busy}
+                          onClick={() => refresh(true)}
+                        >
+                          Review early <ArrowRight size={18} />
+                        </button>
+                      </div>
+                    )}
                   <div className="done-stats">
                     <div>
                       <strong>
@@ -756,7 +764,7 @@ export function TrainingPage() {
                     </Link>
                     <button
                       className="button"
-                      onClick={refresh}
+                      onClick={() => refresh()}
                       disabled={busy}
                     >
                       Check again

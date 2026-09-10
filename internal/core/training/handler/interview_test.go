@@ -25,14 +25,14 @@ func TestCramHTTPFinalAndIsolation(t *testing.T) {
 	finalPath := path + "/materials/" + m.String() + "/start-final"
 	decode[map[string]any](t, f.request(f.user, "POST", finalPath, service.SkipRequest{CommandID: uuid.New(), ExpectedVersion: session.Current.ProgressVersion}), 400)
 	result := decode[model.ActionResult](t, f.request(f.user, "POST", path+"/actions", actionFor(session.Current, algorithm.Correct)), 200)
-	if result.Session.Current != nil || result.NextReviewAt.Sub(start) != 8*time.Hour {
+	if result.Session.Current != nil || result.NextReviewAt.Sub(start) != 8*time.Hour-30*time.Minute {
 		t.Fatal(result)
 	}
 	f.now = start.Add(8 * time.Hour)
 	f.restart()
 	session = decode[model.SessionView](t, f.request(f.user, "GET", path, nil), 200)
 	result = decode[model.ActionResult](t, f.request(f.user, "POST", path+"/actions", actionFor(session.Current, algorithm.Correct)), 200)
-	if result.Session.Session.Status != model.StatusActive || result.NextReviewAt.Sub(start) != 24*time.Hour {
+	if result.Session.Session.Status != model.StatusActive || result.NextReviewAt.Sub(start) != 24*time.Hour-30*time.Minute {
 		t.Fatal(result)
 	}
 	req := service.SkipRequest{CommandID: uuid.New(), ExpectedVersion: result.Event.ProgressVersionAfter}
@@ -80,7 +80,7 @@ func TestLongTermRecoveryHTTP(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		result = decode[model.ActionResult](t, f.request(f.user, "POST", path+"/actions", actionFor(result.Session.Current, algorithm.Correct)), 200)
 	}
-	if result.Session.Current != nil || result.NextReviewAt.Sub(start) != 48*time.Hour {
+	if result.Session.Current != nil || result.NextReviewAt.Sub(start) != 48*time.Hour-30*time.Minute {
 		t.Fatal(result)
 	}
 	f.now = start.AddDate(0, 0, 2)
@@ -89,11 +89,11 @@ func TestLongTermRecoveryHTTP(t *testing.T) {
 		result = decode[model.ActionResult](t, f.request(f.user, "POST", path+"/actions", actionFor(session.Current, algorithm.Correct)), 200)
 		session = result.Session
 	}
-	if result.NextReviewAt.Sub(start) != 12*24*time.Hour {
+	if result.NextReviewAt.Sub(start) != 12*24*time.Hour-30*time.Minute {
 		t.Fatal(result)
 	}
 	progress := decode[service.MaterialProgressView](t, f.request(f.user, "GET", path+"/materials/"+m.String()+"/progress", nil), 200)
-	if progress.StageReviewAt.Sub(start) != 50*24*time.Hour {
+	if progress.StageReviewAt.Sub(start) != 50*24*time.Hour-30*time.Minute {
 		t.Fatal("rehab moved main schedule", progress)
 	}
 	f.now = start.AddDate(0, 0, 50)
