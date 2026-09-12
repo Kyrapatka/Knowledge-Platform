@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/dashboard"
+	interview "github.com/Kyrapatka/knowledge-platform/internal/core/interview"
 	traininghandler "github.com/Kyrapatka/knowledge-platform/internal/core/training/handler"
 	trainingpostgres "github.com/Kyrapatka/knowledge-platform/internal/core/training/repository/postgres"
 	trainingservice "github.com/Kyrapatka/knowledge-platform/internal/core/training/service"
@@ -173,6 +174,7 @@ func New(
 	trainingAPI.Use(authhandler.AuthMiddleware(tokenManager))
 	traininghandler.NewHandler(trainingservice.NewService(trainingpostgres.NewRuntimeStore(postgresDB.GORM))).RegisterRoutes(trainingAPI)
 	dashboard.NewHandler(postgresDB.GORM).RegisterRoutes(trainingAPI)
+	interview.NewHandler(postgresDB.GORM).RegisterRoutes(trainingAPI)
 	webui.Register(router, "web/dist")
 
 	return application, nil

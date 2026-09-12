@@ -1,0 +1,161 @@
+.dialog.keyboard-aware[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dialog.keyboard-aware > .dialog-header {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 6;
+  background: #1a2027;
+}
+
+.dialog.keyboard-aware > .dialog-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding: 100px 0 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dialog.keyboard-aware .form-body > .dialog-actions {
+  top: 0;
+  z-index: 5;
+  background: #202930;
+  box-shadow: 0 8px 20px #0a0e1640;
+}
+
+.dialog.keyboard-aware .form-body input,
+.dialog.keyboard-aware .form-body select,
+.dialog.keyboard-aware .form-body textarea {
+  font-size: 16px;
+  line-height: 1.5;
+  border-radius: 12px;
+  scroll-margin-block: 110px 24px;
+}
+
+.dialog.keyboard-aware .form-body label {
+  font-size: 13px;
+  gap: 10px;
+}
+
+.dialog.keyboard-aware .form-body textarea {
+  resize: vertical;
+  min-height: 76px;
+}
+
+.dialog.keyboard-aware .details-heading .edit-word-button,
+.button.edit-word-button {
+  min-height: 44px;
+  padding: 11px 17px;
+  border: 1px solid #627f79;
+  border-radius: 12px;
+  background: #2b403e;
+  color: #d9f7eb;
+  font-size: 13px;
+  font-weight: 650;
+  box-shadow: inset 0 1px 0 #ffffff0a;
+  white-space: nowrap;
+}
+
+.button.edit-word-button:hover {
+  background: #37524b;
+  border-color: #8cbbab;
+}
+
+.detail-field-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 700px) {
+  .dialog.keyboard-aware,
+  .dialog.keyboard-aware.wide {
+    position: fixed;
+    top: calc(var(--dialog-viewport-offset, 0px) + 8px);
+    bottom: auto;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: calc(100% - 16px);
+    max-height: calc(var(--dialog-viewport-height, 100dvh) - 16px);
+    border-radius: 20px;
+    animation: editor-arrive 160ms ease-out;
+  }
+
+  .dialog.keyboard-aware.drawer {
+    top: var(--dialog-viewport-offset, 0px);
+    height: var(--dialog-viewport-height, 100dvh);
+    max-height: var(--dialog-viewport-height, 100dvh);
+    width: 100%;
+    border-radius: 0;
+  }
+
+  .dialog.keyboard-aware > .dialog-header {
+    padding: 16px 18px;
+    align-items: center;
+  }
+
+  .dialog.keyboard-aware .dialog-header h2 {
+    font-size: 20px;
+  }
+
+  .dialog.keyboard-aware .dialog-header p {
+    font-size: 11px;
+    line-height: 1.5;
+    margin-top: 4px;
+  }
+
+  .dialog.keyboard-aware .dialog-header .icon-button {
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    border: 1px solid #3e4b52;
+    background: #242e36;
+  }
+
+  .dialog.keyboard-aware .form-body {
+    padding: 12px 18px max(24px, env(safe-area-inset-bottom));
+    gap: 20px;
+  }
+
+  .dialog.keyboard-aware .form-body > .dialog-actions {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .dialog.keyboard-aware .dialog-actions > .button {
+    min-height: 44px;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  .dialog.keyboard-aware.keyboard-open .dialog-header p {
+    display: none;
+  }
+
+  .dialog.keyboard-aware.keyboard-open textarea {
+    max-height: max(80px, calc(var(--dialog-viewport-height) * 0.32));
+  }
+
+  .dialog.keyboard-aware .details-heading {
+    flex-wrap: wrap;
+  }
+
+  .dialog.keyboard-aware .form-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes editor-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

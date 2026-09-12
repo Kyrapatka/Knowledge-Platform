@@ -27,23 +27,50 @@ type browserRefresher interface {
 
 func (h *Handler) registerBrowserRoutes(router *gin.RouterGroup) {
 	group := router.Group("/browser")
+
 	group.Use(func(c *gin.Context) {
 		c.Header("Cache-Control", "no-store")
 		c.Header("Pragma", "no-cache")
-		// This adapter is same-origin only. Do not trust forwarded host/protocol
-		// headers: local development proxies must preserve the original Host.
+
 		origin, err := url.Parse(c.GetHeader("Origin"))
+
 		scheme := "http"
+
 		if c.Request.TLS != nil {
 			scheme = "https"
 		}
-		if err != nil || origin.Scheme != scheme || !strings.EqualFold(origin.Host, c.Request.Host) || origin.User != nil || origin.Path != "" || origin.RawQuery != "" || origin.Fragment != "" {
-			c.AbortWithStatusJSON(http.StatusForbidden, errorResponse{Error: "invalid_origin"})
+
+		if forwardedProto := c.GetHeader("X-Forwarded-Proto"); forwardedProto != "" {
+			scheme = forwardedProto
+		}
+
+		host := c.Request.Host
+
+		if forwardedHost := c.GetHeader("X-Forwarded-Host"); forwardedHost != "" {
+			host = forwardedHost
+		}
+
+		if err != nil ||
+			origin.Scheme != scheme ||
+			!strings.EqualFold(origin.Host, host) ||
+			origin.User != nil ||
+			origin.Path != "" ||
+			origin.RawQuery != "" ||
+			origin.Fragment != "" {
+
+			c.AbortWithStatusJSON(
+				http.StatusForbidden,
+				errorResponse{Error: "invalid_origin"},
+			)
+
 			return
 		}
+
 		c.Set(browserCookiePathKey, group.BasePath())
+
 		c.Next()
 	})
+
 	group.POST("/login", h.BrowserLogin)
 	group.POST("/register", h.BrowserRegister)
 	group.POST("/refresh", h.BrowserRefresh)
@@ -52,110 +79,243 @@ func (h *Handler) registerBrowserRoutes(router *gin.RouterGroup) {
 
 func (h *Handler) BrowserLogin(c *gin.Context) {
 	var request loginRequest
+
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse{Error: "invalid_request"})
+		c.JSON(
+			http.StatusBadRequest,
+			errorResponse{Error: "invalid_request"},
+		)
+
 		return
 	}
-	result, err := h.service.Login(c.Request.Context(), service.LoginInput{
-		Nickname: request.Nickname, Password: request.Password,
-		UserAgent: c.Request.UserAgent(), IPAddress: clientIPAddress(c),
-	})
+
+	result, err := h.service.Login(
+		c.Request.Context(),
+		service.LoginInput{
+			Nickname:  request.Nickname,
+			Password:  request.Password,
+			UserAgent: c.Request.UserAgent(),
+			IPAddress: clientIPAddress(c),
+		},
+	)
+
 	if err != nil {
 		browserError(c, err)
 		return
 	}
-	writeBrowserAuth(c, http.StatusOK, result)
+
+	writeBrowserAuth(
+		c,
+		http.StatusOK,
+		result,
+	)
 }
 
 func (h *Handler) BrowserRegister(c *gin.Context) {
 	var request registerRequest
+
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse{Error: "invalid_request"})
+		c.JSON(
+			http.StatusBadRequest,
+			errorResponse{Error: "invalid_request"},
+		)
+
 		return
 	}
-	result, err := h.service.Register(c.Request.Context(), service.RegisterInput{
-		Nickname: request.Nickname, Password: request.Password,
-		UserAgent: c.Request.UserAgent(), IPAddress: clientIPAddress(c),
-	})
+
+	result, err := h.service.Register(
+		c.Request.Context(),
+		service.RegisterInput{
+			Nickname:  request.Nickname,
+			Password:  request.Password,
+			UserAgent: c.Request.UserAgent(),
+			IPAddress: clientIPAddress(c),
+		},
+	)
+
 	if err != nil {
 		browserError(c, err)
 		return
 	}
-	writeBrowserAuth(c, http.StatusCreated, result)
+
+	writeBrowserAuth(
+		c,
+		http.StatusCreated,
+		result,
+	)
 }
 
 func (h *Handler) BrowserRefresh(c *gin.Context) {
 	value, err := c.Cookie(browserRefreshCookie)
+
 	if err != nil || value == "" {
-		c.JSON(http.StatusUnauthorized, errorResponse{Error: "invalid_refresh_token"})
+		c.JSON(
+			http.StatusUnauthorized,
+			errorResponse{Error: "invalid_refresh_token"},
+		)
+
 		return
 	}
+
 	refresher, ok := h.service.(browserRefresher)
+
 	if !ok {
-		c.JSON(http.StatusServiceUnavailable, errorResponse{Error: "browser_auth_unavailable"})
+		c.JSON(
+			http.StatusServiceUnavailable,
+			errorResponse{Error: "browser_auth_unavailable"},
+		)
+
 		return
 	}
-	result, err := refresher.RefreshBrowser(c.Request.Context(), service.RefreshInput{RefreshToken: value})
+
+	result, err := refresher.RefreshBrowser(
+		c.Request.Context(),
+		service.RefreshInput{
+			RefreshToken: value,
+		},
+	)
+
 	if err != nil {
-		// A late response using an old token must not delete a cookie which a
-		// concurrent refresh already rotated successfully.
 		browserError(c, err)
 		return
 	}
-	writeBrowserAuth(c, http.StatusOK, result)
+
+	writeBrowserAuth(
+		c,
+		http.StatusOK,
+		result,
+	)
 }
 
 func (h *Handler) BrowserLogout(c *gin.Context) {
 	value, err := c.Cookie(browserRefreshCookie)
+
 	if err == nil && value != "" {
-		err = h.service.Logout(c.Request.Context(), service.LogoutInput{RefreshToken: value})
-		if err != nil && !errors.Is(err, service.ErrInvalidRefreshToken) {
+		err = h.service.Logout(
+			c.Request.Context(),
+			service.LogoutInput{
+				RefreshToken: value,
+			},
+		)
+
+		if err != nil &&
+			!errors.Is(err, service.ErrInvalidRefreshToken) {
+
 			browserError(c, err)
 			return
 		}
 	}
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name: browserRefreshCookie, Value: "", Path: c.GetString(browserCookiePathKey),
-		MaxAge: -1, Expires: time.Unix(1, 0), HttpOnly: true,
-		Secure: c.Request.TLS != nil, SameSite: http.SameSiteLaxMode,
-	})
+
+	http.SetCookie(
+		c.Writer,
+		&http.Cookie{
+			Name:     browserRefreshCookie,
+			Value:    "",
+			Path:     c.GetString(browserCookiePathKey),
+			MaxAge:   -1,
+			Expires:  time.Unix(1, 0),
+			HttpOnly: true,
+			Secure:   requestIsHTTPS(c),
+			SameSite: http.SameSiteLaxMode,
+		},
+	)
+
 	c.Status(http.StatusNoContent)
 }
 
-func writeBrowserAuth(c *gin.Context, status int, result service.AuthResult) {
+func writeBrowserAuth(
+	c *gin.Context,
+	status int,
+	result service.AuthResult,
+) {
 	cookie := &http.Cookie{
-		Name: browserRefreshCookie, Value: result.RefreshToken,
-		Path: c.GetString(browserCookiePathKey), HttpOnly: true,
-		Secure: c.Request.TLS != nil, SameSite: http.SameSiteLaxMode,
+		Name:     browserRefreshCookie,
+		Value:    result.RefreshToken,
+		Path:     c.GetString(browserCookiePathKey),
+		HttpOnly: true,
+		Secure:   requestIsHTTPS(c),
+		SameSite: http.SameSiteLaxMode,
 	}
+
 	if !result.RefreshExpiresAt.IsZero() {
 		cookie.Expires = result.RefreshExpiresAt
-		cookie.MaxAge = max(1, int(time.Until(result.RefreshExpiresAt).Seconds()))
+
+		cookie.MaxAge = max(
+			1,
+			int(time.Until(result.RefreshExpiresAt).Seconds()),
+		)
 	}
-	http.SetCookie(c.Writer, cookie)
-	c.JSON(status, browserAuthResponse{
-		User:        userResponse{ID: result.User.ID, Nickname: result.User.Nickname, Status: string(result.User.Status)},
-		AccessToken: result.AccessToken, ExpiresAt: result.ExpiresAt,
-	})
+
+	http.SetCookie(
+		c.Writer,
+		cookie,
+	)
+
+	c.JSON(
+		status,
+		browserAuthResponse{
+			User: userResponse{
+				ID:       result.User.ID,
+				Nickname: result.User.Nickname,
+				Status:   string(result.User.Status),
+			},
+			AccessToken: result.AccessToken,
+			ExpiresAt:   result.ExpiresAt,
+		},
+	)
+}
+
+func requestIsHTTPS(c *gin.Context) bool {
+	if c.Request.TLS != nil {
+		return true
+	}
+
+	return strings.EqualFold(
+		c.GetHeader("X-Forwarded-Proto"),
+		"https",
+	)
 }
 
 func browserError(c *gin.Context, err error) {
-	status, code := http.StatusInternalServerError, "internal_error"
+	status := http.StatusInternalServerError
+	code := "internal_error"
+
 	switch {
 	case errors.Is(err, service.ErrInvalidCredentials):
-		status, code = http.StatusUnauthorized, "invalid_credentials"
+		status = http.StatusUnauthorized
+		code = "invalid_credentials"
+
 	case errors.Is(err, service.ErrInvalidRefreshToken):
-		status, code = http.StatusUnauthorized, "invalid_refresh_token"
+		status = http.StatusUnauthorized
+		code = "invalid_refresh_token"
+
 	case errors.Is(err, service.ErrSessionExpired):
-		status, code = http.StatusUnauthorized, "session_expired"
+		status = http.StatusUnauthorized
+		code = "session_expired"
+
 	case errors.Is(err, service.ErrUserBlocked):
-		status, code = http.StatusForbidden, "user_blocked"
+		status = http.StatusForbidden
+		code = "user_blocked"
+
 	case errors.Is(err, service.ErrInvalidNickname):
-		status, code = http.StatusBadRequest, "invalid_nickname"
+		status = http.StatusBadRequest
+		code = "invalid_nickname"
+
 	case errors.Is(err, service.ErrInvalidPassword):
-		status, code = http.StatusBadRequest, "invalid_password"
+		status = http.StatusBadRequest
+		code = "invalid_password"
+
 	case errors.Is(err, service.ErrNicknameTaken):
-		status, code = http.StatusConflict, "nickname_taken"
+		status = http.StatusConflict
+		code = "nickname_taken"
 	}
-	c.JSON(status, errorResponse{Error: code})
+
+	c.JSON(
+		status,
+		errorResponse{
+			Error: code,
+		},
+	)
 }
+
+// migrate -path migrations -database "hell" up

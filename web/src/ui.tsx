@@ -90,7 +90,52 @@ export function Modal({
     dialog.showModal();
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const viewport = window.visualViewport;
+    let frame = 0;
+    const keepFieldVisible = () => {
+      const content = dialog.querySelector<HTMLElement>(".dialog-content");
+      const active = document.activeElement;
+      if (
+        !content ||
+        !(active instanceof HTMLElement) ||
+        !content.contains(active) ||
+        !active.matches("input, textarea, select, [contenteditable='true']")
+      )
+        return;
+      const bounds = content.getBoundingClientRect();
+      const actions = content.querySelector<HTMLElement>(".dialog-actions");
+      const top = bounds.top + (actions?.offsetHeight || 0) + 18;
+      const bottom = bounds.bottom - 18;
+      const field = active.getBoundingClientRect();
+      if (field.bottom > bottom)
+        content.scrollTop += Math.min(field.bottom - bottom, field.top - top);
+      else if (field.top < top) content.scrollTop += field.top - top;
+    };
+    const fitViewport = () => {
+      const height = viewport?.height ?? window.innerHeight;
+      dialog.style.setProperty("--dialog-viewport-height", `${height}px`);
+      dialog.style.setProperty(
+        "--dialog-viewport-offset",
+        `${viewport?.offsetTop || 0}px`,
+      );
+      dialog.classList.toggle(
+        "keyboard-open",
+        window.innerHeight - height > 120,
+      );
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(keepFieldVisible);
+    };
+    fitViewport();
+    viewport?.addEventListener("resize", fitViewport);
+    viewport?.addEventListener("scroll", fitViewport);
+    window.addEventListener("resize", fitViewport);
+    dialog.addEventListener("focusin", fitViewport);
     return () => {
+      cancelAnimationFrame(frame);
+      viewport?.removeEventListener("resize", fitViewport);
+      viewport?.removeEventListener("scroll", fitViewport);
+      window.removeEventListener("resize", fitViewport);
+      dialog.removeEventListener("focusin", fitViewport);
       dialog.close();
       document.body.style.overflow = original;
       previous?.focus();
@@ -99,7 +144,7 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      className={`dialog ${wide ? "wide" : ""} ${drawer ? "drawer" : ""}`}
+      className={`dialog keyboard-aware ${wide ? "wide" : ""} ${drawer ? "drawer" : ""}`}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -131,7 +176,7 @@ export function Modal({
           <X size={20} />
         </button>
       </div>
-      {children}
+      <div className="dialog-content">{children}</div>
     </dialog>
   );
 }

@@ -351,7 +351,7 @@ export function TrainingPage() {
   const [busy, setBusy] = useState(true);
   const busyRef = useRef(true);
   const [error, setError] = useState("");
-  const [shown, setShown] = useState(false);
+  const [shownCardId, setShownCardId] = useState<string | null>(null);
   const [swipe, setSwipe] = useState("");
   const [clock, setClock] = useState(Date.now());
   const [editor, setEditor] = useState<Material | null>(null);
@@ -391,7 +391,7 @@ export function TrainingPage() {
         undoPending.current = null;
         saveStored(undoKey, null);
         setUncertain(false);
-        setShown(false);
+        setShownCardId(null);
         return;
       }
       if (early && !earlyCommand.current)
@@ -442,9 +442,11 @@ export function TrainingPage() {
   }, []);
   const current = view?.current;
   const card = current?.presentation;
-  useEffect(() => {
-    setShown(false);
-  }, [card?.id]);
+  // A new presentation starts on its question in the very first render.
+  const shown = !!card && shownCardId === card.id;
+  function flip() {
+    if (card) setShownCardId((id) => (id === card.id ? null : card.id));
+  }
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 30000);
     return () => window.clearInterval(timer);
@@ -539,8 +541,13 @@ export function TrainingPage() {
       )
         return;
       if (e.code === "Space" && card) {
+        if (
+          e.target instanceof HTMLElement &&
+          e.target.closest("button, a, [role=button]")
+        )
+          return;
         e.preventDefault();
-        setShown((s) => !s);
+        flip();
       } else if (card && (e.key === "1" || e.key === "2")) {
         e.preventDefault();
         void answer(e.key === "1" ? "wrong" : "correct");
@@ -676,12 +683,17 @@ export function TrainingPage() {
                     answers
                   </span>
                   <button
-                    className="icon-button"
+                    className="button edit-word-button"
                     aria-label="Edit current material"
                     onClick={edit}
                     disabled={editBusy || busy || uncertain}
                   >
-                    <Edit3 size={17} />
+                    <Edit3 size={18} />
+                    {editBusy
+                      ? "Opening…"
+                      : current.algorithm_key.startsWith("english_")
+                        ? "Edit word"
+                        : "Edit card"}
                   </button>
                 </div>
                 <RecallCard
@@ -689,7 +701,7 @@ export function TrainingPage() {
                   card={card}
                   algorithm={current.algorithm_key}
                   shown={shown}
-                  flip={() => setShown((s) => !s)}
+                  flip={flip}
                   answer={answer}
                   busy={busy || uncertain || !!error}
                   swipe={swipe}

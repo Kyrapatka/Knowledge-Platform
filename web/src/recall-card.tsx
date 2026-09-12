@@ -1,8 +1,10 @@
 import { Check, RotateCcw, Rotate3D } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { Presentation } from "./types";
 import { algorithmNames } from "./types";
 import { Markdown } from "./ui";
 import { WordExample } from "./example";
+import { PronounceButton } from "./speech";
 
 export function RecallCard({
   card,
@@ -23,6 +25,10 @@ export function RecallCard({
   swipe: string;
   skipRehab: () => void;
 }) {
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    if (shown) setRevealed(true);
+  }, [shown]);
   const english = algorithm.startsWith("english_");
   // Older unanswered snapshots can still carry their example in answer fields.
   const example =
@@ -57,9 +63,16 @@ export function RecallCard({
               ? "Answer"
               : "Question"}
         </span>
-        <span className="recall-flip-hint">
-          <Rotate3D size={15} /> Click to flip
-        </span>
+        <div className="recall-tools">
+          {english &&
+            word &&
+            (shown ? direction === "native" : direction === "foreign") && (
+              <PronounceButton text={word} />
+            )}
+          <span className="recall-flip-hint">
+            <Rotate3D size={15} /> Tap to flip
+          </span>
+        </div>
       </div>
       <div className={`flip-scene ${shown ? "is-flipped" : ""}`}>
         <div className="flip-inner">
@@ -92,22 +105,23 @@ export function RecallCard({
                 }
               }}
             >
-              {(back ? answerFields : card.question).map((field, index) => (
-                <div
-                  key={`${field.key}-${index}`}
-                  className={`${back ? "answer-field" : "question-field"} ${index === 0 ? "recall-lead" : "recall-detail"} ${!back && index === 0 ? "lead-question" : ""}`}
-                >
-                  {index > 0 && (
-                    <span className="eyebrow">
-                      {field.key === "answer" &&
-                      answerFields.some((f) => f.key === "short_answer")
-                        ? "Detailed answer"
-                        : field.label}
-                    </span>
-                  )}
-                  <Markdown value={field.value} field={field.key} />
-                </div>
-              ))}
+              {(!back || shown || revealed) &&
+                (back ? answerFields : card.question).map((field, index) => (
+                  <div
+                    key={`${field.key}-${index}`}
+                    className={`${back ? "answer-field" : "question-field"} ${index === 0 ? "recall-lead" : "recall-detail"} ${!back && index === 0 ? "lead-question" : ""}`}
+                  >
+                    {index > 0 && (
+                      <span className="eyebrow">
+                        {field.key === "answer" &&
+                        answerFields.some((f) => f.key === "short_answer")
+                          ? "Detailed answer"
+                          : field.label}
+                      </span>
+                    )}
+                    <Markdown value={field.value} field={field.key} />
+                  </div>
+                ))}
             </div>
           ))}
         </div>

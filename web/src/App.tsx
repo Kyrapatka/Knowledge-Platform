@@ -23,6 +23,7 @@ import {
   Clock3,
   FolderOpen,
   GraduationCap,
+  GitBranch,
   LayoutGrid,
   ListFilter,
   LogOut,
@@ -50,6 +51,7 @@ import { FolderEditor, MaterialEditor, MaterialDetails } from "./editors";
 import { TrainingPage, TrainingSetup, type SavedTraining } from "./training";
 import { StatisticsPage } from "./statistics";
 import { PlanSettings } from "./settings";
+import { InterviewPage } from "./interview";
 
 type LibraryContextValue = {
   data: LibraryData | null;
@@ -112,6 +114,7 @@ export function App() {
                 <Route path="/folders/:folderID" element={<FolderPage />} />
                 <Route path="/training" element={<TrainingHome />} />
                 <Route path="/statistics" element={<StatisticsPage />} />
+                <Route path="/interview" element={<InterviewPage />} />
                 <Route
                   path="*"
                   element={
@@ -197,6 +200,10 @@ function Shell({ children }: { children: ReactNode }) {
             <TrendingUp size={18} />
             <span>Statistics</span>
           </NavLink>
+          <NavLink to="/interview">
+            <GitBranch size={18} />
+            <span>Mock interview</span>
+          </NavLink>
         </nav>
         <div className="sidebar-bottom">
           <div className="quiet-note">
@@ -234,7 +241,7 @@ function Shell({ children }: { children: ReactNode }) {
             <span>Workspace</span>
             <ChevronRight size={13} />
             <span>
-              {location.pathname === "/statistics"
+              {location.pathname === "/interview" ? "Mock interview" : location.pathname === "/statistics"
                 ? "Statistics"
                 : location.pathname === "/training"
                   ? "Training"

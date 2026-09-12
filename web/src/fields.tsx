@@ -48,7 +48,7 @@ export function initialConfig(kind: string): FolderConfig {
               .map((s) => s[0].toUpperCase() + s.slice(1))
               .join(" "),
     active: true,
-    required: i < 2,
+    required: kind === "interview_questions" ? i === 0 : i < 2,
   });
   return {
     schema: { fields: keys.map(field) },

@@ -107,7 +107,7 @@ func interviewQuestionsTemplate() Template {
 					{
 						Key:      "answer",
 						Label:    "Answer",
-						Required: true,
+						Required: false,
 						Active:   true,
 					},
 					{

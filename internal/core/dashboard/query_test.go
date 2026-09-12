@@ -245,6 +245,7 @@ func TestStatisticsCountsOnlyAnswersAndUsesLocalDays(t *testing.T) {
 	f := newFixture(t)
 	a := f.material(t, "SQL", `{}`)
 	b := f.material(t, "HTTP", `{}`)
+	undone := f.material(t, "Undone card", `{}`)
 	plan := f.plan(t, "long_term", f.now.Add(-10*24*time.Hour))
 	session := uuid.New()
 	f.exec(t, `INSERT INTO training_sessions(id,plan_id,user_id,status,started_at,created_at) VALUES(?,?,?,'active',?,?)`, session, plan, f.user, f.now, f.now)
@@ -262,6 +263,9 @@ func TestStatisticsCountsOnlyAnswersAndUsesLocalDays(t *testing.T) {
 	addEvent(b, "start_final", f.now.Add(-time.Hour), 1)
 	addEvent(b, "correct", f.now.Add(-20*24*time.Hour), 2)
 	addEvent(b, "correct", f.now.Add(time.Hour), 2) // Future rows are not current activity.
+	addEvent(undone, "correct", time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC), 2)
+	addEvent(undone, "wrong", time.Date(2026, 9, 8, 12, 1, 0, 0, time.UTC), 1)
+	f.exec(t, `UPDATE training_events SET undone_at=? WHERE material_id=?`, f.now, undone)
 	f.exec(t, `UPDATE materials SET deleted_at=? WHERE id=?`, f.now, a)
 	result, err := f.store.Statistics(context.Background(), f.user, 3, "Europe/Moscow")
 	if err != nil {

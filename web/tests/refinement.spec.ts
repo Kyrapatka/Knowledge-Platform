@@ -63,9 +63,9 @@ test("refined training: direct answers, masked examples, tooltip and Moscow time
                   ],
                   answer: [
                     {
-                      key: "native",
+                      key: answers ? "foreign" : "native",
                       label: "Translation",
-                      value: "случайная удача",
+                      value: answers ? "serendipity" : "случайная удача",
                     },
                   ],
                   example: "It was serendipity. SERENDIPITY happens.",
@@ -115,14 +115,19 @@ test("refined training: direct answers, masked examples, tooltip and Moscow time
     "aria-hidden",
     "true",
   );
-  const frontBounds = await page.locator(".recall-card").boundingBox();
+  await expect(page.locator(".answer-fields")).toBeEmpty();
+  const frontHeight = await page
+    .locator(".recall-card")
+    .evaluate((el) => (el as HTMLElement).offsetHeight);
   await page.getByRole("button", { name: "Flip to answer" }).click();
   await expect(
     page.getByRole("button", { name: "Flip to question" }),
   ).toBeVisible();
-  expect((await page.locator(".recall-card").boundingBox())?.height).toBe(
-    frontBounds?.height,
-  );
+  expect(
+    await page
+      .locator(".recall-card")
+      .evaluate((el) => (el as HTMLElement).offsetHeight),
+  ).toBe(frontHeight);
   await page.screenshot({
     path: "test-results/flipped-answer.png",
     fullPage: true,
@@ -144,8 +149,15 @@ test("refined training: direct answers, masked examples, tooltip and Moscow time
     path: "test-results/refined-training-desktop.png",
     fullPage: true,
   });
+  // Answer from the reverse side; the next card must never inherit its flip.
+  await page.getByRole("button", { name: "Flip to answer" }).click();
   await page.getByRole("button", { name: "Correct", exact: true }).click();
   await expect(page.locator(".lead-question")).toContainText("случайная удача");
+  await expect(page.locator(".flip-scene")).not.toHaveClass(/is-flipped/);
+  await expect(page.locator(".answer-fields")).toBeEmpty();
+  await expect(
+    page.getByRole("button", { name: "Listen to pronunciation" }),
+  ).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Show example", exact: true }),
   ).toBeVisible();
@@ -270,7 +282,8 @@ test("folder fields control the material editor", async ({ page }) => {
     .getByRole("button", { name: "Create folder", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("link", { name: folder.title, exact: true }).click();
+  await page.locator(".folder-card .folder-description").click();
+  await expect(page).toHaveURL(/\/folders\/folder$/);
   await page.getByRole("button", { name: "Add material", exact: true }).click();
   await expect(page.getByLabel("Memory cue", { exact: false })).toBeVisible();
   await expect(page.getByLabel("Transcription", { exact: false })).toHaveCount(

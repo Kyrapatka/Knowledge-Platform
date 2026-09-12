@@ -6,6 +6,8 @@ import type { Exercise, Folder, Material, SessionView, Topic } from "./types";
 import { algorithmNames, materialTitle, templateNames, topicOf } from "./types";
 import { DateValue, ErrorBox, Markdown, Modal, Spinner } from "./ui";
 import { CardFields, initialConfig } from "./fields";
+import { PronounceButton } from "./speech";
+import "./mobile-editor.css";
 
 export function FolderEditor({
   folder,
@@ -482,16 +484,24 @@ export function MaterialDetails({
           <span className={`difficulty-label ${material.difficulty}`}>
             {material.difficulty}
           </span>
-          <button className="button small" onClick={onEdit}>
-            <Edit3 size={15} />
-            Edit material
+          <button className="button edit-word-button" onClick={onEdit}>
+            <Edit3 size={18} />
+            {folder.template_key === "english_words"
+              ? "Edit word"
+              : "Edit material"}
           </button>
         </div>
         {folder.config.schema.fields
           .filter((f) => f.active && material.values[f.key])
           .map((field) => (
             <section className="detail-field" key={field.key}>
-              <span className="eyebrow">{field.label}</span>
+              <div className="detail-field-heading">
+                <span className="eyebrow">{field.label}</span>
+                {folder.template_key === "english_words" &&
+                  field.key === "foreign" && (
+                    <PronounceButton text={material.values[field.key]!} />
+                  )}
+              </div>
               <Markdown value={material.values[field.key]!} field={field.key} />
             </section>
           ))}
