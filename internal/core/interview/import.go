@@ -52,8 +52,28 @@ type SeedBank struct {
 
 func ReadSeed() (SeedBank, error) {
 	var b SeedBank
-	err := json.Unmarshal(seed.Raw(), &b)
-	return b, err
+	var raw struct {
+		Edges []struct {
+			From     string  `json:"from_slug"`
+			To       string  `json:"to_slug"`
+			Relation string  `json:"relation"`
+			Weight   float64 `json:"weight"`
+		} `json:"edges"`
+	}
+	if err := json.Unmarshal(seed.Raw(), &b); err != nil {
+		return b, err
+	}
+	if err := json.Unmarshal(seed.Raw(), &raw); err != nil {
+		return b, err
+	}
+	b.Edges = make([]Edge, 0, len(raw.Edges))
+	for _, e := range raw.Edges {
+		if e.From == "" || e.To == "" {
+			return b, fmt.Errorf("seed edge has empty endpoint")
+		}
+		b.Edges = append(b.Edges, Edge{e.From, e.To, e.Relation, e.Weight})
+	}
+	return b, nil
 }
 func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuestion) (ImportResult, error) {
 	out := ImportResult{FolderIDs: []uuid.UUID{folder}}

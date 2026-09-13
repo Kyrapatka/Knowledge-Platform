@@ -15,26 +15,27 @@ type CardField struct {
 // A presentation snapshots content and difficulty so edits cannot change the
 // meaning of an already displayed question. Answers identify this exact show.
 type Presentation struct {
-	Direction               string              `json:"direction,omitempty"`
-	Example                 string              `json:"example,omitempty"`
-	ForeignWord             string              `json:"foreign_word,omitempty"`
-	ExerciseID              *uuid.UUID          `json:"exercise_id,omitempty"`
-	ExerciseVersion         int                 `json:"exercise_version,omitempty"`
-	PracticeMode            PracticeMode        `json:"practice_mode,omitempty"`
-	FinalReview             bool                `json:"final_review"`
-	ID                      uuid.UUID           `json:"id"`
-	MaterialID              uuid.UUID           `json:"material_id"`
-	FolderID                uuid.UUID           `json:"folder_id"`
-	Kind                    ReviewKind          `json:"kind"`
-	ProgressVersion         int                 `json:"progress_version"`
-	Stage                   int                 `json:"stage"`
-	ConsecutiveCorrect      int                 `json:"consecutive_correct"`
-	RehabConsecutiveCorrect int                 `json:"rehab_consecutive_correct"`
-	RequiredCorrect         int                 `json:"required_correct"`
-	Difficulty              material.Difficulty `json:"difficulty"`
-	Question                []CardField         `json:"question"`
-	Answer                  []CardField         `json:"answer"`
-	CreatedAt               time.Time           `json:"created_at"`
+	InterviewGraph          *InterviewGraphPresentation `json:"interview_graph,omitempty"`
+	Direction               string                      `json:"direction,omitempty"`
+	Example                 string                      `json:"example,omitempty"`
+	ForeignWord             string                      `json:"foreign_word,omitempty"`
+	ExerciseID              *uuid.UUID                  `json:"exercise_id,omitempty"`
+	ExerciseVersion         int                         `json:"exercise_version,omitempty"`
+	PracticeMode            PracticeMode                `json:"practice_mode,omitempty"`
+	FinalReview             bool                        `json:"final_review"`
+	ID                      uuid.UUID                   `json:"id"`
+	MaterialID              uuid.UUID                   `json:"material_id"`
+	FolderID                uuid.UUID                   `json:"folder_id"`
+	Kind                    ReviewKind                  `json:"kind"`
+	ProgressVersion         int                         `json:"progress_version"`
+	Stage                   int                         `json:"stage"`
+	ConsecutiveCorrect      int                         `json:"consecutive_correct"`
+	RehabConsecutiveCorrect int                         `json:"rehab_consecutive_correct"`
+	RequiredCorrect         int                         `json:"required_correct"`
+	Difficulty              material.Difficulty         `json:"difficulty"`
+	Question                []CardField                 `json:"question"`
+	Answer                  []CardField                 `json:"answer"`
+	CreatedAt               time.Time                   `json:"created_at"`
 }
 
 type SessionItem struct {
@@ -46,6 +47,8 @@ type SessionItem struct {
 }
 
 type TrainingEvent struct {
+	ReviewCredit          bool          `json:"review_credit"`
+	EventMode             string        `json:"event_mode"`
 	Direction             string        `json:"direction,omitempty"`
 	ExerciseID            *uuid.UUID    `json:"exercise_id,omitempty"`
 	PracticeMode          *PracticeMode `json:"practice_mode,omitempty"`
@@ -75,6 +78,8 @@ type CommandReceipt struct {
 }
 
 type SessionSummary struct {
+	ScheduledReviews  int `json:"scheduled_reviews"`
+	InterviewProbes   int `json:"interview_probes"`
 	Correct           int `json:"correct"`
 	Wrong             int `json:"wrong"`
 	Advance           int `json:"advance"`
@@ -85,10 +90,12 @@ type SessionSummary struct {
 }
 
 type SessionView struct {
-	Session  TrainingSession `json:"session"`
-	Current  *Presentation   `json:"current"`
-	PoolSize int             `json:"pool_size"`
-	Summary  SessionSummary  `json:"summary"`
+	Graph       *InterviewGraphView `json:"graph,omitempty"`
+	UndoActions []uuid.UUID         `json:"undo_actions,omitempty"`
+	Session     TrainingSession     `json:"session"`
+	Current     *Presentation       `json:"current"`
+	PoolSize    int                 `json:"pool_size"`
+	Summary     SessionSummary      `json:"summary"`
 }
 
 type ActionResult struct {

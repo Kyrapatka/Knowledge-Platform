@@ -63,7 +63,7 @@ CREATE TABLE interview_graph_selection_events (
   detected_concepts JSONB NOT NULL, candidates JSONB NOT NULL,
   selection_reason TEXT NOT NULL, review_credit BOOLEAN NOT NULL,
   random_seed BIGINT NOT NULL, raw_answer TEXT,
-  snapshot JSONB NOT NULL,п
+  snapshot JSONB NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), undone_at TIMESTAMPTZ
 );
 CREATE INDEX interview_graph_selections_session ON interview_graph_selection_events(session_id,created_at);

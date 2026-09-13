@@ -102,7 +102,7 @@ func saveProfile(db *gorm.DB, user, folder, material uuid.UUID, req ProfileReque
 		return p, err
 	}
 	nonempty := func(k string) bool { return values[k] != nil && strings.TrimSpace(*values[k]) != "" }
-	if p.Status == "ready" && (!nonempty("question") || (!req.Ungraded && !nonempty("answer") && !nonempty("short_answer"))) {
+	if p.Status == "ready" && (!nonempty("question") || (!nonempty("answer") && !nonempty("short_answer"))) {
 		return p, fmt.Errorf("%w: ready questions need a question and a usable answer", ErrInvalid)
 	}
 	old, err := loadProfile(db, material)
@@ -241,15 +241,23 @@ func saveConcept(db *gorm.DB, user uuid.UUID, c Concept, overwrite bool) error {
 	}
 	return nil
 }
-func (s *Store) SaveConcept(ctx context.Context, user uuid.UUID, c Concept) (Catalog, error) {
-	var out Catalog
+func (s *Store) SaveConcept(ctx context.Context, user uuid.UUID, c Concept) (Concept, error) {
+	var out Concept
 	err := s.transact(ctx, user, func(db *gorm.DB) error {
 		if err := saveConcept(db, user, c, true); err != nil {
 			return err
 		}
-		var err error
-		out, err = LoadCatalog(db, user)
-		return err
+		catalog, err := LoadCatalog(db, user)
+		if err != nil {
+			return err
+		}
+		for _, v := range catalog.Concepts {
+			if v.Slug == c.Slug {
+				out = v
+				return nil
+			}
+		}
+		return gorm.ErrRecordNotFound
 	})
 	return out, err
 }

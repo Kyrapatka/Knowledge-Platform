@@ -176,6 +176,9 @@ func (t *runtimeTx) ActiveSession(plan uuid.UUID) (model.TrainingSession, error)
 	return s, translate(err)
 }
 func (t *runtimeTx) CreateSession(s model.TrainingSession) error {
+	if s.SelectionStrategy == "" {
+		s.SelectionStrategy = model.SelectionRandom
+	}
 	if s.Selection == nil {
 		s.Selection = []model.SessionSource{}
 	}
@@ -288,6 +291,7 @@ func (t *runtimeTx) Candidates(p model.TrainingPlan, session uuid.UUID, now time
 		order = "random()"
 	}
 	query := t.db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").
+		Joins("LEFT JOIN interview_question_profiles iq ON iq.material_id=m.id").Where("iq.material_id IS NULL OR iq.status='ready'").
 		Joins(join, joinArgs...).
 		Where("f.owner_id=? AND m.deleted_at IS NULL AND f.deleted_at IS NULL", t.user).Where("("+strings.Join(alternatives, " OR ")+")", args...).
 		Where("(p.material_id IS NULL OR (p.algorithm_key=? AND p.algorithm_version=? AND p.next_review_at<=?))", p.AlgorithmKey, p.AlgorithmVersion, now).
@@ -328,6 +332,10 @@ func (t *runtimeTx) SaveReceipt(r model.CommandReceipt) error {
 	return t.db.Table("training_commands").Create(&r).Error
 }
 func (t *runtimeTx) SaveEvent(e model.TrainingEvent) error {
+	if e.EventMode == "" {
+		e.EventMode = "scheduled"
+		e.ReviewCredit = true
+	}
 	if e.UserID != t.user {
 		return repository.ErrNotFound
 	}
@@ -344,6 +352,8 @@ func (t *runtimeTx) Summary(session uuid.UUID) (model.SessionSummary, error) {
 		return s, err
 	}
 	err := t.db.Table("training_events").Where("user_id=? AND session_id=? AND undone_at IS NULL", t.user, session).Select(`
+		COUNT(*) FILTER (WHERE action IN ('correct','wrong') AND review_credit) AS scheduled_reviews,
+		COUNT(*) FILTER (WHERE action IN ('correct','wrong') AND NOT review_credit) AS interview_probes,
 		COUNT(*) FILTER (WHERE action='correct') AS correct,
 		COUNT(*) FILTER (WHERE action='wrong') AS wrong,
 		COUNT(*) FILTER (WHERE action='advance') AS advance,

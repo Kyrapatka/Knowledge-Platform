@@ -1,14 +1,20 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"github.com/Kyrapatka/knowledge-platform/internal/core/interview/graph"
+	"github.com/google/uuid"
+)
 
 type UndoSnapshot struct {
-	EventID         uuid.UUID
-	PlanID          uuid.UUID
-	SessionID       uuid.UUID
-	MaterialID      uuid.UUID
-	ExpectedVersion int
-	PlanVersion     int
-	Before          UserMaterialProgress
-	Items           []SessionItem
+	GraphStateBefore      *graph.State
+	GraphSelectionEventID *uuid.UUID
+	GraphProbe            bool
+	EventID               uuid.UUID
+	PlanID                uuid.UUID
+	SessionID             uuid.UUID
+	MaterialID            uuid.UUID
+	ExpectedVersion       int
+	PlanVersion           int
+	Before                UserMaterialProgress
+	Items                 []SessionItem
 }

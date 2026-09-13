@@ -17,6 +17,7 @@ type RuntimeStore interface {
 }
 
 type Tx interface {
+	InterviewGraph() InterviewGraphRepository
 	SaveUndo(model.UndoSnapshot) error
 	UndoHistory() ([]model.UndoSnapshot, error)
 	RestoreUndo(model.UndoSnapshot, int, time.Time) error

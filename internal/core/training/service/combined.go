@@ -25,7 +25,8 @@ type CombinedSource struct {
 }
 
 type CombinedRequest struct {
-	Sources []CombinedSource `json:"sources"`
+	SelectionStrategy model.SelectionStrategy `json:"selection_strategy,omitempty"`
+	Sources           []CombinedSource        `json:"sources"`
 }
 type CombinedCurrentRequest struct {
 	SessionIDs  []uuid.UUID `json:"session_ids"`
@@ -84,6 +85,9 @@ func containsFolder(plan model.TrainingPlan, id uuid.UUID) bool {
 }
 
 func (s *Service) StartCombined(ctx context.Context, user uuid.UUID, req CombinedRequest) (model.CombinedView, error) {
+	if req.SelectionStrategy != "" && req.SelectionStrategy != model.SelectionRandom {
+		return model.CombinedView{}, fmt.Errorf("%w: graph selection is not supported in combined training", ErrInvalid)
+	}
 	var result model.CombinedView
 	if len(req.Sources) == 0 || len(req.Sources) > 100 {
 		return result, ErrInvalid
@@ -227,6 +231,9 @@ func (s *Service) scopedSession(ctx context.Context, tx repository.Tx, plan mode
 	}
 	active, err := tx.ActiveSession(plan.ID)
 	if err == nil {
+		if active.SelectionStrategy == model.SelectionInterviewGraphV1 {
+			return active, fmt.Errorf("%w: end the active mock interview before using combined training", repository.ErrConflict)
+		}
 		if active.Combined && reflect.DeepEqual(active.Selection, selection) {
 			return active, nil
 		}

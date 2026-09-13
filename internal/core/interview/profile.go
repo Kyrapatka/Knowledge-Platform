@@ -83,7 +83,14 @@ func (p *Profile) validate() error {
 		return ErrInvalid
 	}
 	seen := map[string]bool{}
+	primary, tested := 0, 0
 	for i, c := range p.Concepts {
+		if c.Role == "primary" {
+			primary++
+		}
+		if c.Role == "tested" {
+			tested++
+		}
 		if !slugPattern.MatchString(c.Slug) || (c.Role != "primary" && c.Role != "tested" && c.Role != "hook" && c.Role != "prerequisite") || seen[c.Slug+":"+c.Role] {
 			return fmt.Errorf("%w: invalid or duplicate concept", ErrInvalid)
 		}
@@ -93,6 +100,9 @@ func (p *Profile) validate() error {
 		} else if c.Weight < 0 || c.Weight > 2 || math.IsNaN(c.Weight) {
 			return ErrInvalid
 		}
+	}
+	if p.Status == "ready" && (primary != 1 || tested < 1) {
+		return fmt.Errorf("%w: ready questions need exactly one primary and at least one tested concept", ErrInvalid)
 	}
 	return nil
 }

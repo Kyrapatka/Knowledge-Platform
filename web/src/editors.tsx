@@ -7,6 +7,11 @@ import { algorithmNames, materialTitle, templateNames, topicOf } from "./types";
 import { DateValue, ErrorBox, Markdown, Modal, Spinner } from "./ui";
 import { CardFields, initialConfig } from "./fields";
 import { PronounceButton } from "./speech";
+import {
+  defaultInterviewProfile,
+  InterviewProfileFields,
+} from "./interview-editor";
+import type { InterviewProfile } from "./interview-types";
 import "./mobile-editor.css";
 
 export function FolderEditor({
@@ -228,6 +233,33 @@ export function MaterialEditor({
   onSaved: () => void;
   inTraining?: boolean;
 }) {
+  const interview = folder.template_key === "interview_questions";
+  const [savedID, setSavedID] = useState(material?.id || "");
+  const [profile, setProfile] = useState<InterviewProfile>(() =>
+    defaultInterviewProfile(),
+  );
+  const [profileLoading, setProfileLoading] = useState(interview && !!material);
+  const [profileFailed, setProfileFailed] = useState(false);
+  async function loadProfile() {
+    if (!interview || !material) return;
+    setProfileLoading(true);
+    setProfileFailed(false);
+    try {
+      setProfile(
+        await api<InterviewProfile>(
+          `/folders/${folder.id}/interview/questions/${material.id}/profile`,
+        ),
+      );
+    } catch (e) {
+      setError(errorText(e));
+      setProfileFailed(true);
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+  useEffect(() => {
+    void loadProfile();
+  }, [folder.id, material?.id]);
   const [values, setValues] = useState<Record<string, string | null>>({
     ...material?.values,
   });
@@ -264,13 +296,28 @@ export function MaterialEditor({
           .filter((f) => f.active)
           .map((f) => [f.key, metadata[f.key]?.trim() || null]),
       );
-      await api(
-        `/folders/${folder.id}/materials${material ? `/${material.id}` : ""}`,
+      const saved = await api<Material>(
+        `/folders/${folder.id}/materials${savedID ? `/${savedID}` : ""}`,
         {
-          method: material ? "PATCH" : "POST",
+          method: savedID ? "PATCH" : "POST",
           body: { values: activeValues, metadata: activeMetadata, difficulty },
         },
       );
+      const id = savedID || saved.id;
+      setSavedID(id);
+      if (interview) {
+        const next = await api<InterviewProfile>(
+          `/folders/${folder.id}/interview/questions/${id}/profile`,
+          {
+            method: "PUT",
+            body: {
+              ...profile,
+              expected_version: profile.profile_version || 0,
+            },
+          },
+        );
+        setProfile(next);
+      }
       onSaved();
     } catch (err) {
       setError(errorText(err));
@@ -399,12 +446,33 @@ export function MaterialEditor({
               />
             </label>
           ))}
-        {error && <ErrorBox error={error} />}
+        {interview &&
+          (profileLoading ? (
+            <Spinner label="Loading interview profile…" />
+          ) : (
+            <InterviewProfileFields
+              value={profile}
+              disabled={busy || profileFailed}
+              onChange={(next) => {
+                setProfile(next);
+                setDirty(true);
+              }}
+            />
+          ))}
+        {error && (
+          <ErrorBox
+            error={error}
+            retry={profileFailed ? () => void loadProfile() : undefined}
+          />
+        )}
         <div className="dialog-actions">
           <button type="button" className="button" onClick={close}>
             Cancel
           </button>
-          <button className="button primary" disabled={busy}>
+          <button
+            className="button primary"
+            disabled={busy || profileLoading || profileFailed}
+          >
             {busy ? "Saving…" : "Save material"}
             <Check size={16} />
           </button>

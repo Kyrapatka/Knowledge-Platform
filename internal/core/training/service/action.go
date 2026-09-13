@@ -14,6 +14,8 @@ import (
 )
 
 type ActionRequest struct {
+	AnswerText      string           `json:"answer_text,omitempty"`
+	AnswerLanguage  string           `json:"answer_language,omitempty"`
 	CommandID       uuid.UUID        `json:"command_id"`
 	PresentationID  uuid.UUID        `json:"presentation_id"`
 	ExpectedVersion int              `json:"expected_version"`
@@ -22,6 +24,9 @@ type ActionRequest struct {
 
 func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req ActionRequest) (model.ActionResult, error) {
 	var out model.ActionResult
+	if len(req.AnswerText) > 64000 || (req.AnswerLanguage != "" && req.AnswerLanguage != "en" && req.AnswerLanguage != "ru" && req.AnswerLanguage != "en-US" && req.AnswerLanguage != "ru-RU") {
+		return out, ErrInvalid
+	}
 	if req.CommandID == uuid.Nil || req.PresentationID == uuid.Nil || req.ExpectedVersion < 1 {
 		return out, ErrInvalid
 	}
@@ -53,6 +58,10 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 		}
 		p, err := tx.Plan(session.PlanID)
 		if err != nil {
+			return err
+		}
+		if session.SelectionStrategy == model.SelectionInterviewGraphV1 {
+			out, err = s.graphAction(ctx, tx, p, session, req, hash)
 			return err
 		}
 		if session.Status != model.StatusActive || p.Status != model.StatusActive {
@@ -107,6 +116,7 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 			PresentationID: &shown.ID, Action: string(req.Action), Kind: kind, AlgorithmKey: a.Key(), AlgorithmVersion: a.Version(),
 			StageBefore: progress.Stage, StageAfter: next.Stage, ProgressVersionBefore: progress.Version, ProgressVersionAfter: next.Version, CreatedAt: now}
 		e.Direction = shown.Direction
+		e.ReviewCredit, e.EventMode = true, "scheduled"
 		if shown.ExerciseID != nil {
 			e.ExerciseID = shown.ExerciseID
 			mode := shown.PracticeMode

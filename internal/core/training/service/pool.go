@@ -42,6 +42,12 @@ func (s *Service) ensureProgress(ctx context.Context, tx repository.Tx, p model.
 }
 
 func (s *Service) sessionView(ctx context.Context, tx repository.Tx, p model.TrainingPlan, session model.TrainingSession) (model.SessionView, error) {
+	if session.SelectionStrategy == model.SelectionInterviewGraphV1 {
+		return s.graphView(ctx, tx, p, session)
+	}
+	if session.SelectionStrategy == "" {
+		session.SelectionStrategy = model.SelectionRandom
+	}
 	out := model.SessionView{Session: session}
 	if session.Status == model.StatusActive && p.Status == model.StatusActive {
 		items, err := s.fillPool(ctx, tx, p, session)
@@ -267,7 +273,9 @@ func (s *Service) preparePool(ctx context.Context, tx repository.Tx, p model.Tra
 			RehabConsecutiveCorrect: progress.RehabConsecutiveCorrect, RequiredCorrect: required,
 			Difficulty: difficulty, Question: question, Answer: answer, CreatedAt: now}
 		if _, ok := a.(algorithm.English); ok {
-			if err := englishCard(tx, i.Presentation, c, m); err != nil { return nil, err }
+			if err := englishCard(tx, i.Presentation, c, m); err != nil {
+				return nil, err
+			}
 		}
 		if formula, ok := a.(algorithm.Formula); ok {
 			exercise, err := tx.PickExercise(m.ID, p.ID)

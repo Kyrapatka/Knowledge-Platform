@@ -1,0 +1,2 @@
+DROP INDEX interview_graph_training_events,interview_graph_events_current,interview_aliases_concept,interview_profiles_ready_folder;
+ALTER TABLE interview_graph_selection_events DROP COLUMN selection_order;

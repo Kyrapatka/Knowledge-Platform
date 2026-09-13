@@ -36,6 +36,9 @@ func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.POST("/training/plans/:planID/algorithm", h.ChangeAlgorithm)
 	api.GET("/training/plans/:planID/changes", h.PlanChanges)
 	api.POST("/training/plans/:planID/sessions", h.StartSession)
+	api.POST("/training/plans/:planID/interview-graph", h.StartGraph)
+	api.GET("/training/interview-graph/config", h.GraphConfig)
+	api.POST("/training/sessions/:sessionID/undo", h.UndoGraph)
 	api.GET("/training/sessions/:sessionID", h.GetSession)
 	api.GET("/training/sessions/:sessionID/current", h.GetSession)
 	api.GET("/training/sessions/:sessionID/result", h.GetSession)
@@ -73,7 +76,7 @@ func respond(c *gin.Context, status int, value any, err error) {
 	case errors.Is(err, repository.ErrNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "training_not_found"})
 	case errors.Is(err, repository.ErrConflict):
-		c.JSON(http.StatusConflict, gin.H{"error": "training_conflict"})
+		c.JSON(http.StatusConflict, gin.H{"error": "training_conflict", "message": err.Error()})
 	case errors.Is(err, service.ErrInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_training_request", "message": err.Error()})
 	default:

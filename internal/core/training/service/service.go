@@ -248,6 +248,9 @@ func (s *Service) StartSession(ctx context.Context, user, planID uuid.UUID) (mod
 		} else if err != nil {
 			return err
 		}
+		if session.SelectionStrategy == model.SelectionInterviewGraphV1 {
+			return fmt.Errorf("%w: resume or end the active mock interview first", repository.ErrConflict)
+		}
 		out, err = s.sessionView(ctx, tx, p, session)
 		return err
 	})
@@ -286,6 +289,16 @@ func (s *Service) FinishSession(ctx context.Context, user, id uuid.UUID, status 
 		}
 		if session.Status == model.StatusActive {
 			now := s.now().UTC()
+			if session.SelectionStrategy == model.SelectionInterviewGraphV1 {
+				state, err := tx.InterviewGraph().State(id)
+				if err != nil {
+					return err
+				}
+				state.StopReason = "user_finished"
+				if _, err = tx.InterviewGraph().SaveState(id, state, state.Version, now); err != nil {
+					return err
+				}
+			}
 			if err = tx.FinishSession(id, status, now); err != nil {
 				return err
 			}
