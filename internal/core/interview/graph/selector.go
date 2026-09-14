@@ -18,8 +18,14 @@ func clone(s State) State {
 	return out
 }
 func Eligible(c Candidate, s State) bool {
-	if c.Status != "ready" || strings.TrimSpace(c.Question) == "" || !c.HasAnswer {
+	if strings.TrimSpace(c.Question) == "" || strings.TrimSpace(c.Question) == "." || c.Status == "archived" || (c.Status != "ready" && !(s.Config.IncludeDraft && c.Status == "draft")) || (!s.Config.IncludeDraft && !c.HasAnswer) {
 		return false
+	}
+	if c.LevelMin > 0 && s.Config.Level < c.LevelMin || c.LevelMax > 0 && s.Config.Level > c.LevelMax { return false }
+	if s.Config.Profile != "" && s.Config.Profile != "all" {
+		found := false
+		for _, profile := range c.Profiles { if profile == s.Config.Profile { found = true; break } }
+		if !found { return false }
 	}
 	for _, id := range s.AskedMaterialIDs {
 		if id == c.MaterialID {
@@ -127,7 +133,7 @@ func finishSelection(out Selection, c Candidate, depth int, root bool) Selection
 		}
 	}
 	out.Candidate = &c
-	out.ReviewCredit = c.Due || (root && c.New)
+	out.ReviewCredit = !s.Config.IncludeDraft && c.Status == "ready" && c.HasAnswer && (c.Due || (root && c.New))
 	return out
 }
 func SelectRoot(state State, candidates []Candidate) Selection {
@@ -169,7 +175,7 @@ func relevance(c Candidate, matches []Match, catalog Catalog) (float64, string) 
 	best := 0.
 	tier := ""
 	for _, l := range c.Concepts {
-		if l.Role == "hook" {
+		if l.Role != "primary" && l.Role != "tested" && l.Role != "prerequisite" {
 			continue
 		}
 		weight := l.Weight
@@ -229,8 +235,8 @@ func followScore(c, current Candidate, s State, rel float64, tier string, depth 
 	if rel < .4 {
 		ambiguity = .25
 	}
-	parts := map[string]float64{"relevance": rel, "specificity_fit": spec, "frequency_fit": freq, "learning_need": clamp(c.LearningNeed, 0, 1), "continuity": continuity, "novelty": 1, "repetition_penalty": penalty(c, s), "ambiguity_penalty": ambiguity, "cross_topic_penalty": cross}
-	score := 2.4*rel + 1.5*spec + 1.2*freq + parts["learning_need"] + .8*continuity + .5 - parts["repetition_penalty"] - ambiguity - cross
+	parts := map[string]float64{"relevance": rel, "specificity_fit": spec, "frequency_fit": freq, "followup_weight": clamp(float64(c.FollowupWeight)/10, 0, 1), "learning_need": clamp(c.LearningNeed, 0, 1), "continuity": continuity, "novelty": 1, "repetition_penalty": penalty(c, s), "ambiguity_penalty": ambiguity, "cross_topic_penalty": cross}
+	score := 2.4*rel + 1.5*spec + 1.2*freq + .8*parts["followup_weight"] + parts["learning_need"] + .8*continuity + .5 - parts["repetition_penalty"] - ambiguity - cross
 	reason := map[string]string{"A": "direct_concept_match", "B": "related_concept_match", "C": "concept_edge", "D": "frontier", "E": "same_topic"}[tier]
 	return Score{c.MaterialID, c.SeedKey, c.Question, score, reason, tier, parts}
 }
@@ -265,6 +271,50 @@ func SelectFollowUp(state State, current Candidate, answer, language string, wro
 		}
 		out.Matches = matches
 	}
+	return selectMatches(state, current, matches, unknown, false, false, candidates, catalog)
+}
+
+// SelectMetadata is the runtime and CLI entry point. Routing only reads
+// question metadata; neither aliases nor user-authored answer prose are parsed.
+func SelectMetadata(state State, current Candidate, action string, candidates []Candidate, catalog Catalog) Selection {
+	wrong := action == "wrong"
+	nextRoute := action == "next_route"
+	matches := []Match{}
+	roles := []string{"answer", "hook"}
+	if wrong { roles = []string{"wrong_fallback", "prerequisite"} }
+	seen := map[string]bool{}
+	for _, role := range roles {
+		links := append([]Link(nil), current.Concepts...)
+		sort.SliceStable(links, func(i, j int) bool { return links[i].Ordinal < links[j].Ordinal })
+		for _, l := range links {
+			if l.Role != role || seen[l.Slug] { continue }
+			seen[l.Slug] = true
+			weight := l.Weight
+			if weight <= 0 { weight = 1 }
+			weight /= 1 + .15*float64(max(0,l.Ordinal))
+			if role == "hook" { weight *= .55 }
+			if wrong && role == "prerequisite" { weight *= .8 }
+			matches = append(matches, Match{Slug: l.Slug, Strength: weight, Source: role})
+		}
+	}
+	if wrong && len(matches) == 0 {
+		for _, l := range current.Concepts {
+			if (l.Role == "primary" || l.Role == "tested") && !seen[l.Slug] {
+				seen[l.Slug] = true
+				matches = append(matches, Match{Slug: l.Slug, Strength: .5, Source: "remediation"})
+			}
+		}
+	}
+	if nextRoute { matches = nil }
+	return selectMatches(state, current, matches, wrong, nextRoute, true, candidates, catalog)
+}
+
+func selectMatches(state State, current Candidate, matches []Match, remediate, nextRoute, metadata bool, candidates []Candidate, catalog Catalog) Selection {
+	out := Selection{State: clone(state), Matches: matches, Scores: []Score{}}
+	if state.QuestionsAsked >= state.Config.QuestionLimit {
+		out.State.StopReason, out.Reason = "question_limit", "question_limit"
+		return out
+	}
 	eligible := map[string]Candidate{}
 	for _, c := range candidates {
 		if c.MaterialID != current.MaterialID && Eligible(c, state) {
@@ -272,14 +322,14 @@ func SelectFollowUp(state State, current Candidate, answer, language string, wro
 		}
 	}
 	depth := state.CurrentDepth + 1
-	if unknown {
+	if remediate {
 		depth = max(0, state.CurrentDepth-1)
 	}
-	if depth <= state.Config.MaxDepthPerBranch {
+	if !nextRoute && depth <= state.Config.MaxDepthPerBranch {
 		bestTier := "Z"
 		alternatives := []Score{}
 		for _, c := range eligible {
-			if unknown && c.Specificity >= current.Specificity {
+			if remediate && ((!metadata && c.Specificity >= current.Specificity) || (metadata && (c.Specificity > current.Specificity || c.InterviewDifficulty > current.InterviewDifficulty))) {
 				continue
 			}
 			rel, tier := relevance(c, matches, catalog)
@@ -287,8 +337,10 @@ func SelectFollowUp(state State, current Candidate, answer, language string, wro
 				continue
 			}
 			score := followScore(c, current, state, rel, tier, depth)
-			if unknown {
+			if remediate {
 				score.Reason = "remediation"
+			} else if metadata && tier == "A" {
+				score.Reason = "answer_concept"
 			}
 			alternatives = append(alternatives, score)
 			if tier < bestTier {
@@ -341,6 +393,7 @@ func SelectFollowUp(state State, current Candidate, answer, language string, wro
 				f.Status = "discarded"
 				continue
 			}
+			if remediate && (f.SourceDepth+1 > state.CurrentDepth || c.Specificity > current.Specificity || c.InterviewDifficulty > current.InterviewDifficulty) { continue }
 			f.Status = "used"
 			out.State.ForksUsed[state.CurrentRoot]++
 			out.State.CurrentBranch = fmt.Sprintf("%d.%d", state.CurrentRoot, out.State.ForksUsed[state.CurrentRoot])
@@ -350,7 +403,7 @@ func SelectFollowUp(state State, current Candidate, answer, language string, wro
 			return finishSelection(out, c, depth, false)
 		}
 	}
-	if !unknown && depth <= state.Config.MaxDepthPerBranch {
+	if !remediate && !nextRoute && depth <= state.Config.MaxDepthPerBranch {
 		for _, c := range eligible {
 			if c.Topic == current.Topic && c.Domain == current.Domain {
 				out.Scores = append(out.Scores, followScore(c, current, state, .15, "E", depth))

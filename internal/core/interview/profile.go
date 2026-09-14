@@ -19,10 +19,12 @@ type QuestionConcept struct {
 	Slug   string  `json:"slug"`
 	Role   string  `json:"role"`
 	Weight float64 `json:"weight"`
+	Ordinal int `json:"ordinal"`
 }
 type Profile struct {
 	MaterialID          uuid.UUID         `json:"material_id"`
 	FolderID            uuid.UUID         `json:"folder_id"`
+	OwnerID             uuid.UUID         `json:"-"`
 	SeedKey             *string           `json:"seed_key"`
 	Domain              string            `json:"domain"`
 	Frequency           int               `json:"frequency"`
@@ -30,6 +32,13 @@ type Profile struct {
 	InterviewDifficulty int               `json:"interview_difficulty"`
 	Specificity         int               `json:"specificity"`
 	RootWeight          int               `json:"root_weight"`
+	FollowupWeight      int               `json:"followup_weight"`
+	LevelMin            int               `json:"level_min"`
+	LevelMax            int               `json:"level_max"`
+	Topic               string            `json:"topic"`
+	Subtopic            string            `json:"subtopic"`
+	SeedRevision        string            `json:"seed_revision"`
+	InterviewProfiles   []string          `json:"interview_profiles" gorm:"-"`
 	Status              string            `json:"status"`
 	ProfileVersion      int               `json:"profile_version"`
 	Concepts            []QuestionConcept `json:"concepts" gorm:"-"`
@@ -73,6 +82,17 @@ type Catalog struct {
 }
 
 func (p *Profile) validate() error {
+	// Compatibility for cards created before levels were introduced.
+	if p.LevelMin == 0 { p.LevelMin = 1 }
+	if p.LevelMax == 0 { p.LevelMax = 5 }
+	if p.LevelMin < 1 || p.LevelMax > 5 || p.LevelMin > p.LevelMax || p.FollowupWeight < 0 || p.FollowupWeight > 10 || len(p.Topic) > 200 || len(p.Subtopic) > 200 || len(p.InterviewProfiles) > 64 {
+		return fmt.Errorf("%w: invalid level range, taxonomy or follow-up weight", ErrInvalid)
+	}
+	profiles := map[string]bool{}
+	for _, profile := range p.InterviewProfiles {
+		if !slugPattern.MatchString(profile) || profiles[profile] { return fmt.Errorf("%w: invalid or duplicate interview profile", ErrInvalid) }
+		profiles[profile] = true
+	}
 	if p.Frequency < 1 || p.Frequency > 10 || p.InterviewDifficulty < 1 || p.InterviewDifficulty > 5 || p.Specificity < 1 || p.Specificity > 5 || p.RootWeight < 0 || p.RootWeight > 10 || math.IsNaN(p.FrequencyConfidence) || p.FrequencyConfidence < 0 || p.FrequencyConfidence > 1 {
 		return fmt.Errorf("%w: profile metrics are out of range", ErrInvalid)
 	}
@@ -91,7 +111,7 @@ func (p *Profile) validate() error {
 		if c.Role == "tested" {
 			tested++
 		}
-		if !slugPattern.MatchString(c.Slug) || (c.Role != "primary" && c.Role != "tested" && c.Role != "hook" && c.Role != "prerequisite") || seen[c.Slug+":"+c.Role] {
+		if !slugPattern.MatchString(c.Slug) || (c.Role != "primary" && c.Role != "tested" && c.Role != "answer" && c.Role != "hook" && c.Role != "prerequisite" && c.Role != "wrong_fallback") || seen[c.Slug+":"+c.Role] || c.Ordinal < 0 {
 			return fmt.Errorf("%w: invalid or duplicate concept", ErrInvalid)
 		}
 		seen[c.Slug+":"+c.Role] = true
@@ -105,5 +125,10 @@ func (p *Profile) validate() error {
 		return fmt.Errorf("%w: ready questions need exactly one primary and at least one tested concept", ErrInvalid)
 	}
 	return nil
+}
+// UsableContent excludes the explicit seed placeholder from published cards.
+func UsableContent(value string) bool {
+	v := strings.TrimSpace(value)
+	return v != "" && v != "."
 }
 func jsonBytes(v any) []byte { b, _ := json.Marshal(v); return b }

@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"math"
@@ -16,14 +17,31 @@ type Config struct {
 	CrossTopicPenalty   float64 `json:"cross_topic_penalty"`
 	EarlyReviewPolicy   string  `json:"early_review_policy"`
 	StoreRawAnswer      bool    `json:"store_raw_answer"`
+	IncludeDraft        bool    `json:"include_draft"`
+	Profile             string  `json:"profile"`
+	Level               int     `json:"level"`
 }
 
-func DefaultConfig() Config { return Config{3, 10, 2, 24, .85, 6, .35, "no_credit", false} }
+func DefaultConfig() Config {
+	return Config{MaxRoots: 3, MaxDepthPerBranch: 10, MaxForksPerRoot: 2, QuestionLimit: 24, Temperature: .85, MaxDetectedConcepts: 6, CrossTopicPenalty: .35, EarlyReviewPolicy: "no_credit", Profile: "all", Level: 3}
+}
+
+// Fill absent JSON properties without treating explicitly supplied zero limits
+// as defaults. This also keeps pre-bank persisted sessions resumable.
+func (c *Config) UnmarshalJSON(data []byte) error {
+	type plain Config
+	v := plain(DefaultConfig())
+	if err := json.Unmarshal(data, &v); err != nil { return err }
+	*c = Config(v)
+	return nil
+}
 func (c Config) Validate() error {
 	finite := func(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }
 	if c.MaxRoots < 1 || c.MaxRoots > 10 || c.MaxDepthPerBranch < 1 || c.MaxDepthPerBranch > 20 || c.MaxForksPerRoot < 0 || c.MaxForksPerRoot > 10 || c.QuestionLimit < 1 || c.QuestionLimit > 100 || !finite(c.Temperature) || c.Temperature <= 0 || c.Temperature > 5 || c.MaxDetectedConcepts < 1 || c.MaxDetectedConcepts > 20 || !finite(c.CrossTopicPenalty) || c.CrossTopicPenalty < 0 || c.CrossTopicPenalty > 20 || c.EarlyReviewPolicy != "no_credit" {
 		return fmt.Errorf("invalid graph configuration")
 	}
+	if c.Level < 1 || c.Level > 5 || len(c.Profile) == 0 || len(c.Profile) > 80 { return fmt.Errorf("invalid interview profile or level") }
+	for _, ch := range c.Profile { if ch != '_' && ch != '-' && (ch < 'a' || ch > 'z') && (ch < '0' || ch > '9') { return fmt.Errorf("invalid interview profile") } }
 	return nil
 }
 
@@ -35,6 +53,7 @@ type Link struct {
 	Slug   string  `json:"slug"`
 	Role   string  `json:"role"`
 	Weight float64 `json:"weight"`
+	Ordinal int    `json:"ordinal"`
 }
 type Candidate struct {
 	MaterialID          uuid.UUID `json:"material_id"`
@@ -49,6 +68,11 @@ type Candidate struct {
 	InterviewDifficulty int       `json:"interview_difficulty"`
 	Specificity         int       `json:"specificity"`
 	RootWeight          int       `json:"root_weight"`
+	FollowupWeight      int       `json:"followup_weight"`
+	LevelMin            int       `json:"level_min"`
+	LevelMax            int       `json:"level_max"`
+	Subtopic            string    `json:"subtopic"`
+	Profiles            []string  `json:"interview_profiles" gorm:"-"`
 	ProfileVersion      int       `json:"profile_version"`
 	HasAnswer           bool      `json:"has_answer"`
 	Due                 bool      `json:"due"`

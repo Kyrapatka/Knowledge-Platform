@@ -10,6 +10,9 @@ export type InterviewGraphConfig = {
   cross_topic_penalty: number;
   early_review_policy: "no_credit";
   store_raw_answer: boolean;
+  include_draft: boolean;
+  profile: string;
+  level: number;
 };
 
 export const defaultGraphConfig: InterviewGraphConfig = {
@@ -22,7 +25,19 @@ export const defaultGraphConfig: InterviewGraphConfig = {
   cross_topic_penalty: 0.35,
   early_review_policy: "no_credit",
   store_raw_answer: false,
+  include_draft: false,
+  profile: "all",
+  level: 3,
 };
+
+export const interviewProfiles = [
+  ["all", "All profiles"], ["go_core", "Go core"], ["go_middle", "Go middle"],
+  ["go_strong_middle", "Go strong middle"], ["go_postgres", "Go + PostgreSQL"],
+  ["backend_core", "Backend core"], ["backend_full", "Backend full"],
+  ["distributed_backend", "Distributed backend"], ["infrastructure", "Infrastructure"],
+  ["system_design", "System design"],
+] as const;
+export const interviewLevels = ["Junior", "Junior+", "Middle", "Strong middle", "Senior"];
 
 export type GraphMatch = { slug: string; strength: number; source?: string };
 export type GraphCandidate = {
@@ -39,6 +54,9 @@ export type GraphSelection = {
   depth: number;
   probe: boolean;
   review_credit: boolean;
+  bank_verification?: boolean;
+  answer_incomplete?: boolean;
+  warning?: string;
   reason?: string;
   detected_concepts?: GraphMatch[];
   candidates?: GraphCandidate[];
@@ -55,6 +73,9 @@ export type InterviewSession = Omit<SessionView, "current"> & {
       config: InterviewGraphConfig;
       recent_concepts?: string[];
       stop_reason?: string;
+      current_branch?: string;
+      random_index?: number;
+      frontier?: { material_id: string; root_index: number; source_depth: number; status: string }[];
     };
     selection?: {
       detected_concepts: GraphMatch[];
@@ -62,6 +83,7 @@ export type InterviewSession = Omit<SessionView, "current"> & {
       selection_reason: string;
       root_index: number;
       depth_after: number;
+      selected_question?: { seed_key?: string; topic?: string; subtopic?: string; status?: string };
     };
     statistics: {
       scheduled_reviews: number;
@@ -89,12 +111,19 @@ export type InterviewProfile = {
   interview_difficulty: number;
   specificity: number;
   root_weight: number;
+  followup_weight: number;
+  level_min: number;
+  level_max: number;
+  topic?: string;
+  subtopic?: string;
+  interview_profiles?: string[];
   status: "draft" | "ready" | "archived";
   profile_version?: number;
   domain?: string;
   concepts: {
     slug: string;
-    role: "primary" | "tested" | "hook" | "prerequisite";
+    role: "primary" | "tested" | "answer" | "hook" | "prerequisite" | "wrong_fallback";
     weight?: number;
+    ordinal?: number;
   }[];
 };

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/netip"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -468,10 +469,27 @@ func prepareTestDatabase(t *testing.T) *gorm.DB {
 		t.Skip("TEST_DATABASE_URL is not configured")
 	}
 
-	postgresDB, err := database.OpenPostgres(databaseURL)
+	base, err := database.OpenPostgres(databaseURL)
 	if err != nil {
 		t.Fatalf("open test PostgreSQL: %v", err)
 	}
+	// Each test owns a separate schema. Never truncate the configured database.
+	schema := "auth_test_" + uuid.New().String()[:8]
+	if err = base.GORM.Exec(`CREATE SCHEMA "` + schema + `"`).Error; err != nil {
+		_ = base.Close()
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := base.GORM.Exec(`DROP SCHEMA "` + schema + `" CASCADE`).Error; err != nil { t.Error(err) }
+		_ = base.Close()
+	})
+	u, parseErr := url.Parse(databaseURL)
+	if parseErr != nil || u.Host == "" { t.Fatal("TEST_DATABASE_URL must be a PostgreSQL URL") }
+	query := u.Query()
+	query.Set("search_path", schema)
+	u.RawQuery = query.Encode()
+	postgresDB, err := database.OpenPostgres(u.String())
+	if err != nil { t.Fatalf("open isolated test PostgreSQL: %v", err) }
 
 	t.Cleanup(func() {
 		if err := postgresDB.Close(); err != nil {
@@ -487,30 +505,7 @@ func prepareTestDatabase(t *testing.T) *gorm.DB {
 		t.Fatalf("migrate test database: %v", err)
 	}
 
-	clearDatabase(t, postgresDB.GORM)
-
-	t.Cleanup(func() {
-		clearDatabase(t, postgresDB.GORM)
-	})
-
 	return postgresDB.GORM
-}
-
-func clearDatabase(
-	t *testing.T,
-	db *gorm.DB,
-) {
-	t.Helper()
-
-	err := db.Exec(`
-		TRUNCATE TABLE
-			auth_sessions,
-			users
-		CASCADE
-	`).Error
-	if err != nil {
-		t.Fatalf("clear test database: %v", err)
-	}
 }
 
 func createTestUser(
