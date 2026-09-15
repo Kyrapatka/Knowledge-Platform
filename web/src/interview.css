@@ -3,6 +3,21 @@
   margin: 0 auto;
   min-width: 0;
 }
+.interview-bank-mode { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid #605541; border-radius:12px; background:#302b23; cursor:pointer; }
+.interview-bank-mode input {margin-top:3px;flex:none;}
+.interview-bank-mode strong {display:block;font-size:12px;line-height:1.6;color:#ecd3a8;}
+.interview-bank-mode small {display:block;font-size:11px;line-height:1.6;color:#b9b09b;margin-top:7px;}
+.interview-bank-warning {display:grid;gap:6px;border:1px solid #625b42;background:#332f24;border-radius:12px;padding:15px 18px;color:#e2d0a0;font-size:12px;line-height:1.65;margin:0 0 18px;}
+.interview-question {min-height:230px;display:flex;flex-direction:column;justify-content:center;}
+.interview-next-route {width:100%;margin-top:13px;min-height:48px;background:transparent;}
+.interview-profile-memberships {display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;}
+.interview-profile-memberships>span {grid-column:1/-1;}
+.interview-profile-memberships label {display:flex;align-items:center;gap:9px;}
+.interview-profile-memberships input {flex:none;}
+.interview-seed-key {font-family:monospace;color:#d4bb85;font-size:13px;}
+.interview-progress-detail b {text-align:right;}
+.interview-concept-chips small {color:#abc2b5;}
+@media(max-width:540px){.interview-question{min-height:200px}.interview-profile-memberships{grid-template-columns:1fr}.folder-page-heading .button-row{flex-wrap:wrap}}
 .interview-heading {
   display: flex;
   align-items: center;

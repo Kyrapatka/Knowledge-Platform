@@ -66,7 +66,7 @@ func (h *Handler) seedInfo(c *gin.Context) {
 		return
 	}
 	b, e := ReadSeed()
-	write(c, gin.H{"version": b.Version, "domains": b.Domains, "question_count": len(b.Questions)}, e)
+	write(c, gin.H{"version": b.Version, "revision": b.Version, "domains": b.Domains, "question_count": len(b.Questions), "profiles": InterviewProfiles, "validation": b.Source.Report}, e)
 }
 func (h *Handler) importSeed(c *gin.Context) {
 	u, ok := userID(c)

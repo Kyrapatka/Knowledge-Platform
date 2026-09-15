@@ -27,15 +27,15 @@ func (g *graphTx) candidates(p model.TrainingPlan, s model.TrainingSession, now 
 	}
 	query := g.t.db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").Joins("JOIN interview_question_profiles q ON q.material_id=m.id AND q.folder_id=m.folder_id").
 		Joins("LEFT JOIN user_material_progress p ON p.material_id=m.id AND p.user_id=? AND p.track=? AND ((p.track='cram' AND p.plan_id=?) OR (p.track<>'cram' AND p.plan_id IS NULL))", g.t.user, p.Track, p.ID).
-		Where("f.owner_id=? AND f.deleted_at IS NULL AND m.deleted_at IS NULL AND f.template_key='interview_questions' AND m.folder_id IN ? AND q.status='ready'", g.t.user, p.SourceFolderIDs).
-		Where("NULLIF(btrim(m.values->>'question'),'') IS NOT NULL AND (NULLIF(btrim(m.values->>'answer'),'') IS NOT NULL OR NULLIF(btrim(m.values->>'short_answer'),'') IS NOT NULL)").
+		Where("f.owner_id=? AND f.deleted_at IS NULL AND m.deleted_at IS NULL AND f.template_key='interview_questions' AND m.folder_id IN ? AND q.status IN ('ready','draft')", g.t.user, p.SourceFolderIDs).
+		Where("COALESCE(btrim(m.values->>'question'),'') NOT IN ('','.')").
 		Where("(p.material_id IS NULL OR (p.algorithm_key=? AND p.algorithm_version=?))", p.AlgorithmKey, p.AlgorithmVersion)
 	query = selectedMaterials(query, s.Selection)
 	if root {
 		query = query.Where("q.root_weight>0")
 	}
 	err := query.Select(`q.*,m.id AS material_id,m.folder_id,m.values->>'question' AS question,COALESCE(m.metadata->>'topic',m.metadata->>'category','') AS topic,
- TRUE AS has_answer, (p.material_id IS NULL) AS new, COALESCE(p.next_review_at<=?,FALSE) AS due,
+ (COALESCE(btrim(m.values->>'answer'),'') NOT IN ('','.') OR COALESCE(btrim(m.values->>'short_answer'),'') NOT IN ('','.')) AS has_answer, (p.material_id IS NULL) AS new, COALESCE(p.next_review_at<=?,FALSE) AS due,
  CASE WHEN p.material_id IS NULL THEN 1.0 ELSE LEAST(1.0,GREATEST(0.0,(p.wrong_count+1.0)/(p.correct_count+p.wrong_count+2.0))) END AS learning_need`, now).
 		Order("m.id").Limit(5000).Scan(&out).Error
 	if err != nil {
@@ -55,13 +55,25 @@ func (g *graphTx) candidates(p model.TrainingPlan, s model.TrainingSession, now 
 		MaterialID uuid.UUID
 		Slug, Role string
 		Weight     float64
+		Ordinal    int
 	}
-	if err = g.t.db.Table("interview_question_concepts q").Select("q.material_id,c.slug,q.role,q.weight").Joins("JOIN interview_concepts c ON c.id=q.concept_id").Where("q.material_id IN ? AND c.owner_id=?", ids, g.t.user).Order("q.material_id,q.role,c.slug").Scan(&links).Error; err != nil {
+	if err = g.t.db.Table("interview_question_concepts q").Select("q.material_id,c.slug,q.role,q.weight,q.ordinal").Joins("JOIN interview_concepts c ON c.id=q.concept_id").Where("q.material_id IN ? AND c.owner_id=?", ids, g.t.user).Order("q.material_id,q.role,q.ordinal,c.slug").Scan(&links).Error; err != nil {
 		return nil, err
 	}
 	for _, l := range links {
 		i := byID[l.MaterialID]
-		out[i].Concepts = append(out[i].Concepts, graph.Link{Slug: l.Slug, Role: l.Role, Weight: l.Weight})
+		out[i].Concepts = append(out[i].Concepts, graph.Link{Slug: l.Slug, Role: l.Role, Weight: l.Weight, Ordinal: l.Ordinal})
+	}
+	var memberships []struct {
+		MaterialID  uuid.UUID
+		ProfileSlug string
+	}
+	if err = g.t.db.Table("interview_question_memberships").Where("material_id IN ?", ids).Order("material_id,profile_slug").Find(&memberships).Error; err != nil {
+		return nil, err
+	}
+	for _, m := range memberships {
+		i := byID[m.MaterialID]
+		out[i].Profiles = append(out[i].Profiles, m.ProfileSlug)
 	}
 	return out, nil
 }

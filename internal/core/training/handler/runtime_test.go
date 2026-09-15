@@ -72,13 +72,17 @@ func newFixture(t *testing.T) *fixture {
 		baseSQL.Close()
 	})
 	u, err := url.Parse(dsn)
-	if err != nil || u.Host == "" {
-		t.Fatal("test DSN must be a PostgreSQL URL")
+	if err != nil {
+		t.Fatal("invalid test DSN")
 	}
-	q := u.Query()
-	q.Set("search_path", schema)
-	u.RawQuery = q.Encode()
-	db, err := gorm.Open(postgres.Open(u.String()), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	scopedDSN := dsn + " search_path=" + schema
+	if u.Host != "" {
+		q := u.Query()
+		q.Set("search_path", schema)
+		u.RawQuery = q.Encode()
+		scopedDSN = u.String()
+	}
+	db, err := gorm.Open(postgres.Open(scopedDSN), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatal(err)
 	}

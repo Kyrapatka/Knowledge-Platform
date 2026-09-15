@@ -19,6 +19,8 @@ import type { Folder, Plan } from "./types";
 import { ErrorBox, Markdown, Spinner } from "./ui";
 import {
   defaultGraphConfig,
+  interviewProfiles,
+  interviewLevels,
   type InterviewGraphConfig,
   type InterviewSession,
 } from "./interview-types";
@@ -33,8 +35,6 @@ type GraphCommand = {
     presentation_id?: string;
     expected_version?: number;
     action?: string;
-    answer_text?: string;
-    answer_language?: string;
     event_id?: string;
   };
 };
@@ -217,8 +217,8 @@ function InterviewSetup({
             Mock interview<span>.</span>
           </h1>
           <p>
-            One answer opens the next question. Follow the ideas wherever they
-            take you.
+            Answer out loud or in your head. Check the reference, rate yourself,
+            and follow the next connection.
           </p>
         </div>
         <span className="interview-heading-icon">
@@ -372,6 +372,20 @@ function InterviewSetup({
               }
             />
           </label>
+          <label className="interview-label">Interview profile
+            <select value={config.profile} disabled={busy || !!startCommand.current} onChange={e => setConfig({...config,profile:e.target.value})}>
+              {interviewProfiles.map(([slug,label]) => <option value={slug} key={slug}>{label}</option>)}
+            </select>
+          </label>
+          <label className="interview-label">Interview level
+            <select value={config.level} disabled={busy || !!startCommand.current} onChange={e => setConfig({...config,level:+e.target.value})}>
+              {interviewLevels.map((label,i) => <option value={i+1} key={label}>{label}</option>)}
+            </select>
+          </label>
+          <label className="interview-bank-mode">
+            <input type="checkbox" checked={config.include_draft} disabled={busy || !!startCommand.current} onChange={e => setConfig({...config,include_draft:e.target.checked})} />
+            <span><strong>Bank testing mode / Include drafts</strong><small>Allows draft questions for graph testing. Practice only; does not modify SRS.</small></span>
+          </label>
           <button
             className="interview-advanced-toggle"
             type="button"
@@ -405,20 +419,6 @@ function InterviewSetup({
                   />
                 </label>
               ))}
-              <label className="interview-checkbox">
-                <input
-                  type="checkbox"
-                  checked={config.store_raw_answer}
-                  disabled={busy || !!startCommand.current}
-                  onChange={(e) =>
-                    setConfig((value) => ({
-                      ...value,
-                      store_raw_answer: e.target.checked,
-                    }))
-                  }
-                />{" "}
-                Save written answers in interview history
-              </label>
             </div>
           )}
           {error && <ErrorBox error={error} />}
@@ -453,8 +453,6 @@ function InterviewRun({
   const { user } = useAuth();
   const pendingKey = `knowledge:interview:pending:${user.id}`;
   const [view, setView] = useState(initial);
-  const [text, setText] = useState("");
-  const [language, setLanguage] = useState("en");
   const [revealedID, setRevealedID] = useState("");
   const [debug, setDebug] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -486,7 +484,6 @@ function InterviewRun({
       pending.current = null;
       saveStored(pendingKey, null);
       setView(next);
-      setText("");
       setRevealedID("");
     } catch (e) {
       if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
@@ -499,7 +496,6 @@ function InterviewRun({
                 `/training/sessions/${view.session.id}`,
               ),
             );
-            setText("");
             setRevealedID("");
           } catch (refreshError) {
             setError(errorText(refreshError));
@@ -523,8 +519,6 @@ function InterviewRun({
         presentation_id: card.id,
         expected_version: card.progress_version,
         action,
-        answer_text: text.trim(),
-        answer_language: language,
       },
     });
   }
@@ -539,7 +533,6 @@ function InterviewRun({
           `/training/sessions/${view.session.id}/finish`,
         ),
       );
-      setText("");
     } catch (e) {
       setError(errorText(e));
     } finally {
@@ -549,9 +542,8 @@ function InterviewRun({
   }
   useEffect(() => {
     if (pending.current?.session_id === view.session.id) {
-      setText(pending.current.body.answer_text || "");
       setError(
-        "Your last answer has not been confirmed. Retry to continue safely.",
+        "Your last action has not been confirmed. Retry to continue safely.",
       );
     }
   }, []);
@@ -608,33 +600,8 @@ function InterviewRun({
                   />
                 ))}
               </article>
-              <div className="interview-answer-box">
-                <div className="interview-answer-toolbar">
-                  <label htmlFor="interview-answer">Your answer</label>
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    disabled={busy || !!pending.current}
-                    aria-label="Answer language"
-                  >
-                    <option value="en">English</option>
-                    <option value="ru">Russian</option>
-                  </select>
-                </div>
-                <textarea
-                  id="interview-answer"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  disabled={busy || !!pending.current}
-                  rows={6}
-                  maxLength={16000}
-                  placeholder="Talk through your reasoning. Mention the ideas and connections that matter."
-                />
-                <div className="interview-answer-note">
-                  <span>{text.length.toLocaleString()} / 16,000</span>
-                  <span>Your device’s keyboard dictation works here too.</span>
-                </div>
-              </div>
+              {graph?.config.include_draft && <div className="interview-bank-warning" role="status"><strong>Bank testing mode</strong><span>Reference answers may be unfilled. All actions are practice only; your SRS schedule stays unchanged.</span></div>}
+              {!graph?.config.include_draft && selection?.answer_incomplete && <p className="interview-bank-warning">Reference answer has not been filled in yet.</p>}
               <button
                 type="button"
                 className="interview-reveal"
@@ -644,16 +611,14 @@ function InterviewRun({
                 aria-expanded={revealedID === card.id}
               >
                 <BookOpen size={17} />
-                {revealedID === card.id
-                  ? "Hide reference answer"
-                  : "Read reference answer"}
+                {revealedID === card.id ? "Hide Answer" : "Reveal Answer"}
                 <ChevronDown size={16} />
               </button>
               {revealedID === card.id && (
                 <section className="interview-reference">
-                  {card.answer.map((field) => (
+                  {card.answer.filter(field => ["short_answer","answer","sources"].includes(field.key)).map((field) => (
                     <div key={field.key}>
-                      <h3>{field.label}</h3>
+                      <h3>{{short_answer:"Short Answer",answer:"Detailed Answer",sources:"Source"}[field.key]}</h3>
                       <Markdown value={field.value} field={field.key} />
                     </div>
                   ))}
@@ -677,6 +642,9 @@ function InterviewRun({
                   Correct
                 </button>
               </div>
+              <button className="interview-next-route button" disabled={busy || !!pending.current} onClick={() => answer("next_route")}>
+                <GitBranch size={18} /> Next Route <ArrowRight size={17} />
+              </button>
             </>
           ) : (
             <div className="interview-finished">
@@ -690,7 +658,7 @@ function InterviewRun({
                   ? "Your answers have been saved. Take a moment to review your path."
                   : "There are no ready questions in these sources yet. Add answers and mark questions ready to begin."}
               </p>
-              <button className="button primary" onClick={onSetup}>
+              <button className="button primary" disabled={busy || !!pending.current} onClick={onSetup}>
                 Choose another interview
                 <ArrowRight size={17} />
               </button>
@@ -719,7 +687,7 @@ function InterviewRun({
                 })
               }
             >
-              <RotateCcw size={16} /> Undo last answer{" "}
+              <RotateCcw size={16} /> Undo last action{" "}
               <span>{Math.min(3, undoActions.length)} available</span>
             </button>
           )}
@@ -740,6 +708,12 @@ function InterviewRun({
           </div>
           {graph && (
             <div className="interview-progress-detail">
+              <span>Shown <b>{graph.questions_asked} / {graph.config.question_limit}</b></span>
+              <span>Root <b>{graph.current_root} / {graph.config.max_roots}</b></span>
+              <span>Branch <b>{graph.current_branch}</b></span>
+              <span>Depth <b>{graph.current_depth} / {graph.config.max_depth_per_branch}</b></span>
+              <span>Profile <b>{interviewProfiles.find(([slug])=>slug===graph.config.profile)?.[1] || graph.config.profile}</b></span>
+              <span>Level <b>{interviewLevels[graph.config.level-1]}</b></span>
               <span>
                 Topics explored <b>{graph.roots_used}</b>
               </span>
@@ -821,14 +795,17 @@ function GraphDebug({ view }: { view: InterviewSession }) {
           "No selection explanation is available yet."}
       </p>
       {!!selection?.detected_concepts?.length && (
+        <><h3>Routing concepts</h3>
         <div className="interview-concept-chips">
           {selection.detected_concepts.map((match, i) => (
             <span key={`${match.slug}-${i}`}>
               {match.slug}
+              <small>{match.source}</small>
               <b>{match.strength.toFixed(2)}</b>
             </span>
           ))}
         </div>
+        </>
       )}
       {!!selection?.candidates?.length && (
         <table>

@@ -67,6 +67,10 @@ func (s *Service) UndoGraph(ctx context.Context, user, sessionID uuid.UUID, req 
 			return err
 		}
 		progress, err := tx.Progress().Get(ctx, keyFor(p, snapshot.MaterialID))
+		if errors.Is(err, repository.ErrNotFound) && snapshot.GraphProbe && snapshot.ExpectedVersion == 0 {
+			progress = model.UserMaterialProgress{}
+			err = nil
+		}
 		if err != nil {
 			return err
 		}

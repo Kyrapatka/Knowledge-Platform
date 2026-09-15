@@ -21,11 +21,20 @@ func Eligible(c Candidate, s State) bool {
 	if strings.TrimSpace(c.Question) == "" || strings.TrimSpace(c.Question) == "." || c.Status == "archived" || (c.Status != "ready" && !(s.Config.IncludeDraft && c.Status == "draft")) || (!s.Config.IncludeDraft && !c.HasAnswer) {
 		return false
 	}
-	if c.LevelMin > 0 && s.Config.Level < c.LevelMin || c.LevelMax > 0 && s.Config.Level > c.LevelMax { return false }
+	if c.LevelMin > 0 && s.Config.Level < c.LevelMin || c.LevelMax > 0 && s.Config.Level > c.LevelMax {
+		return false
+	}
 	if s.Config.Profile != "" && s.Config.Profile != "all" {
 		found := false
-		for _, profile := range c.Profiles { if profile == s.Config.Profile { found = true; break } }
-		if !found { return false }
+		for _, profile := range c.Profiles {
+			if profile == s.Config.Profile {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
 	}
 	for _, id := range s.AskedMaterialIDs {
 		if id == c.MaterialID {
@@ -82,7 +91,7 @@ func rootScore(c Candidate, s State) Score {
 		need = math.Max(.85, need)
 	}
 	parts := map[string]float64{"root_weight": float64(c.RootWeight) / 10, "frequency": float64(c.Frequency-1) / 9, "learning_need": need, "novelty": 1, "repetition_penalty": penalty(c, s)}
-	score := 1.8*parts["root_weight"] + 1.4*parts["frequency"] + 1.2*need + .6 - parts["repetition_penalty"]
+	score := 1.8*parts["root_weight"] + 1.4*parts["frequency"] + .15*need + .6 - parts["repetition_penalty"]
 	return Score{c.MaterialID, c.SeedKey, c.Question, score, "root", "F", parts}
 }
 func nextRandom(s *State) float64 {
@@ -118,12 +127,65 @@ func sample(scores []Score, s *State) int {
 	}
 	return len(scores) - 1
 }
+
+// Randomness only chooses among competitive candidates, with a stable order
+// independent of SQL order or Go map iteration.
+func qualityCandidates(scores []Score) []Score {
+	sort.Slice(scores, func(i, j int) bool {
+		if scores[i].Score != scores[j].Score {
+			return scores[i].Score > scores[j].Score
+		}
+		return scores[i].MaterialID.String() < scores[j].MaterialID.String()
+	})
+	if len(scores) == 0 {
+		return scores
+	}
+	n := 0
+	for n < len(scores) && n < 5 && scores[n].Score >= scores[0].Score-1.75 {
+		n++
+	}
+	return scores[:n]
+}
+func boundFrontier(s *State) {
+	limit := s.Config.MaxFrontierSize
+	if limit < 1 {
+		limit = 12
+	}
+	kept := []FrontierEntry{}
+	for _, f := range s.Frontier {
+		if f.Status != "available" || f.RootIndex != s.CurrentRoot {
+			continue
+		}
+		asked := false
+		for _, id := range s.AskedMaterialIDs {
+			if id == f.MaterialID {
+				asked = true
+				break
+			}
+		}
+		if !asked {
+			kept = append(kept, f)
+		}
+	}
+	rank := func(f FrontierEntry) float64 { return f.Score - .04*float64(max(0, s.QuestionsAsked-f.AddedAt)) }
+	sort.SliceStable(kept, func(i, j int) bool {
+		if rank(kept[i]) != rank(kept[j]) {
+			return rank(kept[i]) > rank(kept[j])
+		}
+		return kept[i].MaterialID.String() < kept[j].MaterialID.String()
+	})
+	if len(kept) > limit {
+		kept = kept[:limit]
+	}
+	s.Frontier = kept
+}
 func finishSelection(out Selection, c Candidate, depth int, root bool) Selection {
 	s := &out.State
 	s.StopReason = ""
 	s.CurrentDepth = depth
 	s.QuestionsAsked++
 	s.AskedMaterialIDs = append(s.AskedMaterialIDs, c.MaterialID)
+	boundFrontier(s)
 	id := c.MaterialID
 	s.LastMaterialID = &id
 	if p := primary(c); p != "" {
@@ -164,6 +226,7 @@ func SelectRoot(state State, candidates []Candidate) Selection {
 		out.State.StopReason = out.Reason
 		return out
 	}
+	out.Scores = qualityCandidates(out.Scores)
 	chosen := out.Scores[sample(out.Scores, &out.State)]
 	out.State.RootsUsed++
 	out.State.CurrentRoot = out.State.RootsUsed
@@ -236,7 +299,7 @@ func followScore(c, current Candidate, s State, rel float64, tier string, depth 
 		ambiguity = .25
 	}
 	parts := map[string]float64{"relevance": rel, "specificity_fit": spec, "frequency_fit": freq, "followup_weight": clamp(float64(c.FollowupWeight)/10, 0, 1), "learning_need": clamp(c.LearningNeed, 0, 1), "continuity": continuity, "novelty": 1, "repetition_penalty": penalty(c, s), "ambiguity_penalty": ambiguity, "cross_topic_penalty": cross}
-	score := 2.4*rel + 1.5*spec + 1.2*freq + .8*parts["followup_weight"] + parts["learning_need"] + .8*continuity + .5 - parts["repetition_penalty"] - ambiguity - cross
+	score := 3.2*rel + 1.5*spec + 1.0*freq + .6*parts["followup_weight"] + .12*parts["learning_need"] + 1.2*continuity + .5 - parts["repetition_penalty"] - ambiguity - cross
 	reason := map[string]string{"A": "direct_concept_match", "B": "related_concept_match", "C": "concept_edge", "D": "frontier", "E": "same_topic"}[tier]
 	return Score{c.MaterialID, c.SeedKey, c.Question, score, reason, tier, parts}
 }
@@ -281,23 +344,33 @@ func SelectMetadata(state State, current Candidate, action string, candidates []
 	nextRoute := action == "next_route"
 	matches := []Match{}
 	roles := []string{"answer", "hook"}
-	if wrong { roles = []string{"wrong_fallback", "prerequisite"} }
+	if wrong {
+		roles = []string{"wrong_fallback", "prerequisite"}
+	}
 	seen := map[string]bool{}
 	for _, role := range roles {
 		links := append([]Link(nil), current.Concepts...)
 		sort.SliceStable(links, func(i, j int) bool { return links[i].Ordinal < links[j].Ordinal })
 		for _, l := range links {
-			if l.Role != role || seen[l.Slug] { continue }
+			if l.Role != role || seen[l.Slug] {
+				continue
+			}
 			seen[l.Slug] = true
 			weight := l.Weight
-			if weight <= 0 { weight = 1 }
-			weight /= 1 + .15*float64(max(0,l.Ordinal))
-			if role == "hook" { weight *= .55 }
-			if wrong && role == "prerequisite" { weight *= .8 }
+			if weight <= 0 {
+				weight = 1
+			}
+			weight /= 1 + .15*float64(max(0, l.Ordinal))
+			if role == "hook" {
+				weight *= .55
+			}
+			if wrong && role == "prerequisite" {
+				weight *= .8
+			}
 			matches = append(matches, Match{Slug: l.Slug, Strength: weight, Source: role})
 		}
 	}
-	if wrong && len(matches) == 0 {
+	if wrong {
 		for _, l := range current.Concepts {
 			if (l.Role == "primary" || l.Role == "tested") && !seen[l.Slug] {
 				seen[l.Slug] = true
@@ -305,7 +378,40 @@ func SelectMetadata(state State, current Candidate, action string, candidates []
 			}
 		}
 	}
-	if nextRoute { matches = nil }
+	if nextRoute {
+		matches = nil
+	}
+	if !nextRoute {
+		priority := []string{"answer", "hook"}
+		if wrong {
+			priority = []string{"wrong_fallback", "prerequisite", "remediation"}
+		}
+		for _, source := range priority {
+			group := []Match{}
+			for _, m := range matches {
+				if m.Source == source {
+					group = append(group, m)
+				}
+			}
+			found := false
+			for _, c := range candidates {
+				if !Eligible(c, state) || c.MaterialID == current.MaterialID {
+					continue
+				}
+				if wrong && (c.Specificity > current.Specificity || c.InterviewDifficulty > current.InterviewDifficulty) {
+					continue
+				}
+				if _, tier := relevance(c, group, catalog); tier != "" {
+					found = true
+					break
+				}
+			}
+			if found {
+				matches = group
+				break
+			}
+		}
+	}
 	return selectMatches(state, current, matches, wrong, nextRoute, true, candidates, catalog)
 }
 
@@ -353,13 +459,18 @@ func selectMatches(state State, current Candidate, matches []Match, remediate, n
 		}
 		if len(out.Scores) > 0 {
 			sort.Slice(out.Scores, func(i, j int) bool { return out.Scores[i].MaterialID.String() < out.Scores[j].MaterialID.String() })
+			out.Scores = qualityCandidates(out.Scores)
 			chosen := sample(out.Scores, &out.State)
 			pick := out.Scores[chosen]
 			// Preserve weaker semantic tiers too, in stable priority order. A
 			// strong direct match should not erase a discovered edge alternative.
 			sort.Slice(alternatives, func(i, j int) bool {
-				if alternatives[i].Tier != alternatives[j].Tier { return alternatives[i].Tier < alternatives[j].Tier }
-				if alternatives[i].Score != alternatives[j].Score { return alternatives[i].Score > alternatives[j].Score }
+				if alternatives[i].Tier != alternatives[j].Tier {
+					return alternatives[i].Tier < alternatives[j].Tier
+				}
+				if alternatives[i].Score != alternatives[j].Score {
+					return alternatives[i].Score > alternatives[j].Score
+				}
 				return alternatives[i].MaterialID.String() < alternatives[j].MaterialID.String()
 			})
 			for _, score := range alternatives {
@@ -373,8 +484,8 @@ func selectMatches(state State, current Candidate, matches []Match, remediate, n
 						break
 					}
 				}
-				if !seen && len(out.State.Frontier) < 200 {
-					out.State.Frontier = append(out.State.Frontier, FrontierEntry{current.MaterialID, score.MaterialID, state.CurrentRoot, state.CurrentBranch, state.CurrentDepth, score.Reason, "available", score.Score})
+				if !seen && score.Score >= pick.Score-1.75 {
+					out.State.Frontier = append(out.State.Frontier, FrontierEntry{OriginMaterialID: current.MaterialID, MaterialID: score.MaterialID, RootIndex: state.CurrentRoot, Branch: state.CurrentBranch, SourceDepth: state.CurrentDepth, Reason: score.Reason, Status: "available", Score: score.Score, AddedAt: state.QuestionsAsked})
 				}
 			}
 			out.Reason = pick.Reason
@@ -393,7 +504,9 @@ func selectMatches(state State, current Candidate, matches []Match, remediate, n
 				f.Status = "discarded"
 				continue
 			}
-			if remediate && (f.SourceDepth+1 > state.CurrentDepth || c.Specificity > current.Specificity || c.InterviewDifficulty > current.InterviewDifficulty) { continue }
+			if remediate && (f.SourceDepth+1 > state.CurrentDepth || c.Specificity > current.Specificity || c.InterviewDifficulty > current.InterviewDifficulty) {
+				continue
+			}
 			f.Status = "used"
 			out.State.ForksUsed[state.CurrentRoot]++
 			out.State.CurrentBranch = fmt.Sprintf("%d.%d", state.CurrentRoot, out.State.ForksUsed[state.CurrentRoot])
@@ -411,6 +524,7 @@ func selectMatches(state State, current Candidate, matches []Match, remediate, n
 		}
 		if len(out.Scores) > 0 {
 			sort.Slice(out.Scores, func(i, j int) bool { return out.Scores[i].MaterialID.String() < out.Scores[j].MaterialID.String() })
+			out.Scores = qualityCandidates(out.Scores)
 			pick := out.Scores[sample(out.Scores, &out.State)]
 			out.Reason = "same_topic"
 			return finishSelection(out, eligible[pick.MaterialID.String()], depth, false)

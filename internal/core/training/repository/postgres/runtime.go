@@ -339,7 +339,7 @@ func (t *runtimeTx) SaveEvent(e model.TrainingEvent) error {
 	if e.UserID != t.user {
 		return repository.ErrNotFound
 	}
-	if e.Action != "correct" && e.Action != "wrong" {
+	if e.Action != "correct" && e.Action != "wrong" && e.Action != "next_route" {
 		if err := t.db.Exec("DELETE FROM training_undo WHERE user_id=?", t.user).Error; err != nil {
 			return err
 		}

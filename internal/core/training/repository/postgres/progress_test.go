@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm/logger"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -156,8 +157,8 @@ func TestProgressPostgres(t *testing.T) {
 		}
 	}
 	// Validate rollback migrations too, still entirely inside the private schema.
-	for _, name := range []string{"000012_training_changes_and_deletion.down.sql", "000011_formula_training.down.sql", "000010_interview_final.down.sql", "000009_training_runtime.down.sql", "000008_create_training_progress.down.sql", "000007_add_material_difficulty.down.sql"} {
-		content, e := os.ReadFile(filepath.Join("../../../../../migrations", name))
+	for i := len(files)-1; i >= 6; i-- {
+		content, e := os.ReadFile(strings.TrimSuffix(files[i],".up.sql")+".down.sql")
 		if e != nil {
 			t.Fatal(e)
 		}

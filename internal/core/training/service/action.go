@@ -24,14 +24,11 @@ type ActionRequest struct {
 
 func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req ActionRequest) (model.ActionResult, error) {
 	var out model.ActionResult
-	if len(req.AnswerText) > 64000 || (req.AnswerLanguage != "" && req.AnswerLanguage != "en" && req.AnswerLanguage != "ru" && req.AnswerLanguage != "en-US" && req.AnswerLanguage != "ru-RU") {
-		return out, ErrInvalid
-	}
-	if req.CommandID == uuid.Nil || req.PresentationID == uuid.Nil || req.ExpectedVersion < 1 {
+	if req.CommandID == uuid.Nil || req.PresentationID == uuid.Nil || req.ExpectedVersion < 0 {
 		return out, ErrInvalid
 	}
 	switch req.Action {
-	case algorithm.Correct, algorithm.Wrong, algorithm.Advance, algorithm.Rollback, algorithm.SkipRehab:
+	case algorithm.Correct, algorithm.Wrong, algorithm.Advance, algorithm.Rollback, algorithm.SkipRehab, "next_route":
 	default:
 		return out, ErrInvalid
 	}
@@ -63,6 +60,9 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 		if session.SelectionStrategy == model.SelectionInterviewGraphV1 {
 			out, err = s.graphAction(ctx, tx, p, session, req, hash)
 			return err
+		}
+		if req.ExpectedVersion < 1 || req.Action == "next_route" {
+			return ErrInvalid
 		}
 		if session.Status != model.StatusActive || p.Status != model.StatusActive {
 			return repository.ErrConflict

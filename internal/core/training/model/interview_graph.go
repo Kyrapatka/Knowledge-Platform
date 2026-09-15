@@ -19,6 +19,8 @@ type InterviewGraphPresentation struct {
 	Depth            int       `json:"depth"`
 	Probe            bool      `json:"probe"`
 	ReviewCredit     bool      `json:"review_credit"`
+	BankVerification bool      `json:"bank_verification"`
+	AnswerIncomplete bool      `json:"answer_incomplete"`
 }
 type GraphSelectionEvent struct {
 	ID               uuid.UUID       `json:"id"`

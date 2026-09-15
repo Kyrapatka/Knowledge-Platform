@@ -33,7 +33,7 @@ func graphFixture(t *testing.T) (*fixture, model.TrainingPlan, []uuid.UUID) {
 		if i == 0 {
 			root = 10
 		}
-		f.exec(t, `INSERT INTO interview_question_profiles(material_id,folder_id,seed_key,domain,frequency,interview_difficulty,specificity,root_weight,status) VALUES(?,?,?,'go',8,2,2,?,'ready')`, id, f.folder, slug, root)
+		f.exec(t, `INSERT INTO interview_question_profiles(material_id,folder_id,owner_id,seed_key,domain,frequency,interview_difficulty,specificity,root_weight,status) VALUES(?,?,?,?,'go',8,2,2,?,'ready')`, id, f.folder, f.user, slug, root)
 		f.exec(t, `INSERT INTO interview_concepts(id,owner_id,slug,display_name,domain,topic) VALUES(?,?,?,?,'go','Runtime')`, concept, f.user, slug, slug)
 		for _, role := range []string{"primary", "tested"} {
 			f.exec(t, `INSERT INTO interview_question_concepts(material_id,concept_id,role) VALUES(?,?,?)`, id, concept, role)
@@ -44,7 +44,7 @@ func graphFixture(t *testing.T) (*fixture, model.TrainingPlan, []uuid.UUID) {
 		}
 		f.exec(t, `INSERT INTO interview_concept_aliases(id,concept_id,alias,normalized_alias) VALUES(?,?,?,?)`, uuid.New(), concept, alias, alias)
 	}
-	f.exec(t, `INSERT INTO interview_question_concepts(material_id,concept_id,role) SELECT ?,id,'hook' FROM interview_concepts WHERE owner_id=? AND slug='context_switch'`, ids[0], f.user)
+	f.exec(t, `INSERT INTO interview_question_concepts(material_id,concept_id,role) SELECT ?,id,'answer' FROM interview_concepts WHERE owner_id=? AND slug='context_switch'`, ids[0], f.user)
 	plan := decode[model.TrainingPlan](t, f.request(f.user, "POST", "/training/plans", service.CreatePlanRequest{SourceFolderIDs: []uuid.UUID{f.folder}, HorizonDays: 150}), 201)
 	return f, plan, ids
 }
@@ -114,7 +114,7 @@ func TestGraphProbeUndoCompletionAndPrivacy(t *testing.T) {
 	firstReq.AnswerLanguage = "en"
 	first := f.request(f.user, "POST", path+"/actions", firstReq)
 	a := decode[model.ActionResult](t, first, 200)
-	if a.Session.Current == nil || a.Session.Current.MaterialID != ids[1] || !a.Session.Current.InterviewGraph.Probe || a.Session.Graph.Selection.SelectionReason != "direct_concept_match" {
+	if a.Session.Current == nil || a.Session.Current.MaterialID != ids[1] || !a.Session.Current.InterviewGraph.Probe || a.Session.Graph.Selection.SelectionReason != "answer_concept" {
 		t.Fatalf("missing semantic probe: %+v", a.Session)
 	}
 	if len(a.Session.Graph.Selection.DetectedConcepts) == 0 || len(a.Session.Graph.Selection.Candidates) == 0 {
@@ -126,12 +126,16 @@ func TestGraphProbeUndoCompletionAndPrivacy(t *testing.T) {
 	firstReq.AnswerText = "stack"
 	decode[map[string]any](t, f.request(f.user, "POST", path+"/actions", firstReq), 409)
 	var stored int64
-	if err := f.db.Table("interview_graph_selection_events").Where("session_id=? AND raw_answer IS NOT NULL", v.Session.ID).Count(&stored).Error; err != nil { t.Fatal(err) }
+	if err := f.db.Table("interview_graph_selection_events").Where("session_id=? AND raw_answer IS NOT NULL", v.Session.ID).Count(&stored).Error; err != nil {
+		t.Fatal(err)
+	}
 	if stored != 0 {
 		t.Fatal("raw answer was retained")
 	}
 	var payloads []string
-	if err := f.db.Raw("SELECT snapshot::text FROM interview_graph_selection_events WHERE session_id=?", v.Session.ID).Scan(&payloads).Error; err != nil { t.Fatal(err) }
+	if err := f.db.Raw("SELECT snapshot::text FROM interview_graph_selection_events WHERE session_id=?", v.Session.ID).Scan(&payloads).Error; err != nil {
+		t.Fatal(err)
+	}
 	for _, x := range payloads {
 		if strings.Contains(x, "preserves execution") {
 			t.Fatal("raw answer in snapshot")
@@ -175,6 +179,7 @@ func TestGraphProbeUndoCompletionAndPrivacy(t *testing.T) {
 }
 func TestGraphDueFollowUpAndFrontierUndo(t *testing.T) {
 	f, p, ids := graphFixture(t)
+	f.exec(t, `INSERT INTO interview_question_concepts(material_id,concept_id,role,ordinal) SELECT ?,id,'answer',1 FROM interview_concepts WHERE owner_id=? AND slug='stack'`, ids[0], f.user)
 	graphDue(t, f, p, ids[1], true)
 	graphDue(t, f, p, ids[2], true)
 	v := startGraph(t, f, p, 5)
@@ -254,7 +259,8 @@ func TestSeedImportImportsEdgesAndProfileLifecycle(t *testing.T) {
 	}
 	var n int64
 	f.db.Table("interview_concept_edges").Count(&n)
-	if n != 92 {
+	// Only 72 legacy edges have both endpoints in the corrected dictionary.
+	if n != 72 {
 		t.Fatal("missing seed edges", n)
 	}
 	again := decode[interview.ImportResult](t, f.request(f.user, "POST", "/interview/seed/import", map[string]any{"domains": []string{"go"}}), 200)
@@ -276,8 +282,19 @@ func TestSeedImportImportsEdgesAndProfileLifecycle(t *testing.T) {
 		t.Fatal(ready)
 	}
 	result := decode[interview.ImportResult](t, f.request(f.user, "POST", "/interview/seed/import", map[string]any{"domains": []string{"go"}}), 200)
-	if result.Skipped != 1 {
-		t.Fatal("ready seed overwritten")
+	if result.Updated != 130 || result.Created != 0 {
+		t.Fatal("seed metadata not refreshed", result)
+	}
+	refreshed := decode[interview.Profile](t, f.request(f.user, "GET", path, nil), 200)
+	if refreshed.Status != "ready" || refreshed.MaterialID != got.MaterialID {
+		t.Fatal("published seed identity/status overwritten")
+	}
+	var answer string
+	if err := f.db.Raw("SELECT values->>'answer' FROM materials WHERE id=?", got.MaterialID).Scan(&answer).Error; err != nil {
+		t.Fatal(err)
+	}
+	if answer != "A goroutine is scheduled by the Go runtime." {
+		t.Fatal("manual answer overwritten", answer)
 	}
 	catalog := decode[interview.Catalog](t, f.request(f.user, "GET", "/interview/concepts", nil), 200)
 	c := catalog.Concepts[0]

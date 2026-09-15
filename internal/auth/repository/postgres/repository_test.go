@@ -480,16 +480,26 @@ func prepareTestDatabase(t *testing.T) *gorm.DB {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if err := base.GORM.Exec(`DROP SCHEMA "` + schema + `" CASCADE`).Error; err != nil { t.Error(err) }
+		if err := base.GORM.Exec(`DROP SCHEMA "` + schema + `" CASCADE`).Error; err != nil {
+			t.Error(err)
+		}
 		_ = base.Close()
 	})
 	u, parseErr := url.Parse(databaseURL)
-	if parseErr != nil || u.Host == "" { t.Fatal("TEST_DATABASE_URL must be a PostgreSQL URL") }
-	query := u.Query()
-	query.Set("search_path", schema)
-	u.RawQuery = query.Encode()
-	postgresDB, err := database.OpenPostgres(u.String())
-	if err != nil { t.Fatalf("open isolated test PostgreSQL: %v", err) }
+	if parseErr != nil {
+		t.Fatal("invalid TEST_DATABASE_URL")
+	}
+	scopedURL := databaseURL + " search_path=" + schema
+	if u.Host != "" {
+		query := u.Query()
+		query.Set("search_path", schema)
+		u.RawQuery = query.Encode()
+		scopedURL = u.String()
+	}
+	postgresDB, err := database.OpenPostgres(scopedURL)
+	if err != nil {
+		t.Fatalf("open isolated test PostgreSQL: %v", err)
+	}
 
 	t.Cleanup(func() {
 		if err := postgresDB.Close(); err != nil {

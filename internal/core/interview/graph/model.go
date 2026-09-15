@@ -20,10 +20,11 @@ type Config struct {
 	IncludeDraft        bool    `json:"include_draft"`
 	Profile             string  `json:"profile"`
 	Level               int     `json:"level"`
+	MaxFrontierSize     int     `json:"max_frontier_size"`
 }
 
 func DefaultConfig() Config {
-	return Config{MaxRoots: 3, MaxDepthPerBranch: 10, MaxForksPerRoot: 2, QuestionLimit: 24, Temperature: .85, MaxDetectedConcepts: 6, CrossTopicPenalty: .35, EarlyReviewPolicy: "no_credit", Profile: "all", Level: 3}
+	return Config{MaxRoots: 3, MaxDepthPerBranch: 10, MaxForksPerRoot: 2, QuestionLimit: 24, Temperature: .85, MaxDetectedConcepts: 6, CrossTopicPenalty: .8, EarlyReviewPolicy: "no_credit", Profile: "all", Level: 3, MaxFrontierSize: 12}
 }
 
 // Fill absent JSON properties without treating explicitly supplied zero limits
@@ -31,7 +32,9 @@ func DefaultConfig() Config {
 func (c *Config) UnmarshalJSON(data []byte) error {
 	type plain Config
 	v := plain(DefaultConfig())
-	if err := json.Unmarshal(data, &v); err != nil { return err }
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
 	*c = Config(v)
 	return nil
 }
@@ -40,8 +43,17 @@ func (c Config) Validate() error {
 	if c.MaxRoots < 1 || c.MaxRoots > 10 || c.MaxDepthPerBranch < 1 || c.MaxDepthPerBranch > 20 || c.MaxForksPerRoot < 0 || c.MaxForksPerRoot > 10 || c.QuestionLimit < 1 || c.QuestionLimit > 100 || !finite(c.Temperature) || c.Temperature <= 0 || c.Temperature > 5 || c.MaxDetectedConcepts < 1 || c.MaxDetectedConcepts > 20 || !finite(c.CrossTopicPenalty) || c.CrossTopicPenalty < 0 || c.CrossTopicPenalty > 20 || c.EarlyReviewPolicy != "no_credit" {
 		return fmt.Errorf("invalid graph configuration")
 	}
-	if c.Level < 1 || c.Level > 5 || len(c.Profile) == 0 || len(c.Profile) > 80 { return fmt.Errorf("invalid interview profile or level") }
-	for _, ch := range c.Profile { if ch != '_' && ch != '-' && (ch < 'a' || ch > 'z') && (ch < '0' || ch > '9') { return fmt.Errorf("invalid interview profile") } }
+	if c.Level < 1 || c.Level > 5 || len(c.Profile) == 0 || len(c.Profile) > 80 {
+		return fmt.Errorf("invalid interview profile or level")
+	}
+	if c.MaxFrontierSize < 1 || c.MaxFrontierSize > 30 {
+		return fmt.Errorf("invalid frontier limit")
+	}
+	for _, ch := range c.Profile {
+		if ch != '_' && ch != '-' && (ch < 'a' || ch > 'z') && (ch < '0' || ch > '9') {
+			return fmt.Errorf("invalid interview profile")
+		}
+	}
 	return nil
 }
 
@@ -50,10 +62,10 @@ type Source struct {
 	Topics   []string  `json:"topics,omitempty"`
 }
 type Link struct {
-	Slug   string  `json:"slug"`
-	Role   string  `json:"role"`
-	Weight float64 `json:"weight"`
-	Ordinal int    `json:"ordinal"`
+	Slug    string  `json:"slug"`
+	Role    string  `json:"role"`
+	Weight  float64 `json:"weight"`
+	Ordinal int     `json:"ordinal"`
 }
 type Candidate struct {
 	MaterialID          uuid.UUID `json:"material_id"`
@@ -128,6 +140,7 @@ type FrontierEntry struct {
 	Reason           string    `json:"reason"`
 	Status           string    `json:"status"`
 	Score            float64   `json:"score"`
+	AddedAt          int       `json:"added_at"`
 }
 type State struct {
 	StrategyVersion  int             `json:"strategy_version"`

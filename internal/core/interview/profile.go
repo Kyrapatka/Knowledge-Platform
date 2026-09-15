@@ -16,10 +16,10 @@ var ErrConflict = errors.New("interview profile changed")
 var slugPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_]{0,95}$`)
 
 type QuestionConcept struct {
-	Slug   string  `json:"slug"`
-	Role   string  `json:"role"`
-	Weight float64 `json:"weight"`
-	Ordinal int `json:"ordinal"`
+	Slug    string  `json:"slug"`
+	Role    string  `json:"role"`
+	Weight  float64 `json:"weight"`
+	Ordinal int     `json:"ordinal"`
 }
 type Profile struct {
 	MaterialID          uuid.UUID         `json:"material_id"`
@@ -83,14 +83,20 @@ type Catalog struct {
 
 func (p *Profile) validate() error {
 	// Compatibility for cards created before levels were introduced.
-	if p.LevelMin == 0 { p.LevelMin = 1 }
-	if p.LevelMax == 0 { p.LevelMax = 5 }
+	if p.LevelMin == 0 {
+		p.LevelMin = 1
+	}
+	if p.LevelMax == 0 {
+		p.LevelMax = 5
+	}
 	if p.LevelMin < 1 || p.LevelMax > 5 || p.LevelMin > p.LevelMax || p.FollowupWeight < 0 || p.FollowupWeight > 10 || len(p.Topic) > 200 || len(p.Subtopic) > 200 || len(p.InterviewProfiles) > 64 {
 		return fmt.Errorf("%w: invalid level range, taxonomy or follow-up weight", ErrInvalid)
 	}
 	profiles := map[string]bool{}
 	for _, profile := range p.InterviewProfiles {
-		if !slugPattern.MatchString(profile) || profiles[profile] { return fmt.Errorf("%w: invalid or duplicate interview profile", ErrInvalid) }
+		if !validInterviewProfile(profile) || profiles[profile] {
+			return fmt.Errorf("%w: invalid or duplicate interview profile", ErrInvalid)
+		}
 		profiles[profile] = true
 	}
 	if p.Frequency < 1 || p.Frequency > 10 || p.InterviewDifficulty < 1 || p.InterviewDifficulty > 5 || p.Specificity < 1 || p.Specificity > 5 || p.RootWeight < 0 || p.RootWeight > 10 || math.IsNaN(p.FrequencyConfidence) || p.FrequencyConfidence < 0 || p.FrequencyConfidence > 1 {
@@ -126,6 +132,7 @@ func (p *Profile) validate() error {
 	}
 	return nil
 }
+
 // UsableContent excludes the explicit seed placeholder from published cards.
 func UsableContent(value string) bool {
 	v := strings.TrimSpace(value)

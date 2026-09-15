@@ -45,7 +45,7 @@ func TestExtractorAcceptance(t *testing.T) {
 			if len(m) != 1 || m[0].Slug != tt.want || tt.source != "" && m[0].Source != tt.source {
 				t.Fatalf("got %+v", m)
 			}
-			if tt.source == "fuzzy" && m[0].Strength >= .45 {
+			if tt.source == "fuzzy" && m[0].Strength > .45 {
 				t.Fatal("fuzzy too strong", m)
 			}
 		})

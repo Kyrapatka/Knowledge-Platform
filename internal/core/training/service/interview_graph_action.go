@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/interview/graph"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/algorithm"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/model"
@@ -13,7 +14,7 @@ import (
 // Called inside Act's existing transaction and after its command receipt check.
 func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.TrainingPlan, session model.TrainingSession, req ActionRequest, hash string) (model.ActionResult, error) {
 	var out model.ActionResult
-	if req.Action != algorithm.Correct && req.Action != algorithm.Wrong {
+	if req.Action != algorithm.Correct && req.Action != algorithm.Wrong && req.Action != "next_route" {
 		return out, ErrInvalid
 	}
 	if session.Combined || session.Status != model.StatusActive || p.Status != model.StatusActive {
@@ -44,6 +45,10 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 		return out, err
 	}
 	progress, err := tx.Progress().Get(ctx, keyFor(p, item.MaterialID))
+	if errors.Is(err, repository.ErrNotFound) && req.ExpectedVersion == 0 && !shown.InterviewGraph.ReviewCredit {
+		progress = model.UserMaterialProgress{MaterialID: item.MaterialID, Stage: shown.Stage}
+		err = nil
+	}
 	if err != nil {
 		return out, err
 	}
@@ -52,7 +57,7 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 	}
 	now := s.now().UTC()
 	next := progress
-	credit := shown.InterviewGraph.ReviewCredit
+	credit := shown.InterviewGraph.ReviewCredit && !state.Config.IncludeDraft && req.Action != "next_route"
 	if credit {
 		kind, due := progress.DueReview(now)
 		if !due || kind != shown.Kind {
@@ -75,6 +80,9 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 	if !credit {
 		mode = "graph_probe"
 	}
+	if req.Action == "next_route" {
+		mode = "graph_navigation"
+	}
 	event := model.TrainingEvent{ID: uuid.New(), CommandID: req.CommandID, UserID: p.UserID, PlanID: p.ID, SessionID: session.ID, MaterialID: item.MaterialID, PresentationID: &shown.ID, Action: string(req.Action), Kind: shown.Kind, AlgorithmKey: p.AlgorithmKey, AlgorithmVersion: p.AlgorithmVersion, StageBefore: progress.Stage, StageAfter: next.Stage, ProgressVersionBefore: progress.Version, ProgressVersionAfter: next.Version, ReviewCredit: credit, EventMode: mode, CreatedAt: now}
 	if err = tx.SaveEvent(event); err != nil {
 		return out, err
@@ -88,13 +96,13 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 	if err != nil {
 		return out, err
 	}
-	selected := graph.SelectFollowUp(state, selection.Snapshot, req.AnswerText, req.AnswerLanguage, req.Action == algorithm.Wrong, candidates, catalog)
+	selected := graph.SelectMetadata(state, selection.Snapshot, string(req.Action), candidates, catalog)
 	item.State = "completed"
 	item.Presentation = nil
 	if err = tx.SaveItem(item); err != nil {
 		return out, err
 	}
-	snapshot.GraphSelectionEventID, err = s.persistGraphSelection(ctx, tx, p, &session, state, selected, &item.MaterialID, req.AnswerText)
+	snapshot.GraphSelectionEventID, err = s.persistGraphSelection(ctx, tx, p, &session, state, selected, &item.MaterialID, "")
 	if err != nil {
 		return out, err
 	}

@@ -171,7 +171,13 @@ func (s *Service) persistGraphSelection(ctx context.Context, tx repository.Tx, p
 	if err != nil {
 		return nil, err
 	}
-	progress, err := s.ensureProgress(ctx, tx, p, m, now)
+	progress, err := tx.Progress().Get(ctx, keyFor(p, m.ID))
+	if selected.ReviewCredit && !selected.State.Config.IncludeDraft {
+		progress, err = s.ensureProgress(ctx, tx, p, m, now)
+	} else if errors.Is(err, repository.ErrNotFound) {
+		progress = model.UserMaterialProgress{MaterialID: m.ID, Stage: 1}
+		err = nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +208,17 @@ func (s *Service) persistGraphSelection(ctx context.Context, tx repository.Tx, p
 	if !ok {
 		return nil, repository.ErrConflict
 	}
-	question, answerFields := fields(cfg.Card.QuestionFields, cfg, m.Values), fields(cfg.Card.AnswerFields, cfg, m.Values)
-	if len(question) == 0 || len(answerFields) == 0 {
+	question := []model.CardField{{Key: "question", Label: "Question", Value: c.Question}}
+	answerFields := []model.CardField{}
+	for _, f := range []struct{ key, label string }{{"short_answer", "Short Answer"}, {"answer", "Detailed Answer"}, {"sources", "Source"}} {
+		value := ""
+		if m.Values[f.key] != nil {
+			value = *m.Values[f.key]
+		}
+		answerFields = append(answerFields, model.CardField{Key: f.key, Label: f.label, Value: value})
+	}
+	_ = cfg // Folder ownership/config are validated above; graph has fixed reference fields.
+	if len(question) == 0 {
 		return nil, repository.ErrConflict
 	}
 	// Candidates are queried and persisted under the user row lock also acquired
@@ -215,9 +230,6 @@ func (s *Service) persistGraphSelection(ctx context.Context, tx repository.Tx, p
 	}
 	if event.Candidates == nil {
 		event.Candidates = []graph.Score{}
-	}
-	if before.Config.StoreRawAnswer && from != nil {
-		event.RawAnswer = &answer
 	}
 	if err = gr.SaveSelection(event); err != nil {
 		return nil, err
@@ -238,6 +250,8 @@ func (s *Service) persistGraphSelection(ctx context.Context, tx repository.Tx, p
 		}
 	}
 	shown := &model.Presentation{ID: uuid.New(), MaterialID: m.ID, FolderID: m.FolderID, Kind: kind, ProgressVersion: progress.Version, Stage: stage, ConsecutiveCorrect: correct, RehabConsecutiveCorrect: progress.RehabConsecutiveCorrect, RequiredCorrect: required, Difficulty: difficulty, Question: question, Answer: answerFields, FinalReview: final, CreatedAt: now, InterviewGraph: &model.InterviewGraphPresentation{SelectionEventID: event.ID, RootIndex: event.RootIndex, Depth: event.DepthAfter, Probe: !credit, ReviewCredit: credit}}
+	shown.InterviewGraph.BankVerification = selected.State.Config.IncludeDraft
+	shown.InterviewGraph.AnswerIncomplete = !c.HasAnswer
 	if err = tx.SaveItem(model.SessionItem{SessionID: session.ID, MaterialID: m.ID, State: "active", Position: int64(selected.State.QuestionsAsked), Presentation: shown}); err != nil {
 		return nil, err
 	}
@@ -281,7 +295,7 @@ func (s *Service) graphView(ctx context.Context, tx repository.Tx, p model.Train
 			if err != nil {
 				return out, err
 			}
-			next := graph.SelectFollowUp(state, current.Snapshot, "", "", false, candidates, catalog)
+			next := graph.SelectMetadata(state, current.Snapshot, "next_route", candidates, catalog)
 			if _, err = s.persistGraphSelection(ctx, tx, p, &session, state, next, &item.MaterialID, ""); err != nil {
 				return out, err
 			}

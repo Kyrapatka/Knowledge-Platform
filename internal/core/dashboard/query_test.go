@@ -34,8 +34,8 @@ func newFixture(t *testing.T) *fixture {
 		t.Skip("set TRAINING_TEST_DATABASE_URL for isolated PostgreSQL projection tests")
 	}
 	u, err := url.Parse(dsn)
-	if err != nil || u.Host == "" {
-		t.Fatal("test DSN must be a PostgreSQL URL")
+	if err != nil {
+		t.Fatal("invalid test DSN")
 	}
 	base, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
@@ -58,10 +58,9 @@ func newFixture(t *testing.T) *fixture {
 		}
 		baseSQL.Close()
 	})
-	query := u.Query()
-	query.Set("search_path", schema)
-	u.RawQuery = query.Encode()
-	db, err := gorm.Open(postgres.Open(u.String()), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	scopedDSN:=dsn+" search_path="+schema
+	if u.Host!="" {query:=u.Query();query.Set("search_path",schema);u.RawQuery=query.Encode();scopedDSN=u.String()}
+	db, err := gorm.Open(postgres.Open(scopedDSN), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -33,6 +33,7 @@ import {
   Settings2,
   Sparkles,
   TrendingUp,
+  Trash2,
   X,
   Zap,
 } from "lucide-react";
@@ -638,6 +639,7 @@ function FolderPage() {
   const [editor, setEditor] = useState<Material | "new" | null>(null);
   const [details, setDetails] = useState<Material | null>(null);
   const [editFolder, setEditFolder] = useState(false);
+  const [deleteFolder, setDeleteFolder] = useState(false);
   const [settings, setSettings] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
@@ -712,12 +714,14 @@ function FolderPage() {
         </div>
         <div className="button-row">
           <button
-            className="icon-button bordered"
+            className="button"
             aria-label="Edit folder"
             onClick={() => setEditFolder(true)}
           >
             <MoreHorizontal size={20} />
+            Edit folder
           </button>
+          <button className="button danger-text" onClick={() => setDeleteFolder(true)}><Trash2 size={17} />Delete folder</button>
           <button className="button" onClick={() => setSettings(true)}>
             <Settings2 size={16} />
             Settings
@@ -975,12 +979,14 @@ function FolderPage() {
           }}
         />
       )}
-      {editFolder && (
+      {(editFolder || deleteFolder) && (
         <FolderEditor
           folder={folder}
-          onClose={() => setEditFolder(false)}
+          initialDeleting={deleteFolder}
+          onClose={() => {setEditFolder(false);setDeleteFolder(false)}}
           onSaved={() => {
             setEditFolder(false);
+            setDeleteFolder(false);
             refresh();
           }}
           onDeleted={() => {

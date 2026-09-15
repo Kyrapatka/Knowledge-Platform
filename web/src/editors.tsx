@@ -19,11 +19,13 @@ export function FolderEditor({
   onClose,
   onSaved,
   onDeleted,
+  initialDeleting = false,
 }: {
   folder?: Folder;
   onClose: () => void;
   onSaved: () => void;
   onDeleted?: () => void;
+  initialDeleting?: boolean;
 }) {
   const [title, setTitle] = useState(folder?.title || "");
   const [description, setDescription] = useState(folder?.description || "");
@@ -34,7 +36,7 @@ export function FolderEditor({
   const [savedFolder, setSavedFolder] = useState(folder);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState(initialDeleting);
   const dirty =
     title !== (folder?.title || "") ||
     description !== (folder?.description || "") ||
@@ -110,6 +112,16 @@ export function FolderEditor({
       setBusy(false);
     }
   }
+  if (deleting && folder) return <Modal title={`Delete “${folder.title}”?`} onClose={() => {if (!busy) onClose()}}>
+    <div className="form-body">
+      <p>This removes the folder and its {folder.material_count} materials from your library and training. Past training history is retained.</p>
+      {error && <ErrorBox error={error} />}
+      <div className="dialog-actions">
+        <button className="button" disabled={busy} onClick={() => setDeleting(false)}>Keep folder</button>
+        <button className="button danger" disabled={busy} onClick={() => void remove()}><Trash2 size={18} />{busy ? "Deleting…" : "Delete folder"}</button>
+      </div>
+    </div>
+  </Modal>;
   return (
     <Modal
       title={folder ? "Edit folder" : "A new place to learn"}
@@ -198,11 +210,12 @@ export function FolderEditor({
           {folder && (
             <button
               type="button"
-              className="icon-button danger-text"
+              className="button danger-text"
               aria-label="Delete folder"
               onClick={() => setDeleting(true)}
             >
               <Trash2 size={18} />
+              Delete folder
             </button>
           )}
           <span className="flex-spacer" />
@@ -312,6 +325,7 @@ export function MaterialEditor({
             method: "PUT",
             body: {
               ...profile,
+              topic: metadata.topic || "",
               expected_version: profile.profile_version || 0,
             },
           },
@@ -359,7 +373,7 @@ export function MaterialEditor({
           .filter((f) => f.active)
           .map((field) => (
             <label key={field.key}>
-              {field.label}
+              {interview ? ({short_answer:"Short Answer",answer:"Detailed Answer",sources:"Source"}[field.key] || field.label) : field.label}
               {!field.required && <span className="optional">optional</span>}
               {preview ? (
                 <div className="field-preview">

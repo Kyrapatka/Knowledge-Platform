@@ -7,7 +7,7 @@ func TestSeedEdgesParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(b.Questions) != 368 || len(b.Domains) != 9 || len(b.Edges) != 92 {
+	if len(b.Questions) != 368 || len(b.Domains) != 15 || len(b.Edges) != 92 {
 		t.Fatalf("corpus counts: %d/%d/%d", len(b.Questions), len(b.Domains), len(b.Edges))
 	}
 	for _, e := range b.Edges {

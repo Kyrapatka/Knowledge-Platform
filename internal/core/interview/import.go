@@ -20,6 +20,14 @@ type BulkQuestion struct {
 	SeedKey             string            `json:"seed_key"`
 	Question            string            `json:"question"`
 	Answer              *string           `json:"answer,omitempty"`
+	ShortAnswer         *string           `json:"short_answer,omitempty"`
+	Source              *string           `json:"source,omitempty"`
+	Subtopic            string            `json:"subtopic"`
+	FollowupWeight      int               `json:"followup_weight"`
+	LevelMin            int               `json:"level_min"`
+	LevelMax            int               `json:"level_max"`
+	InterviewProfiles   []string          `json:"interview_profiles"`
+	SeedRevision        string            `json:"seed_revision"`
 	Topic               string            `json:"topic"`
 	Category            string            `json:"category"`
 	Domain              string            `json:"domain"`
@@ -32,10 +40,12 @@ type BulkQuestion struct {
 	Concepts            []QuestionConcept `json:"concepts"`
 }
 type ImportResult struct {
-	FolderIDs []uuid.UUID `json:"folder_ids"`
-	Created   int         `json:"created"`
-	Updated   int         `json:"updated"`
-	Skipped   int         `json:"skipped"`
+	FolderIDs   []uuid.UUID `json:"folder_ids"`
+	Created     int         `json:"created"`
+	Updated     int         `json:"updated"`
+	Skipped     int         `json:"skipped"`
+	Revision    string      `json:"revision"`
+	ImportRunID uuid.UUID   `json:"import_run_id"`
 }
 type SeedDomain struct {
 	Slug          string `json:"slug"`
@@ -48,6 +58,7 @@ type SeedBank struct {
 	Questions []BulkQuestion `json:"questions"`
 	Concepts  []Concept      `json:"concepts"`
 	Edges     []Edge         `json:"edges"`
+	Source    seed.Bank      `json:"-"`
 }
 
 func ReadSeed() (SeedBank, error) {
@@ -60,9 +71,11 @@ func ReadSeed() (SeedBank, error) {
 			Weight   float64 `json:"weight"`
 		} `json:"edges"`
 	}
-	if err := json.Unmarshal(seed.Raw(), &b); err != nil {
+	source, err := seed.Load()
+	if err != nil {
 		return b, err
 	}
+	b = bankFromSeed(source)
 	if err := json.Unmarshal(seed.Raw(), &raw); err != nil {
 		return b, err
 	}
@@ -92,25 +105,27 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		if q.Status == "" {
 			q.Status = "draft"
 		}
-		p := Profile{SeedKey: &q.SeedKey, Domain: q.Domain, Frequency: q.Frequency, FrequencyConfidence: q.FrequencyConfidence, InterviewDifficulty: q.InterviewDifficulty, Specificity: q.Specificity, RootWeight: q.RootWeight, Status: q.Status, Concepts: q.Concepts}
+		p := Profile{SeedKey: &q.SeedKey, Domain: q.Domain, Frequency: q.Frequency, FrequencyConfidence: q.FrequencyConfidence, InterviewDifficulty: q.InterviewDifficulty, Specificity: q.Specificity, RootWeight: q.RootWeight, Status: q.Status, Concepts: q.Concepts, FollowupWeight: q.FollowupWeight, LevelMin: q.LevelMin, LevelMax: q.LevelMax, Topic: q.Topic, Subtopic: q.Subtopic, InterviewProfiles: q.InterviewProfiles, SeedRevision: q.SeedRevision}
 		if err := p.validate(); err != nil {
 			return out, err
 		}
 		var existing Profile
-		err := db.Table("interview_question_profiles").Where("folder_id=? AND seed_key=?", folder, q.SeedKey).Take(&existing).Error
+		err := db.Table("interview_question_profiles").Where("owner_id=? AND seed_key=?", user, q.SeedKey).Take(&existing).Error
 		exists := err == nil
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return out, err
 		}
-		// Never overwrite a reviewed/archived profile or resurrect a deleted card.
-		if exists && existing.Status != "draft" {
-			out.Skipped++
-			continue
+		actualFolder := folder
+		if exists {
+			actualFolder = existing.FolderID
+			if existing.Status != "draft" {
+				p.Status = existing.Status
+			}
 		}
 		id := existing.MaterialID
 		if exists {
 			var n int64
-			if err = db.Table("materials").Where("id=? AND deleted_at IS NULL", id).Count(&n).Error; err != nil {
+			if err = db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").Where("m.id=? AND m.deleted_at IS NULL AND f.deleted_at IS NULL", id).Count(&n).Error; err != nil {
 				return out, err
 			}
 			if n == 0 {
@@ -125,6 +140,23 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		if q.Answer != nil {
 			values["answer"] = q.Answer
 		}
+		if q.ShortAnswer != nil {
+			values["short_answer"] = q.ShortAnswer
+		}
+		if q.Source != nil {
+			values["sources"] = q.Source
+		}
+		if exists {
+			oldValues, err := materialValues(db, user, actualFolder, id)
+			if err != nil {
+				return out, err
+			}
+			for key, incoming := range values {
+				if incoming != nil && !UsableContent(*incoming) && oldValues[key] != nil && UsableContent(*oldValues[key]) {
+					delete(values, key)
+				}
+			}
+		}
 		metadata := map[string]string{"topic": q.Topic, "category": q.Category}
 		if exists {
 			err = db.Exec(`UPDATE materials SET values=values || ?::jsonb, metadata=metadata || ?::jsonb,updated_at=? WHERE id=?`, jsonBytes(values), jsonBytes(metadata), now, id).Error
@@ -134,7 +166,7 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		if err != nil {
 			return out, err
 		}
-		if _, err = saveProfile(db, user, folder, id, ProfileRequest{Profile: p, ExpectedVersion: existing.ProfileVersion}); err != nil {
+		if _, err = saveProfile(db, user, actualFolder, id, ProfileRequest{Profile: p, ExpectedVersion: existing.ProfileVersion}); err != nil {
 			return out, err
 		}
 		if exists {
@@ -177,24 +209,34 @@ func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string
 		}
 	}
 	err = s.transact(ctx, user, func(db *gorm.DB) error {
-		for _, c := range bank.Concepts {
-			if err := saveConcept(db, user, c, false); err != nil {
-				return err
-			}
+		started := time.Now().UTC()
+		if err := syncBankConcepts(db, user, bank.Source); err != nil {
+			return err
+		}
+		if err := syncProfileDictionary(db); err != nil {
+			return err
 		}
 		for _, e := range bank.Edges {
-			a, err := ensureConcept(db, user, e.From, "", "")
-			if err != nil {
+			var endpoints []Concept
+			if err := db.Table("interview_concepts").Where("owner_id=? AND slug IN ?", user, []string{e.From, e.To}).Find(&endpoints).Error; err != nil {
 				return err
 			}
-			b, err := ensureConcept(db, user, e.To, "", "")
-			if err != nil {
-				return err
+			var a, b uuid.UUID
+			for _, c := range endpoints {
+				if c.Slug == e.From {
+					a = c.ID
+				}
+				if c.Slug == e.To {
+					b = c.ID
+				}
+			}
+			if a == uuid.Nil || b == uuid.Nil {
+				continue
 			}
 			if e.Weight == 0 {
 				e.Weight = 1
 			}
-			if err = db.Table("interview_concept_edges").Clauses(clause.OnConflict{DoNothing: true}).Create(map[string]any{"from_concept_id": a, "to_concept_id": b, "relation": e.Relation, "weight": e.Weight}).Error; err != nil {
+			if err := db.Table("interview_concept_edges").Clauses(clause.OnConflict{DoNothing: true}).Create(map[string]any{"from_concept_id": a, "to_concept_id": b, "relation": e.Relation, "weight": e.Weight}).Error; err != nil {
 				return err
 			}
 		}
@@ -224,8 +266,6 @@ func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string
 			qs := []BulkQuestion{}
 			for _, q := range bank.Questions {
 				if q.Domain == d.Slug {
-					q.Status = "draft"
-					q.Answer = nil
 					qs = append(qs, q)
 				}
 			}
@@ -238,7 +278,9 @@ func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string
 			out.Updated += result.Updated
 			out.Skipped += result.Skipped
 		}
-		return nil
+		out.Revision = bank.Version
+		out.ImportRunID = uuid.New()
+		return db.Table("interview_bank_import_runs").Create(map[string]any{"id": out.ImportRunID, "user_id": user, "seed_revision": bank.Version, "questions_sha256": bank.Source.QuestionsSHA256, "concepts_sha256": bank.Source.ConceptsSHA256, "domains": jsonBytes(domains), "started_at": started, "finished_at": time.Now().UTC(), "status": "completed", "created_count": out.Created, "updated_count": out.Updated, "skipped_count": out.Skipped}).Error
 	})
 	return out, err
 }

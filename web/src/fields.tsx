@@ -40,9 +40,10 @@ export function initialConfig(kind: string): FolderConfig {
     key,
     label:
       key === "short_answer"
-        ? "Answer"
+        ? "Short Answer"
         : key === "answer"
-          ? "Detailed answer"
+          ? "Detailed Answer"
+          : key === "sources" && kind === "interview_questions" ? "Source"
           : key
               .split("_")
               .map((s) => s[0].toUpperCase() + s.slice(1))

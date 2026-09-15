@@ -57,7 +57,10 @@ func loadProfile(db *gorm.DB, material uuid.UUID) (Profile, error) {
 		return p, err
 	}
 	p.Concepts = []QuestionConcept{}
-	err := db.Table("interview_question_concepts q").Select("c.slug,q.role,q.weight").Joins("JOIN interview_concepts c ON c.id=q.concept_id").Where("q.material_id=?", material).Order("q.role,c.slug").Scan(&p.Concepts).Error
+	err := db.Table("interview_question_concepts q").Select("c.slug,q.role,q.weight,q.ordinal").Joins("JOIN interview_concepts c ON c.id=q.concept_id").Where("q.material_id=?", material).Order("q.role,q.ordinal,c.slug").Scan(&p.Concepts).Error
+	if err == nil {
+		err = db.Table("interview_question_memberships").Where("material_id=?", material).Order("profile_slug").Pluck("profile_slug", &p.InterviewProfiles).Error
+	}
 	return p, err
 }
 func (s *Store) Profile(ctx context.Context, user, folder, material uuid.UUID) (Profile, error) {
@@ -69,7 +72,7 @@ func (s *Store) Profile(ctx context.Context, user, folder, material uuid.UUID) (
 		var err error
 		out, err = loadProfile(db, material)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			out = Profile{MaterialID: material, FolderID: folder, Frequency: 5, FrequencyConfidence: .5, InterviewDifficulty: 2, Specificity: 2, RootWeight: 5, Status: "draft", Concepts: []QuestionConcept{}}
+			out = Profile{MaterialID: material, FolderID: folder, Frequency: 5, FrequencyConfidence: .5, InterviewDifficulty: 2, Specificity: 2, RootWeight: 5, FollowupWeight: 5, LevelMin: 1, LevelMax: 5, Status: "draft", Concepts: []QuestionConcept{}, InterviewProfiles: []string{}}
 			return nil
 		}
 		return err
@@ -101,7 +104,7 @@ func saveProfile(db *gorm.DB, user, folder, material uuid.UUID, req ProfileReque
 	if err != nil {
 		return p, err
 	}
-	nonempty := func(k string) bool { return values[k] != nil && strings.TrimSpace(*values[k]) != "" }
+	nonempty := func(k string) bool { return values[k] != nil && UsableContent(*values[k]) }
 	if p.Status == "ready" && (!nonempty("question") || (!nonempty("answer") && !nonempty("short_answer"))) {
 		return p, fmt.Errorf("%w: ready questions need a question and a usable answer", ErrInvalid)
 	}
@@ -115,6 +118,7 @@ func saveProfile(db *gorm.DB, user, folder, material uuid.UUID, req ProfileReque
 	now := time.Now().UTC()
 	p.MaterialID = material
 	p.FolderID = folder
+	p.OwnerID = user
 	p.ProfileVersion = old.ProfileVersion + 1
 	p.CreatedAt = old.CreatedAt
 	p.UpdatedAt = now
@@ -135,7 +139,24 @@ func saveProfile(db *gorm.DB, user, folder, material uuid.UUID, req ProfileReque
 		if err != nil {
 			return p, err
 		}
-		if err = db.Table("interview_question_concepts").Create(map[string]any{"material_id": material, "concept_id": id, "role": c.Role, "weight": c.Weight}).Error; err != nil {
+		if err = db.Table("interview_question_concepts").Create(map[string]any{"material_id": material, "concept_id": id, "role": c.Role, "weight": c.Weight, "ordinal": c.Ordinal}).Error; err != nil {
+			return p, err
+		}
+	}
+	if err = syncProfileDictionary(db); err != nil {
+		return p, err
+	}
+	if err = db.Table("interview_question_memberships").Where("material_id=?", material).Delete(&struct{}{}).Error; err != nil {
+		return p, err
+	}
+	for _, slug := range p.InterviewProfiles {
+		if slug == "all" {
+			continue
+		}
+		if !validInterviewProfile(slug) {
+			return p, ErrInvalid
+		}
+		if err = db.Table("interview_question_memberships").Create(map[string]any{"material_id": material, "profile_slug": slug}).Error; err != nil {
 			return p, err
 		}
 	}

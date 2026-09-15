@@ -163,6 +163,9 @@ func availableUndos(ctx context.Context, tx repository.Tx, sessions []model.Trai
 		}
 		if i == 0 {
 			progress, err := tx.Progress().Get(ctx, keyFor(p, entry.MaterialID))
+			if errors.Is(err, repository.ErrNotFound) && entry.GraphProbe && entry.ExpectedVersion == 0 {
+				err = nil
+			}
 			if err != nil {
 				return nil, err
 			}

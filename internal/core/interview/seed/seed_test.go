@@ -52,7 +52,7 @@ func TestCorpusIntegrity(t *testing.T) {
 	if err := json.Unmarshal(Raw(), &b); err != nil {
 		t.Fatal(err)
 	}
-	if b.Version != Version || len(b.Questions) != QuestionCount || len(b.Domains) != 9 {
+	if b.Version != "2026-09-12.1" || len(b.Questions) != QuestionCount || len(b.Domains) != 9 {
 		t.Fatalf("unexpected corpus: version=%q questions=%d domains=%d", b.Version, len(b.Questions), len(b.Domains))
 	}
 	concepts := map[string]bool{}

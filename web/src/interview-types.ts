@@ -13,6 +13,7 @@ export type InterviewGraphConfig = {
   include_draft: boolean;
   profile: string;
   level: number;
+  max_frontier_size: number;
 };
 
 export const defaultGraphConfig: InterviewGraphConfig = {
@@ -22,12 +23,13 @@ export const defaultGraphConfig: InterviewGraphConfig = {
   question_limit: 24,
   temperature: 0.85,
   max_detected_concepts: 6,
-  cross_topic_penalty: 0.35,
+  cross_topic_penalty: 0.8,
   early_review_policy: "no_credit",
   store_raw_answer: false,
   include_draft: false,
   profile: "all",
   level: 3,
+  max_frontier_size: 12,
 };
 
 export const interviewProfiles = [

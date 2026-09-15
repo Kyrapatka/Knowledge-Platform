@@ -94,39 +94,39 @@ type AmbiguousAlias struct {
 }
 
 type Report struct {
-	Revision            string         `json:"revision"`
-	QuestionsSHA256     string         `json:"questions_sha256"`
-	ConceptsSHA256      string         `json:"concepts_sha256"`
-	Questions           int            `json:"questions"`
-	Concepts            int            `json:"concepts"`
-	Aliases             int            `json:"aliases"`
-	ScopedAliases       int            `json:"scoped_aliases"`
-	AmbiguousAliases    int            `json:"ambiguous_aliases"`
-	ConceptsWithoutAlias int           `json:"concepts_without_alias"`
-	Relations           int            `json:"relations"`
-	PrimaryRelations    int            `json:"primary_relations"`
-	ProfileMemberships  int            `json:"profile_memberships"`
-	CountsByPrefix      map[string]int `json:"counts_by_prefix"`
+	Revision             string         `json:"revision"`
+	QuestionsSHA256      string         `json:"questions_sha256"`
+	ConceptsSHA256       string         `json:"concepts_sha256"`
+	Questions            int            `json:"questions"`
+	Concepts             int            `json:"concepts"`
+	Aliases              int            `json:"aliases"`
+	ScopedAliases        int            `json:"scoped_aliases"`
+	AmbiguousAliases     int            `json:"ambiguous_aliases"`
+	ConceptsWithoutAlias int            `json:"concepts_without_alias"`
+	Relations            int            `json:"relations"`
+	PrimaryRelations     int            `json:"primary_relations"`
+	ProfileMemberships   int            `json:"profile_memberships"`
+	CountsByPrefix       map[string]int `json:"counts_by_prefix"`
 }
 
 type Bank struct {
-	Revision           string
-	Version            string
-	QuestionsSHA256    string
-	ConceptsSHA256     string
-	Questions          []Question
-	Concepts           []Concept
-	AliasMap           map[string]string
-	ScopedAliases      []ScopedAlias
-	AmbiguousAliases   []AmbiguousAlias
-	CountsByPrefix     map[string]int
-	Report             Report
-	questionSchema     int
-	conceptSchema      int
-	declaredQuestions  int
-	declaredConcepts   int
-	declaredAliases    int
-	conceptRevision    string
+	Revision          string
+	Version           string
+	QuestionsSHA256   string
+	ConceptsSHA256    string
+	Questions         []Question
+	Concepts          []Concept
+	AliasMap          map[string]string
+	ScopedAliases     []ScopedAlias
+	AmbiguousAliases  []AmbiguousAlias
+	CountsByPrefix    map[string]int
+	Report            Report
+	questionSchema    int
+	conceptSchema     int
+	declaredQuestions int
+	declaredConcepts  int
+	declaredAliases   int
+	conceptRevision   string
 }
 
 func Load() (Bank, error) { return Parse(questionsJSON, conceptsJSON) }
@@ -134,9 +134,13 @@ func Load() (Bank, error) { return Parse(questionsJSON, conceptsJSON) }
 // LoadFiles validates both files entirely in memory; it never contacts a DB.
 func LoadFiles(questionsPath, conceptsPath string) (Bank, error) {
 	q, err := os.ReadFile(questionsPath)
-	if err != nil { return Bank{}, fmt.Errorf("read questions: %w", err) }
+	if err != nil {
+		return Bank{}, fmt.Errorf("read questions: %w", err)
+	}
 	c, err := os.ReadFile(conceptsPath)
-	if err != nil { return Bank{}, fmt.Errorf("read concepts: %w", err) }
+	if err != nil {
+		return Bank{}, fmt.Errorf("read concepts: %w", err)
+	}
 	return Parse(q, c)
 }
 
@@ -146,43 +150,65 @@ func ValidateFiles(questionsPath, conceptsPath string) (Report, error) {
 }
 
 func Parse(questionBytes, conceptBytes []byte) (Bank, error) {
-	if err := validateJSON(questionBytes, "questions"); err != nil { return Bank{}, err }
-	if err := validateJSON(conceptBytes, "concepts"); err != nil { return Bank{}, err }
-	if err := validateRequiredFields(questionBytes, conceptBytes); err != nil { return Bank{}, err }
+	if err := validateJSON(questionBytes, "questions"); err != nil {
+		return Bank{}, err
+	}
+	if err := validateJSON(conceptBytes, "concepts"); err != nil {
+		return Bank{}, err
+	}
+	if err := validateRequiredFields(questionBytes, conceptBytes); err != nil {
+		return Bank{}, err
+	}
 	var q struct {
-		SchemaVersion int `json:"schema_version"`
-		Revision string `json:"seed_revision"`
-		Count int `json:"question_count"`
-		Counts map[string]int `json:"counts_by_prefix"`
-		Questions []Question `json:"questions"`
+		SchemaVersion int            `json:"schema_version"`
+		Revision      string         `json:"seed_revision"`
+		Count         int            `json:"question_count"`
+		Counts        map[string]int `json:"counts_by_prefix"`
+		Questions     []Question     `json:"questions"`
 	}
 	var c struct {
-		SchemaVersion int `json:"schema_version"`
-		Revision string `json:"seed_revision"`
-		Count int `json:"concept_count"`
-		AliasCount int `json:"alias_count"`
-		Concepts []Concept `json:"concepts"`
-		AliasMap map[string]string `json:"alias_map"`
-		ScopedAliases []ScopedAlias `json:"scoped_aliases"`
-		AmbiguousAliases []AmbiguousAlias `json:"ambiguous_aliases"`
+		SchemaVersion    int               `json:"schema_version"`
+		Revision         string            `json:"seed_revision"`
+		Count            int               `json:"concept_count"`
+		AliasCount       int               `json:"alias_count"`
+		Concepts         []Concept         `json:"concepts"`
+		AliasMap         map[string]string `json:"alias_map"`
+		ScopedAliases    []ScopedAlias     `json:"scoped_aliases"`
+		AmbiguousAliases []AmbiguousAlias  `json:"ambiguous_aliases"`
 	}
-	if err := json.Unmarshal(questionBytes, &q); err != nil { return Bank{}, fmt.Errorf("questions: %w", err) }
-	if err := json.Unmarshal(conceptBytes, &c); err != nil { return Bank{}, fmt.Errorf("concepts: %w", err) }
-	b := Bank{Revision:q.Revision, Version:q.Revision, Questions:q.Questions, Concepts:c.Concepts, AliasMap:c.AliasMap, ScopedAliases:c.ScopedAliases, AmbiguousAliases:c.AmbiguousAliases, CountsByPrefix:q.Counts, questionSchema:q.SchemaVersion, conceptSchema:c.SchemaVersion, declaredQuestions:q.Count, declaredConcepts:c.Count, declaredAliases:c.AliasCount, conceptRevision:c.Revision}
+	if err := json.Unmarshal(questionBytes, &q); err != nil {
+		return Bank{}, fmt.Errorf("questions: %w", err)
+	}
+	if err := json.Unmarshal(conceptBytes, &c); err != nil {
+		return Bank{}, fmt.Errorf("concepts: %w", err)
+	}
+	b := Bank{Revision: q.Revision, Version: q.Revision, Questions: q.Questions, Concepts: c.Concepts, AliasMap: c.AliasMap, ScopedAliases: c.ScopedAliases, AmbiguousAliases: c.AmbiguousAliases, CountsByPrefix: q.Counts, questionSchema: q.SchemaVersion, conceptSchema: c.SchemaVersion, declaredQuestions: q.Count, declaredConcepts: c.Count, declaredAliases: c.AliasCount, conceptRevision: c.Revision}
 	qh, ch := sha256.Sum256(questionBytes), sha256.Sum256(conceptBytes)
 	b.QuestionsSHA256, b.ConceptsSHA256 = hex.EncodeToString(qh[:]), hex.EncodeToString(ch[:])
-	if err := b.Validate(); err != nil { return Bank{}, err }
+	if err := b.Validate(); err != nil {
+		return Bank{}, err
+	}
 	b.Report = b.report()
 	return b, nil
 }
 
 func (b Bank) report() Report {
-	r := Report{Revision:b.Revision, QuestionsSHA256:b.QuestionsSHA256, ConceptsSHA256:b.ConceptsSHA256, Questions:len(b.Questions), Concepts:len(b.Concepts), Aliases:len(b.AliasMap), ScopedAliases:len(b.ScopedAliases), AmbiguousAliases:len(b.AmbiguousAliases), PrimaryRelations:len(b.Questions), CountsByPrefix:map[string]int{}}
-	for k,v := range b.CountsByPrefix { r.CountsByPrefix[k]=v }
-	for _,q := range b.Questions {
-		r.Relations += len(q.TestedConcepts)+len(q.AnswerConcepts)+len(q.ExpectedHooks)+len(q.PrerequisiteConcepts)+len(q.WrongFallback)
-		for _,p := range q.InterviewProfiles { if p != "all" { r.ProfileMemberships++ } }
+	r := Report{Revision: b.Revision, QuestionsSHA256: b.QuestionsSHA256, ConceptsSHA256: b.ConceptsSHA256, Questions: len(b.Questions), Concepts: len(b.Concepts), Aliases: len(b.AliasMap), ScopedAliases: len(b.ScopedAliases), AmbiguousAliases: len(b.AmbiguousAliases), PrimaryRelations: len(b.Questions), CountsByPrefix: map[string]int{}}
+	for k, v := range b.CountsByPrefix {
+		r.CountsByPrefix[k] = v
 	}
-	for _,c := range b.Concepts { if len(c.Aliases)==0 {r.ConceptsWithoutAlias++} }
+	for _, q := range b.Questions {
+		r.Relations += len(q.TestedConcepts) + len(q.AnswerConcepts) + len(q.ExpectedHooks) + len(q.PrerequisiteConcepts) + len(q.WrongFallback)
+		for _, p := range q.InterviewProfiles {
+			if p != "all" {
+				r.ProfileMemberships++
+			}
+		}
+	}
+	for _, c := range b.Concepts {
+		if len(c.Aliases) == 0 {
+			r.ConceptsWithoutAlias++
+		}
+	}
 	return r
 }
