@@ -85,7 +85,7 @@ func TestBankImportPreservesCanonicalIdentityAndProgress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if again.Created != 0 || again.Updated != 368 || graphProgress(t, f, id) != before {
+	if again.Created != 0 || again.Updated != 0 || again.Skipped != 368 || graphProgress(t, f, id) != before {
 		t.Fatal("reimport duplicated cards or changed SRS", again)
 	}
 	var values struct{ Values []byte }

@@ -98,8 +98,11 @@ func (b Bank) Validate() error {
 		if !validText(q.Question) || strings.TrimSpace(q.Question) == "." {
 			return fmt.Errorf("%s question must contain its real question text", q.SeedKey)
 		}
-		if q.ShortAnswer != "." || q.FullAnswer != "." || q.Source != "." || q.Status != "draft" {
-			return fmt.Errorf("%s must retain dot answer/source placeholders and draft status", q.SeedKey)
+		if !validText(q.ShortAnswer) || !validText(q.FullAnswer) || !validText(q.Source) || (q.Status != "draft" && q.Status != "ready" && q.Status != "archived") {
+			return fmt.Errorf("%s requires answer/source text or explicit dot placeholders and a valid status", q.SeedKey)
+		}
+		if q.Status == "ready" && strings.TrimSpace(q.ShortAnswer) == "." && strings.TrimSpace(q.FullAnswer) == "." {
+			return fmt.Errorf("%s cannot be ready without a usable answer", q.SeedKey)
 		}
 		if !slugPattern.MatchString(q.Domain) || !slugPattern.MatchString(q.Topic) || !slugPattern.MatchString(q.Subtopic) {
 			return fmt.Errorf("%s requires valid domain/topic/subtopic", q.SeedKey)

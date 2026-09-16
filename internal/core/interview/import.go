@@ -123,14 +123,20 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 			}
 		}
 		id := existing.MaterialID
+		var oldMaterial seedMaterial
+		materialExists, restored := false, false
 		if exists {
-			var n int64
-			if err = db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").Where("m.id=? AND m.deleted_at IS NULL AND f.deleted_at IS NULL", id).Count(&n).Error; err != nil {
+			oldMaterial, materialExists, err = findSeedMaterial(db, user, id)
+			if err != nil {
 				return out, err
 			}
-			if n == 0 {
-				out.Skipped++
-				continue
+			restored = !materialExists || oldMaterial.DeletedAt != nil || !oldMaterial.FolderActive
+			if restored {
+				// Keep material identity and progress, but never resurrect a link
+				// to a deleted folder. The target was validated by ownedFolder.
+				actualFolder = folder
+			} else {
+				actualFolder = oldMaterial.FolderID
 			}
 		} else {
 			id = uuid.New()
@@ -146,22 +152,32 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		if q.Source != nil {
 			values["sources"] = q.Source
 		}
-		if exists {
-			oldValues, err := materialValues(db, user, actualFolder, id)
-			if err != nil {
-				return out, err
-			}
+		if materialExists {
 			for key, incoming := range values {
-				if incoming != nil && !UsableContent(*incoming) && oldValues[key] != nil && UsableContent(*oldValues[key]) {
+				// Seed answers fill empty fields; they never replace a user's
+				// completed answer, including while restoring deleted materials.
+				if key != "question" && incoming != nil && oldMaterial.Values[key] != nil && UsableContent(*oldMaterial.Values[key]) {
 					delete(values, key)
 				}
 			}
 		}
 		metadata := map[string]string{"topic": q.Topic, "category": q.Category}
-		if exists {
-			err = db.Exec(`UPDATE materials SET values=values || ?::jsonb, metadata=metadata || ?::jsonb,updated_at=? WHERE id=?`, jsonBytes(values), jsonBytes(metadata), now, id).Error
+		if exists && !restored && existing.FolderID == actualFolder && !seedContentChanged(oldMaterial, values, metadata) {
+			full, err := loadProfile(db, id)
+			if err != nil {
+				return out, err
+			}
+			if sameSeedMetadata(full, p) {
+				out.Skipped++
+				continue
+			}
+		}
+		if materialExists {
+			err = db.Exec(`UPDATE materials SET folder_id=?,deleted_at=NULL,values=values || ?::jsonb, metadata=metadata || ?::jsonb,updated_at=? WHERE id=?`, actualFolder, jsonBytes(values), jsonBytes(metadata), now, id).Error
 		} else {
-			err = db.Table("materials").Create(map[string]any{"id": id, "folder_id": folder, "values": jsonBytes(values), "metadata": jsonBytes(metadata), "difficulty": "medium", "created_at": now, "updated_at": now}).Error
+			// Physical deletion normally cascades to the profile. Retaining the
+			// known ID also reconciles legacy orphan profiles if one is present.
+			err = db.Table("materials").Create(map[string]any{"id": id, "folder_id": actualFolder, "values": jsonBytes(values), "metadata": jsonBytes(metadata), "difficulty": "medium", "created_at": now, "updated_at": now}).Error
 		}
 		if err != nil {
 			return out, err
@@ -169,7 +185,7 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		if _, err = saveProfile(db, user, actualFolder, id, ProfileRequest{Profile: p, ExpectedVersion: existing.ProfileVersion}); err != nil {
 			return out, err
 		}
-		if exists {
+		if exists && !restored {
 			out.Updated++
 		} else {
 			out.Created++
@@ -245,7 +261,7 @@ func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string
 				continue
 			}
 			var row struct{ FolderID uuid.UUID }
-			err := db.Table("interview_seed_folders s").Select("s.folder_id").Joins("JOIN folders f ON f.id=s.folder_id AND f.deleted_at IS NULL").Where("s.user_id=? AND s.domain=?", user, d.Slug).Take(&row).Error
+			err := db.Table("interview_seed_folders s").Select("s.folder_id").Joins("JOIN folders f ON f.id=s.folder_id AND f.deleted_at IS NULL AND f.owner_id=? AND f.template_key='interview_questions'", user).Where("s.user_id=? AND s.domain=?", user, d.Slug).Take(&row).Error
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				tmpl, err := foldertemplate.NewRegistry(foldertemplate.DefaultTemplates()).Get("interview_questions")
 				if err != nil {

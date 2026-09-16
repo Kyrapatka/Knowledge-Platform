@@ -46,11 +46,16 @@ async function material(
   await page.getByRole("button", { name: "Add material", exact: true }).click();
   const dialog = page.getByRole("dialog");
   for (const [label, value] of Object.entries(values))
-    await dialog.getByLabel(label, { exact: true }).fill(value);
+    await dialog.getByLabel(label, { exact: label !== "Detailed Answer" }).fill(value);
   await dialog.getByLabel("Topic", { exact: true }).fill(topic);
   await dialog
     .getByRole("combobox", { name: "Difficulty", exact: true })
     .selectOption("easy");
+  if (values.Question) {
+    await dialog.getByLabel("Primary concept", { exact: true }).fill("index");
+    await dialog.getByLabel("Tested concepts", { exact: true }).fill("index");
+    await dialog.getByRole("combobox", { name: "Status", exact: true }).selectOption("ready");
+  }
   await dialog
     .getByRole("button", { name: "Save material", exact: true })
     .click();
@@ -97,6 +102,8 @@ test("desktop: real auth, CRUD, topic filtering, recall, persistence and statist
     .getByRole("dialog")
     .getByRole("button", { name: "Save material", exact: true })
     .click();
+  // Save is asynchronous. Reloading before the dialog closes aborts PATCH.
+  await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(page.locator(".lead-question")).toHaveText(firstQuestion);
   await page.reload();
   await expect(page.locator(".lead-question")).toHaveText(firstQuestion);
@@ -144,7 +151,7 @@ test("desktop: real auth, CRUD, topic filtering, recall, persistence and statist
     page,
     {
       Question: "What is an index?",
-      "Detailed answer": "A data structure that speeds up retrieval.",
+      "Detailed Answer": "A data structure that speeds up retrieval.",
     },
     "SQL",
   );

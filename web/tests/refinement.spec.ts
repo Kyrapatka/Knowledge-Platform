@@ -116,6 +116,8 @@ test("refined training: direct answers, masked examples, tooltip and Moscow time
     "true",
   );
   await expect(page.locator(".answer-fields")).toBeEmpty();
+  // Compare stable layout, not the fallback font while local fonts load.
+  await page.evaluate(() => document.fonts.ready);
   const frontHeight = await page
     .locator(".recall-card")
     .evaluate((el) => (el as HTMLElement).offsetHeight);

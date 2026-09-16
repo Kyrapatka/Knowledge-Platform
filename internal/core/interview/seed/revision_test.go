@@ -18,11 +18,11 @@ func TestAuthoritativeRevision(t *testing.T) {
 	if !reflect.DeepEqual(r.CountsByPrefix, prefixCounts) {
 		t.Fatal(r.CountsByPrefix)
 	}
-	if r.QuestionsSHA256 != "d22685b9967cf4ff3bdc25329824894d17f42105974b1dcf991f7973d22106ac" || r.ConceptsSHA256 != "e7418e6c131e5025c9801d25b64d1162894865813ffb5f6853a388579190b414" {
+	if r.QuestionsSHA256 != "f189b41e6024250fa82975f1af00870cfa772c1daa179b7f9e65801ebb00bbe3" || r.ConceptsSHA256 != "e7418e6c131e5025c9801d25b64d1162894865813ffb5f6853a388579190b414" {
 		t.Fatal("embedded bytes differ from supplied corrected revision")
 	}
 	for _, q := range b.Questions {
-		if q.Question == "." || q.ShortAnswer != "." || q.FullAnswer != "." || q.Source != "." || q.Status != "draft" {
+		if q.Question == "." || q.ShortAnswer == "." || q.FullAnswer != "." || q.Source != "." || q.Status != "draft" {
 			t.Fatal("seed content changed", q.SeedKey)
 		}
 	}

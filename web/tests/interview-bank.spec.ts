@@ -20,8 +20,8 @@ test("real question bank: import, metadata routes, undo, resume, drafts and fold
   expect(importResponse.ok()).toBeTruthy();
   expect((await importResponse.json()).created).toBe(368);
   await expect(modal).not.toBeVisible();
-  await page.getByLabel("Interview profile",{exact:true}).selectOption("go_core");
-  await page.getByLabel("Interview level",{exact:true}).selectOption("3");
+  await page.getByRole("combobox",{name:"Interview profile",exact:true}).selectOption("go_core");
+  await page.getByRole("combobox",{name:"Interview level",exact:true}).selectOption("3");
   await page.getByRole("checkbox",{name:/Bank testing mode/}).check();
   await page.locator(".interview-source").filter({hasText:"Interview / Go"}).getByRole("checkbox").check();
   const started=page.waitForResponse(r=>r.url().includes("/interview-graph") && r.request().method()==="POST");
@@ -35,7 +35,10 @@ test("real question bank: import, metadata routes, undo, resume, drafts and fold
   await expect(page.locator(".interview-bank-warning")).toContainText("SRS schedule stays unchanged");
   await page.getByRole("button",{name:"Reveal Answer",exact:true}).click();
   await expect(page.locator(".interview-reference h3")).toHaveText(["Short Answer","Detailed Answer","Source"]);
-  await expect(page.locator(".interview-reference .markdown")).toHaveText([".",".","."]);
+  const referenceFields=page.locator(".interview-reference > div");
+  await expect(referenceFields.nth(0)).not.toHaveText("Short Answer.");
+  await expect(referenceFields.nth(1)).toContainText(".");
+  await expect(referenceFields.nth(2)).toContainText(".");
   await page.screenshot({path:"test-results/interview-bank-desktop.png",fullPage:true});
   async function act(label:string,action:string) {
     const request=page.waitForRequest(r=>r.url().endsWith("/actions") && r.method()==="POST");

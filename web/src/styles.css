@@ -3766,7 +3766,7 @@ select option:checked {
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  min-height: 40px;
+  min-height: 44px;
 }
 .flip-scene {
   perspective: 1400px;

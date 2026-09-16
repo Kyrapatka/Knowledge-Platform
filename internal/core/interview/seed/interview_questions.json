@@ -18,7 +18,7 @@
     "numeric_metadata": "Exact latest field-specific tables visible in the conversation, NOT the provisional reconstructed values described in the later report.",
     "graph_metadata": "Exact latest per-question arrays, primary concepts, taxonomy and profile assignments visible in the conversation.",
     "frequency_kind": "relative_design_priority_1_to_10_not_measured_market_percentage",
-    "answers": "Three placeholders explicitly requested by the user: short_answer, full_answer and source are exactly a single ASCII dot.",
+    "answers": "short_answer заполнен кратким ответом для каждого из 368 вопросов; full_answer и source пока остаются одиночной ASCII-точкой как незаполненные поля.",
     "full_answer_field": "Logical equivalent of detailed_answer; use one persisted field, not two independent copies.",
     "concept_ids": "Preserved from the agreed chat tables. No silent semantic merges or splitting in this restoration.",
     "all_profile": "Expanded explicitly for every question; may be implemented as a virtual all selector.",
@@ -29,7 +29,7 @@
     {
       "seed_key": "GO001",
       "question": "Что такое goroutine?",
-      "short_answer": ".",
+      "short_answer": "Goroutine — легковесная функция, выполняемая конкурентно под управлением runtime Go; запускается оператором go и мультиплексируется на OS threads.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -73,7 +73,7 @@
     {
       "seed_key": "GO002",
       "question": "Чем goroutine отличается от OS thread?",
-      "short_answer": ".",
+      "short_answer": "Goroutine управляется runtime Go, имеет небольшой растущий стек и дешёвое переключение; OS thread управляется ядром и требует существенно больше ресурсов.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -124,7 +124,7 @@
     {
       "seed_key": "GO003",
       "question": "Почему goroutine считается легковесной?",
-      "short_answer": ".",
+      "short_answer": "У goroutine маленький стартовый стек, который растёт по необходимости, а runtime размещает множество goroutines на небольшом числе системных потоков.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -174,7 +174,7 @@
     {
       "seed_key": "GO004",
       "question": "Что такое context switch и почему переключение goroutines обычно дешевле переключения OS threads?",
-      "short_answer": ".",
+      "short_answer": "Context switch — переключение выполняемого контекста. Переключение goroutines обычно дешевле, потому что его делает runtime в user space и сохраняет меньше состояния, чем ядро для threads.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -226,7 +226,7 @@
     {
       "seed_key": "GO005",
       "question": "Чем concurrency отличается от parallelism?",
-      "short_answer": ".",
+      "short_answer": "Concurrency — организация нескольких задач с перекрывающимся прогрессом, а parallelism — их фактическое одновременное выполнение на разных CPU cores.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -271,7 +271,7 @@
     {
       "seed_key": "GO006",
       "question": "Чем CPU-bound workload отличается от I/O-bound с точки зрения конкурентности?",
-      "short_answer": ".",
+      "short_answer": "CPU-bound задачи ограничены вычислительной мощностью и выигрывают от параллелизма до числа доступных P/ядер; I/O-bound часто масштабируются большим числом goroutines, пока те ждут I/O.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -322,7 +322,7 @@
     {
       "seed_key": "GO007",
       "question": "Что такое GOMAXPROCS и что именно он ограничивает?",
-      "short_answer": ".",
+      "short_answer": "GOMAXPROCS задаёт максимальное число P, то есть сколько goroutines могут одновременно выполнять Go-код; это не прямой лимит на goroutines или OS threads.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -375,7 +375,7 @@
     {
       "seed_key": "GO008",
       "question": "Как в общих чертах работает модель G-M-P планировщика Go?",
-      "short_answer": ".",
+      "short_answer": "В GMP-модели G — goroutine, M — OS thread, P — ресурс планировщика. M выполняет G только имея P, а scheduler распределяет runnable G между P.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -430,7 +430,7 @@
     {
       "seed_key": "GO009",
       "question": "Что представляет собой G в модели GMP?",
-      "short_answer": ".",
+      "short_answer": "G — объект runtime, представляющий goroutine: её стек, состояние, instruction pointer и служебные данные планировщика.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -476,7 +476,7 @@
     {
       "seed_key": "GO010",
       "question": "Что представляет собой M в модели GMP?",
-      "short_answer": ".",
+      "short_answer": "M — машинный поток, то есть OS thread, на котором runtime фактически выполняет Go-код и системные вызовы.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -525,7 +525,7 @@
     {
       "seed_key": "GO011",
       "question": "Что представляет собой P в модели GMP?",
-      "short_answer": ".",
+      "short_answer": "P — логический процессор runtime с локальной очередью runnable goroutines и ресурсами, нужными M для выполнения Go-кода.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -572,7 +572,7 @@
     {
       "seed_key": "GO012",
       "question": "Зачем scheduler нужны local и global run queues?",
-      "short_answer": ".",
+      "short_answer": "Локальные очереди уменьшают contention и дают быстрый доступ к работе, а глобальная очередь служит общим резервом и помогает балансировать нагрузку.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -620,7 +620,7 @@
     {
       "seed_key": "GO013",
       "question": "Что такое work stealing в Go scheduler?",
-      "short_answer": ".",
+      "short_answer": "Work stealing — механизм, при котором свободный P забирает часть runnable goroutines из очереди другого P, чтобы выровнять загрузку.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -670,7 +670,7 @@
     {
       "seed_key": "GO014",
       "question": "Как Go может вытеснить долго выполняющуюся goroutine?",
-      "short_answer": ".",
+      "short_answer": "Runtime использует асинхронную preemption и безопасные точки, чтобы прервать долго выполняющуюся goroutine и дать CPU другим.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -717,7 +717,7 @@
     {
       "seed_key": "GO015",
       "question": "Что происходит с GMP-моделью, когда goroutine блокируется в системном вызове?",
-      "short_answer": ".",
+      "short_answer": "Если M блокируется в syscall, runtime может отвязать от него P и передать P другому M, чтобы остальные goroutines продолжили выполняться.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -768,7 +768,7 @@
     {
       "seed_key": "GO016",
       "question": "Для чего Go runtime нужен network poller и как он связан с scheduler?",
-      "short_answer": ".",
+      "short_answer": "Network poller ждёт readiness сетевых дескрипторов без блокировки отдельных OS threads и возвращает готовые goroutines scheduler'у.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -818,7 +818,7 @@
     {
       "seed_key": "GO017",
       "question": "Как устроен и как растёт stack goroutine?",
-      "short_answer": ".",
+      "short_answer": "Стек goroutine начинается небольшим и при нехватке памяти runtime выделяет больший непрерывный стек, копирует содержимое и исправляет ссылки на стековые данные.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -869,7 +869,7 @@
     {
       "seed_key": "GO018",
       "question": "Чем stack отличается от heap применительно к Go?",
-      "short_answer": ".",
+      "short_answer": "Stack хранит локальные данные с известным временем жизни и дешёв в управлении; heap используется для значений, которые должны жить дольше stack frame, и обслуживается GC.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -919,7 +919,7 @@
     {
       "seed_key": "GO019",
       "question": "Что такое escape analysis и кто решает, где будет размещено значение?",
-      "short_answer": ".",
+      "short_answer": "Escape analysis — анализ компилятора, определяющий, может ли значение остаться на stack или должно «убежать» в heap; решение принимает компилятор, а не программист напрямую.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -973,7 +973,7 @@
     {
       "seed_key": "GO020",
       "question": "Что реально ограничивает количество goroutines в процессе?",
-      "short_answer": ".",
+      "short_answer": "Количество goroutines ограничивают прежде всего доступная память, размер стеков, scheduler overhead, внешние ресурсы и ограничения ОС, а не фиксированный лимит runtime.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1025,7 +1025,7 @@
     {
       "seed_key": "GO021",
       "question": "Что такое goroutine leak?",
-      "short_answer": ".",
+      "short_answer": "Goroutine leak — goroutine, которая больше не полезна, но никогда не завершается и продолжает удерживать память или другие ресурсы.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1073,7 +1073,7 @@
     {
       "seed_key": "GO022",
       "question": "Какие ситуации чаще всего приводят к утечке goroutines?",
-      "short_answer": ".",
+      "short_answer": "Частые причины — вечное ожидание channel, забытая cancellation, blocked send/receive без consumer, незавершённый I/O и циклы без условия выхода.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1125,7 +1125,7 @@
     {
       "seed_key": "GO023",
       "question": "Как диагностировать goroutine leak в работающем сервисе?",
-      "short_answer": ".",
+      "short_answer": "Смотрят рост runtime.NumGoroutine, goroutine profile в pprof, stack traces и повторяющиеся заблокированные call stacks во времени.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1172,7 +1172,7 @@
     {
       "seed_key": "GO024",
       "question": "Как спроектировать goroutine так, чтобы она всегда имела путь к корректному завершению?",
-      "short_answer": ".",
+      "short_answer": "У goroutine должен быть явный путь завершения: context cancellation, закрытие входа, timeout или другой сигнал, причём все блокирующие операции должны учитывать этот сигнал.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1225,7 +1225,7 @@
     {
       "seed_key": "GO025",
       "question": "Что произойдёт, если одна из goroutines вызовет необработанный panic ?",
-      "short_answer": ".",
+      "short_answer": "Необработанный panic в любой goroutine завершает весь процесс после выполнения defer в этой goroutine и печати stack trace.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1276,7 +1276,7 @@
     {
       "seed_key": "GO026",
       "question": "Может ли одна goroutine сделать recover panic, возникшего в другой goroutine?",
-      "short_answer": ".",
+      "short_answer": "Нет. recover работает только в deferred функции той же goroutine, в которой происходит panic.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1328,7 +1328,7 @@
     {
       "seed_key": "GO027",
       "question": "Что происходит с другими goroutines после завершения main ?",
-      "short_answer": ".",
+      "short_answer": "Когда main возвращается, процесс Go завершается немедленно; runtime не ждёт остальные goroutines и их defer могут не выполниться.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1378,7 +1378,7 @@
     {
       "seed_key": "GO028",
       "question": "Как реализовать worker pool и ограничить количество одновременно выполняемых задач?",
-      "short_answer": ".",
+      "short_answer": "Создают фиксированное число workers, читающих jobs из channel, либо ограничивают запуск buffered semaphore; завершение и ошибки координируют через WaitGroup/context/results.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1435,7 +1435,7 @@
     {
       "seed_key": "GO029",
       "question": "Что такое fan-out и fan-in и когда эти паттерны полезны?",
-      "short_answer": ".",
+      "short_answer": "Fan-out распределяет работу между несколькими workers, а fan-in объединяет их результаты в один поток; это полезно для параллельной обработки независимых задач.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1489,7 +1489,7 @@
     {
       "seed_key": "GO030",
       "question": "Как корректно остановить concurrent pipeline без утечек и зависших producers?",
-      "short_answer": ".",
+      "short_answer": "Нужно отменять общий context, закрывать channels только владельцем, прекращать producers/consumers по ctx.Done и дождаться всех goroutines через WaitGroup.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1542,7 +1542,7 @@
     {
       "seed_key": "GO031",
       "question": "Чем buffered channel отличается от unbuffered channel?",
-      "short_answer": ".",
+      "short_answer": "Unbuffered channel требует одновременной готовности sender и receiver; buffered channel хранит до cap значений и позволяет send без немедленного receiver, пока буфер не заполнен.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1592,7 +1592,7 @@
     {
       "seed_key": "GO032",
       "question": "При каких условиях send и receive блокируются для buffered и unbuffered channels?",
-      "short_answer": ".",
+      "short_answer": "Для unbuffered send/receive блокируются до парной операции; для buffered send блокируется при полном буфере, receive — при пустом, если channel ещё не закрыт.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1646,7 +1646,7 @@
     {
       "seed_key": "GO033",
       "question": "Как выбирать размер buffer channel и почему «чем больше, тем лучше» неверно?",
-      "short_answer": ".",
+      "short_answer": "Размер буфера выбирают по модели нагрузки и допустимому burst/backpressure. Слишком большой буфер увеличивает память, latency и скрывает перегрузку.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1696,7 +1696,7 @@
     {
       "seed_key": "GO034",
       "question": "Кто обычно должен закрывать channel и почему?",
-      "short_answer": ".",
+      "short_answer": "Channel обычно закрывает сторона, которая производит значения и точно знает, что новых send больше не будет; receiver не должен гадать о состоянии producers.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1744,7 +1744,7 @@
     {
       "seed_key": "GO035",
       "question": "Что происходит при чтении из закрытого channel?",
-      "short_answer": ".",
+      "short_answer": "После close сначала читаются оставшиеся buffered значения, затем receive немедленно возвращает zero value и ok=false.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1796,7 +1796,7 @@
     {
       "seed_key": "GO036",
       "question": "Что происходит при записи в закрытый channel?",
-      "short_answer": ".",
+      "short_answer": "Запись в закрытый channel вызывает panic.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1846,7 +1846,7 @@
     {
       "seed_key": "GO037",
       "question": "Что произойдёт при повторном close channel и при close(nilChannel) ?",
-      "short_answer": ".",
+      "short_answer": "Повторный close уже закрытого channel вызывает panic; close(nil channel) тоже вызывает panic.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1896,7 +1896,7 @@
     {
       "seed_key": "GO038",
       "question": "Что происходит при чтении из или записи в nil channel?",
-      "short_answer": ".",
+      "short_answer": "Send и receive на nil channel блокируются навсегда, если их не прерывает окружающий select с другими готовыми ветками.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1946,7 +1946,7 @@
     {
       "seed_key": "GO039",
       "question": "Как nil channel ведёт себя внутри select и зачем это может быть полезно?",
-      "short_answer": ".",
+      "short_answer": "Case с nil channel в select никогда не готов, поэтому присваиванием nil можно динамически отключать отдельную ветку select.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -1997,7 +1997,7 @@
     {
       "seed_key": "GO040",
       "question": "Когда завершается range по channel?",
-      "short_answer": ".",
+      "short_answer": "range по channel завершается только после его закрытия и чтения всех оставшихся buffered значений.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2045,7 +2045,7 @@
     {
       "seed_key": "GO041",
       "question": "Для чего нужны chan<-T и <-chan T ?",
-      "short_answer": ".",
+      "short_answer": "chan<- T разрешает только отправку, а <-chan T — только чтение; направления фиксируют контракт API на уровне типов.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2093,7 +2093,7 @@
     {
       "seed_key": "GO042",
       "question": "Как безопасно закрыть channel, если producers несколько?",
-      "short_answer": ".",
+      "short_answer": "Нужно централизовать закрытие: дождаться всех producers, например WaitGroup, и закрыть channel ровно один раз отдельным владельцем.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2143,7 +2143,7 @@
     {
       "seed_key": "GO043",
       "question": "Почему закрытие channel можно использовать как broadcast-сигнал?",
-      "short_answer": ".",
+      "short_answer": "После close все текущие и будущие receivers могут немедленно обнаружить закрытие, поэтому закрытый channel работает как one-to-many broadcast-сигнал.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2192,7 +2192,7 @@
     {
       "seed_key": "GO044",
       "question": "Когда лучше использовать channel, а когда Mutex?",
-      "short_answer": ".",
+      "short_answer": "Channel удобен для передачи владения, потоков данных и координации; Mutex проще для защиты общего изменяемого состояния и коротких критических секций.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2246,7 +2246,7 @@
     {
       "seed_key": "GO045",
       "question": "Как использовать buffered channel как semaphore и какие у подхода ограничения?",
-      "short_answer": ".",
+      "short_answer": "Buffered channel ёмкости N можно использовать как semaphore: send захватывает слот, receive освобождает. Нужно аккуратно освобождать слоты и учитывать cancellation.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2296,7 +2296,7 @@
     {
       "seed_key": "GO046",
       "question": "Как работает select ?",
-      "short_answer": ".",
+      "short_answer": "select ждёт готовности одной из channel-операций; если есть готовые case, выбирает одну, а default позволяет не блокироваться.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2345,7 +2345,7 @@
     {
       "seed_key": "GO047",
       "question": "Что произойдёт, если сразу несколько case в select готовы?",
-      "short_answer": ".",
+      "short_answer": "Если готовы несколько case, runtime выбирает один псевдослучайно, без гарантии строгой очередности.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2394,7 +2394,7 @@
     {
       "seed_key": "GO048",
       "question": "Для чего нужен default в select и какую проблему он может создать в цикле?",
-      "short_answer": ".",
+      "short_answer": "default делает select неблокирующим. В быстром цикле он может создать busy loop, высокий CPU usage и ухудшить fairness.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2444,7 +2444,7 @@
     {
       "seed_key": "GO049",
       "question": "Как организовать timeout и cancellation внутри select ?",
-      "short_answer": ".",
+      "short_answer": "Добавляют case <-ctx.Done() или channel таймера/timeout; при срабатывании прекращают работу и освобождают ресурсы.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2496,7 +2496,7 @@
     {
       "seed_key": "GO050",
       "question": "Может ли select loop приводить к starvation и при каких условиях?",
-      "short_answer": ".",
+      "short_answer": "Да. Если одна ветка почти всегда готова или цикл делает дополнительную работу вне select, другие операции могут долго не получать прогресс; строгой fairness-гарантии нет.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2545,7 +2545,7 @@
     {
       "seed_key": "GO051",
       "question": "Что такое data race и чем она отличается от более общего race condition?",
-      "short_answer": ".",
+      "short_answer": "Data race — одновременный доступ к одной памяти, где хотя бы одна операция запись и нет синхронизации. Race condition шире: результат зависит от порядка событий даже без data race.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2596,7 +2596,7 @@
     {
       "seed_key": "GO052",
       "question": "Как обнаруживать data races в Go?",
-      "short_answer": ".",
+      "short_answer": "Запускают тесты/программу с -race, пишут конкурентные tests и анализируют отчёты race detector со stack traces конфликтующих accesses.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2644,7 +2644,7 @@
     {
       "seed_key": "GO053",
       "question": "Почему отсутствие предупреждений race detector не доказывает отсутствие data race?",
-      "short_answer": ".",
+      "short_answer": "Race detector видит только реально выполненные пути в конкретном запуске, поэтому непокрытые timing/path комбинации могут остаться незамеченными.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2690,7 +2690,7 @@
     {
       "seed_key": "GO054",
       "question": "Для чего нужен sync.Mutex ?",
-      "short_answer": ".",
+      "short_answer": "sync.Mutex обеспечивает взаимное исключение: в каждый момент критическую секцию может удерживать только одна goroutine.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2741,7 +2741,7 @@
     {
       "seed_key": "GO055",
       "question": "Чем sync.RWMutex отличается от sync.Mutex ?",
-      "short_answer": ".",
+      "short_answer": "RWMutex допускает несколько одновременных readers или одного writer; Mutex допускает только одного владельца независимо от типа операции.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2791,7 +2791,7 @@
     {
       "seed_key": "GO056",
       "question": "Почему RWMutex не обязательно быстрее обычного Mutex при большом количестве чтений?",
-      "short_answer": ".",
+      "short_answer": "RWMutex сложнее и дороже в bookkeeping; при коротких секциях, частых writes или contention накладные расходы могут превысить выгоду параллельных reads.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2844,7 +2844,7 @@
     {
       "seed_key": "GO057",
       "question": "Что такое lock contention и как он влияет на сервис?",
-      "short_answer": ".",
+      "short_answer": "Lock contention — конкуренция goroutines за один lock, из-за которой они блокируются, растут latency и scheduler overhead, а throughput падает.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2894,7 +2894,7 @@
     {
       "seed_key": "GO058",
       "question": "Почему Mutex нельзя копировать после начала использования?",
-      "short_answer": ".",
+      "short_answer": "Копия Mutex имеет отдельное внутреннее состояние, которое уже не соответствует ожидающим goroutines; после первого использования копирование нарушает синхронизацию.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2942,7 +2942,7 @@
     {
       "seed_key": "GO059",
       "question": "Что произойдёт при Unlock незаблокированного Mutex?",
-      "short_answer": ".",
+      "short_answer": "Unlock незаблокированного sync.Mutex приводит к fatal runtime error.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -2989,7 +2989,7 @@
     {
       "seed_key": "GO060",
       "question": "Для чего нужен sync.WaitGroup ?",
-      "short_answer": ".",
+      "short_answer": "WaitGroup позволяет дождаться завершения известного набора goroutines: Add увеличивает счётчик, Done уменьшает, Wait блокируется до нуля.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3036,7 +3036,7 @@
     {
       "seed_key": "GO061",
       "question": "Какие типичные ошибки возникают при использовании Add , Done и Wait ?",
-      "short_answer": ".",
+      "short_answer": "Типичные ошибки: Add после запуска/одновременно с Wait, забытый Done, лишний Done и копирование WaitGroup; они приводят к race, зависанию или panic.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3088,7 +3088,7 @@
     {
       "seed_key": "GO062",
       "question": "Когда для ожидания завершения лучше WaitGroup, а когда channel?",
-      "short_answer": ".",
+      "short_answer": "WaitGroup выбирают для простого ожидания завершения группы; channel — когда нужно ещё передать результат, ошибку, сигнал или выразить поток событий.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3140,7 +3140,7 @@
     {
       "seed_key": "GO063",
       "question": "Для чего нужен sync.Once ?",
-      "short_answer": ".",
+      "short_answer": "sync.Once гарантирует, что функция выполнится не более одного раза даже при конкурентных вызовах, например для ленивой инициализации.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3187,7 +3187,7 @@
     {
       "seed_key": "GO064",
       "question": "Когда atomic operation уместнее Mutex, а когда наоборот?",
-      "short_answer": ".",
+      "short_answer": "Atomic подходит для простого независимого состояния вроде счётчика/флага; Mutex лучше для нескольких связанных полей и сложных инвариантов.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3239,7 +3239,7 @@
     {
       "seed_key": "GO065",
       "question": "Когда оправдан sync.Map , а когда обычный map + Mutex проще и лучше?",
-      "short_answer": ".",
+      "short_answer": "sync.Map полезен для специфичных read-mostly или disjoint-key сценариев; обычный map+Mutex обычно проще, типобезопаснее и предсказуемее.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3291,7 +3291,7 @@
     {
       "seed_key": "GO066",
       "question": "Для чего существует sync.Pool и почему его не следует использовать как обычный cache?",
-      "short_answer": ".",
+      "short_answer": "sync.Pool переиспользует временные объекты, снижая allocations; runtime может очистить pool в любой GC, поэтому он не хранит обязательные cache-данные.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3341,7 +3341,7 @@
     {
       "seed_key": "GO067",
       "question": "Что такое deadlock и какими способами его чаще всего получают в Go?",
-      "short_answer": ".",
+      "short_answer": "Deadlock — состояние без возможного прогресса. Частые причины: циклическое ожидание locks, send/receive без партнёра, ожидание самого себя и неверный порядок блокировок.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3394,7 +3394,7 @@
     {
       "seed_key": "GO068",
       "question": "Чем deadlock, livelock и starvation отличаются друг от друга?",
-      "short_answer": ".",
+      "short_answer": "Deadlock — все нужные участники заблокированы; livelock — активно реагируют, но не продвигаются; starvation — один участник долго не получает ресурс.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3442,7 +3442,7 @@
     {
       "seed_key": "GO069",
       "question": "Для чего нужен context.Context ?",
-      "short_answer": ".",
+      "short_answer": "context.Context переносит cancellation, deadline и request-scoped значения через цепочку вызовов и помогает завершать связанную работу.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3487,7 +3487,7 @@
     {
       "seed_key": "GO070",
       "question": "Что представляют собой ctx.Done() и ctx.Err() ?",
-      "short_answer": ".",
+      "short_answer": "ctx.Done() возвращает channel, закрывающийся при cancellation/deadline, а ctx.Err() после завершения сообщает context.Canceled или context.DeadlineExceeded.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3537,7 +3537,7 @@
     {
       "seed_key": "GO071",
       "question": "Чем WithCancel , WithTimeout и WithDeadline отличаются друг от друга?",
-      "short_answer": ".",
+      "short_answer": "WithCancel отменяется явным cancel; WithTimeout ставит deadline относительно текущего времени; WithDeadline принимает абсолютный момент.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3588,7 +3588,7 @@
     {
       "seed_key": "GO072",
       "question": "Как cancellation распространяется по дереву contexts?",
-      "short_answer": ".",
+      "short_answer": "Отмена родительского context отменяет всех его потомков; отмена дочернего не отменяет родителя и соседние ветки.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3639,7 +3639,7 @@
     {
       "seed_key": "GO073",
       "question": "Почему возвращённый cancel обычно необходимо вызывать самостоятельно?",
-      "short_answer": ".",
+      "short_answer": "Вызов cancel освобождает timer и связи с родителем раньше дедлайна; без него ресурсы могут удерживаться дольше необходимого.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3690,7 +3690,7 @@
     {
       "seed_key": "GO074",
       "question": "Почему context принято передавать первым аргументом и не хранить в struct?",
-      "short_answer": ".",
+      "short_answer": "Context передают явно первым аргументом, чтобы lifetime был виден в API и не смешивался с состоянием объекта; хранение в struct часто создаёт неверные lifetime и reuse.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3738,7 +3738,7 @@
     {
       "seed_key": "GO075",
       "question": "Какие данные допустимо хранить в context.WithValue , а какие нет?",
-      "short_answer": ".",
+      "short_answer": "В WithValue кладут только request-scoped metadata, пересекающую API boundaries, например request ID; не кладут зависимости, config и обычные обязательные параметры.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3786,7 +3786,7 @@
     {
       "seed_key": "GO076",
       "question": "Чем context.Background() отличается от context.TODO() ?",
-      "short_answer": ".",
+      "short_answer": "Background — корневой context для реальной работы; TODO семантически означает, что подходящий context ещё не определён.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3833,7 +3833,7 @@
     {
       "seed_key": "GO077",
       "question": "Для чего существуют WithCancelCause , Cause , AfterFunc и WithoutCancel ?",
-      "short_answer": ".",
+      "short_answer": "WithCancelCause сохраняет причину отмены, Cause её читает, AfterFunc запускает callback после отмены, WithoutCancel создаёт context без наследования cancellation/deadline родителя.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3882,7 +3882,7 @@
     {
       "seed_key": "GO078",
       "question": "Как правильно распространять timeout/ deadline через цепочку сервисов?",
-      "short_answer": ".",
+      "short_answer": "Нужно передавать входной context дальше, не расширять его deadline и ставить более короткие локальные timeout только при необходимости, сохраняя запас для ответа вверх по цепочке.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3932,7 +3932,7 @@
     {
       "seed_key": "GO079",
       "question": "Чем array отличается от slice?",
-      "short_answer": ".",
+      "short_answer": "Array имеет фиксированную длину как часть типа и хранит элементы сам; slice — небольшой descriptor над backing array с динамическими len/cap.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -3977,7 +3977,7 @@
     {
       "seed_key": "GO080",
       "question": "Как концептуально представлен slice?",
-      "short_answer": ".",
+      "short_answer": "Slice концептуально содержит указатель на backing array, длину len и ёмкость cap; копирование slice копирует descriptor, а не элементы.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4028,7 +4028,7 @@
     {
       "seed_key": "GO081",
       "question": "Что означают len и cap у slice?",
-      "short_answer": ".",
+      "short_answer": "len — число доступных элементов, cap — максимальная длина до конца текущего backing array, до которой slice можно расширить без новой allocation.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4077,7 +4077,7 @@
     {
       "seed_key": "GO082",
       "question": "Как работает append ?",
-      "short_answer": ".",
+      "short_answer": "append добавляет элементы и возвращает новый slice header; если capacity хватает, пишет в тот же backing array, иначе выделяет новый и копирует данные.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4131,7 +4131,7 @@
     {
       "seed_key": "GO083",
       "question": "Что происходит, когда append превышает текущую capacity?",
-      "short_answer": ".",
+      "short_answer": "При превышении cap runtime выделяет больший backing array, копирует элементы, добавляет новые и возвращает slice, указывающий на новый массив.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4182,7 +4182,7 @@
     {
       "seed_key": "GO084",
       "question": "Как несколько slices могут использовать один backing array?",
-      "short_answer": ".",
+      "short_answer": "Slices, созданные из одного массива или друг друга, могут указывать на перекрывающиеся участки одного backing array, поэтому изменения элементов становятся общими.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4234,7 +4234,7 @@
     {
       "seed_key": "GO085",
       "question": "Почему после append изменение одного slice иногда видно другому, а иногда нет?",
-      "short_answer": ".",
+      "short_answer": "Если append не требует новой allocation, slices могут продолжать разделять массив; если realloc произошёл, изменённый slice уже указывает на другой backing array.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4286,7 +4286,7 @@
     {
       "seed_key": "GO086",
       "question": "Почему Go передаёт slice по значению, но функция всё равно может изменить его элементы?",
-      "short_answer": ".",
+      "short_answer": "Функция получает копию slice header, но header всё ещё указывает на тот же backing array, поэтому изменение элементов видно вызывающему коду.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4337,7 +4337,7 @@
     {
       "seed_key": "GO087",
       "question": "Как работает builtin copy , в том числе при перекрывающихся slices?",
-      "short_answer": ".",
+      "short_answer": "copy копирует минимум из len(src) и len(dst) элементов и корректно обрабатывает перекрывающиеся области подобно memmove.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4386,7 +4386,7 @@
     {
       "seed_key": "GO088",
       "question": "Чем nil slice отличается от пустого, но ненулевого slice?",
-      "short_answer": ".",
+      "short_answer": "У nil slice указатель nil и len/cap 0; пустой non-nil slice тоже имеет len 0, но может иметь backing storage. Большинство операций ведут себя одинаково, JSON/reflect могут отличать.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4436,7 +4436,7 @@
     {
       "seed_key": "GO089",
       "question": "Чем make([]T, n) отличается от make([]T, 0, n) ?",
-      "short_answer": ".",
+      "short_answer": "make([]T,n) создаёт len=n и элементы уже существуют как zero values; make([]T,0,n) создаёт пустой slice с заранее зарезервированной capacity n.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4487,7 +4487,7 @@
     {
       "seed_key": "GO090",
       "question": "Почему маленький subslice может удерживать в памяти большой backing array?",
-      "short_answer": ".",
+      "short_answer": "Subslice хранит ссылку на исходный backing array, поэтому GC не может освободить большой массив, пока маленький subslice жив.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4536,7 +4536,7 @@
     {
       "seed_key": "GO091",
       "question": "Как удалить элемент из slice с сохранением порядка и без сохранения порядка?",
-      "short_answer": ".",
+      "short_answer": "С сохранением порядка используют copy/append соседних частей, что O(n); без порядка заменяют удаляемый элемент последним и укорачивают slice, что O(1).",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4586,7 +4586,7 @@
     {
       "seed_key": "GO092",
       "question": "Что именно происходит с index/value при range по slice и как изменения влияют на обход?",
-      "short_answer": ".",
+      "short_answer": "range по slice вычисляет длину в начале и на каждой итерации даёт index и копию элемента; изменение backing array может быть видно, а append может перейти на новый массив.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4638,7 +4638,7 @@
     {
       "seed_key": "GO093",
       "question": "Какие типы могут использоваться как ключ map и почему?",
-      "short_answer": ".",
+      "short_answer": "Ключ map должен быть comparable: можно сравнить оператором ==, поэтому slices, maps и functions ключами быть не могут.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4687,7 +4687,7 @@
     {
       "seed_key": "GO094",
       "question": "Что возвращает map при обращении к отсутствующему ключу и зачем нужен comma-ok?",
-      "short_answer": ".",
+      "short_answer": "Отсутствующий ключ возвращает zero value типа значения; форма v, ok := m[k] отличает отсутствие ключа от сохранённого zero value.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4736,7 +4736,7 @@
     {
       "seed_key": "GO095",
       "question": "Какие операции допустимы с nil map?",
-      "short_answer": ".",
+      "short_answer": "Из nil map можно безопасно читать, получать len, range и delete; запись m[k]=v вызывает panic.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4787,7 +4787,7 @@
     {
       "seed_key": "GO096",
       "question": "Можно ли одновременно читать и писать обычную map из нескольких goroutines?",
-      "short_answer": ".",
+      "short_answer": "Нет. Одновременная запись или чтение с записью в обычную map без синхронизации — data race и может завершиться fatal error.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4839,7 +4839,7 @@
     {
       "seed_key": "GO097",
       "question": "Гарантирован ли порядок обхода map?",
-      "short_answer": ".",
+      "short_answer": "Нет. Порядок range по map намеренно не определён и может меняться между обходами.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4886,7 +4886,7 @@
     {
       "seed_key": "GO098",
       "question": "Почему нельзя использовать элемент map как обычное addressable значение?",
-      "short_answer": ".",
+      "short_answer": "Элемент map не addressable, потому что реализация может перемещать записи при изменении структуры; нельзя надёжно держать указатель на внутреннюю ячейку.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4932,7 +4932,7 @@
     {
       "seed_key": "GO099",
       "question": "Какие гарантии даёт Go при изменении map во время range ?",
-      "short_answer": ".",
+      "short_answer": "Удаление ещё не посещённого ключа гарантирует, что он не появится; добавленный во время range ключ может появиться или нет. Порядок всё равно не определён.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -4980,7 +4980,7 @@
     {
       "seed_key": "GO100",
       "question": "Как выбирать между map + Mutex и sync.Map ?",
-      "short_answer": ".",
+      "short_answer": "map+Mutex лучше для обычного типизированного состояния и сложных операций; sync.Map — для read-mostly или ключей, которые разные goroutines в основном трогают независимо.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5031,7 +5031,7 @@
     {
       "seed_key": "GO101",
       "question": "Какова ожидаемая сложность map operations и почему O(1) не является абсолютной гарантией?",
-      "short_answer": ".",
+      "short_answer": "Средняя сложность lookup/insert близка к O(1), но зависит от hashing, заполнения и collisions; worst-case и реальные constants не гарантированы.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5083,7 +5083,7 @@
     {
       "seed_key": "GO102",
       "question": "Как на высоком уровне устроена современная builtin map после перехода Go на Swiss Tables?",
-      "short_answer": ".",
+      "short_answer": "Современная map использует Swiss Tables: control bytes, группы слотов и открытая адресация улучшают cache locality и позволяют быстро искать несколько кандидатов за раз.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5132,7 +5132,7 @@
     {
       "seed_key": "GO103",
       "question": "Что такое interface в Go и как тип его реализует?",
-      "short_answer": ".",
+      "short_answer": "Interface описывает набор методов; тип реализует его неявно, если его method set содержит все требуемые методы.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5176,7 +5176,7 @@
     {
       "seed_key": "GO104",
       "question": "Почему interface, содержащий nil pointer, может быть != nil ?",
-      "short_answer": ".",
+      "short_answer": "Interface хранит динамический тип и динамическое значение; если тип — *T, а значение nil, сам interface содержит тип и поэтому не равен nil.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5229,7 +5229,7 @@
     {
       "seed_key": "GO105",
       "question": "Что такое type assertion и type switch?",
-      "short_answer": ".",
+      "short_answer": "Type assertion извлекает конкретный динамический тип из interface, а type switch удобно ветвится по нескольким возможным динамическим типам.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5277,7 +5277,7 @@
     {
       "seed_key": "GO106",
       "question": "Когда использовать pointer receiver, а когда value receiver?",
-      "short_answer": ".",
+      "short_answer": "Pointer receiver нужен при изменении receiver, больших structs или требованиях method set; value receiver подходит для маленьких immutable-like значений и когда копирование допустимо.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5330,7 +5330,7 @@
     {
       "seed_key": "GO107",
       "question": "Как method set влияет на то, реализует ли T или *T некоторый interface?",
-      "short_answer": ".",
+      "short_answer": "Method set T содержит value-receiver методы, а *T — и value, и pointer-receiver методы; поэтому interface с pointer-методом обычно реализует только *T.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5381,7 +5381,7 @@
     {
       "seed_key": "GO108",
       "question": "Когда сравнение interface values может вызвать panic?",
-      "short_answer": ".",
+      "short_answer": "Сравнение interface values вызывает panic, если их динамические значения имеют несравнимый тип, например slice или map.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5429,7 +5429,7 @@
     {
       "seed_key": "GO109",
       "question": "Почему в Go обычно предпочитают маленькие interfaces со стороны consumer?",
-      "short_answer": ".",
+      "short_answer": "Маленькие consumer-defined interfaces уменьшают coupling, проще реализуются и тестируются и не заставляют producer заранее угадывать все сценарии использования.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5478,7 +5478,7 @@
     {
       "seed_key": "GO110",
       "question": "Как работает embedding и что происходит при конфликте promoted methods или fields?",
-      "short_answer": ".",
+      "short_answer": "Embedding продвигает доступные методы/поля вложенного типа. При неоднозначном конфликте на одном уровне selector не разрешается автоматически и нужно указать путь явно.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5530,7 +5530,7 @@
     {
       "seed_key": "GO111",
       "question": "Что такое zero value и почему idiomatic Go старается делать его полезным?",
-      "short_answer": ".",
+      "short_answer": "Zero value — значение без явной инициализации. Полезный zero value уменьшает boilerplate и позволяет типу быть готовым к базовому использованию сразу после объявления.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5574,7 +5574,7 @@
     {
       "seed_key": "GO112",
       "question": "Чем make отличается от new ?",
-      "short_answer": ".",
+      "short_answer": "new(T) выделяет zero value T и возвращает *T; make инициализирует внутренние runtime-структуры slice, map или channel и возвращает сам тип, не указатель на него.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5630,7 +5630,7 @@
     {
       "seed_key": "GO113",
       "question": "Чем type alias отличается от нового defined type?",
-      "short_answer": ".",
+      "short_answer": "Alias создаёт другое имя того же типа и сохраняет assignability/методы; defined type создаёт новый отличный тип с собственным method set.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5681,7 +5681,7 @@
     {
       "seed_key": "GO114",
       "question": "Что такое type parameters, constraints, any , comparable и type sets?",
-      "short_answer": ".",
+      "short_answer": "Type parameters параметризуют код типами; constraints задают допустимые типы/операции, any означает любой тип, comparable — сравнимые типы, type sets описывают множество допустимых типов.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5735,7 +5735,7 @@
     {
       "seed_key": "GO115",
       "question": "Что изменили generic methods в Go 1.27 и какие ограничения у них остаются?",
-      "short_answer": ".",
+      "short_answer": "Go 1.27 разрешил методы иметь собственные type parameters в поддерживаемых формах, но ограничения сохраняются вокруг generic method values/interfaces и реализации должна следовать правилам language spec этой версии.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5782,7 +5782,7 @@
     {
       "seed_key": "GO116",
       "question": "Что на самом деле представляет собой error в Go?",
-      "short_answer": ".",
+      "short_answer": "error — обычный interface с методом Error() string; nil error означает отсутствие ошибки, а конкретные типы могут нести дополнительные данные и поведение.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5832,7 +5832,7 @@
     {
       "seed_key": "GO117",
       "question": "Что такое wrapping ошибки и для чего используется %w ?",
-      "short_answer": ".",
+      "short_answer": "Wrapping добавляет контекст, сохраняя исходную ошибку в цепочке; %w в fmt.Errorf создаёт такую связь для errors.Is/As.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5881,7 +5881,7 @@
     {
       "seed_key": "GO118",
       "question": "Чем errors.Is отличается от == и для чего нужен errors.As ?",
-      "short_answer": ".",
+      "short_answer": "errors.Is проходит цепочку wrapping и учитывает Is-методы, а == сравнивает только непосредственно; errors.As ищет в цепочке ошибку подходящего concrete/interface типа.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5931,7 +5931,7 @@
     {
       "seed_key": "GO119",
       "question": "Когда использовать sentinel error, custom error type и errors.Join ?",
-      "short_answer": ".",
+      "short_answer": "Sentinel удобен для стабильного сравнимого состояния, custom type — когда нужны данные/поведение, errors.Join — когда нужно представить несколько независимых ошибок одной цепочкой.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -5982,7 +5982,7 @@
     {
       "seed_key": "GO120",
       "question": "В каком порядке выполняются несколько defer ?",
-      "short_answer": ".",
+      "short_answer": "Несколько defer выполняются в обратном порядке регистрации — LIFO.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6030,7 +6030,7 @@
     {
       "seed_key": "GO121",
       "question": "Когда вычисляются аргументы deferred function?",
-      "short_answer": ".",
+      "short_answer": "Аргументы deferred вызова вычисляются сразу в момент выполнения defer, а сама функция вызывается при выходе из окружающей функции.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6078,7 +6078,7 @@
     {
       "seed_key": "GO122",
       "question": "Может ли defer изменить named return value?",
-      "short_answer": ".",
+      "short_answer": "Да. Deferred функция может изменить named return variable после return выражения, но до фактического возврата вызывающему коду.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6128,7 +6128,7 @@
     {
       "seed_key": "GO123",
       "question": "Как работают panic и recover и какие условия нужны для успешного recovery?",
-      "short_answer": ".",
+      "short_answer": "panic начинает unwinding stack и выполняет defer; recover останавливает panic только если вызван непосредственно из deferred функции той же goroutine во время unwinding.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6182,7 +6182,7 @@
     {
       "seed_key": "GO124",
       "question": "Где уместен panic, а где функция должна возвращать error?",
-      "short_answer": ".",
+      "short_answer": "panic уместен для нарушений внутренних инвариантов или невозможной инициализации, когда продолжение бессмысленно; ожидаемые runtime-сбои должны возвращаться как error.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6234,7 +6234,7 @@
     {
       "seed_key": "GO125",
       "question": "Чем byte , rune и string отличаются друг от друга?",
-      "short_answer": ".",
+      "short_answer": "byte — alias uint8 и обычно единица сырых байт; rune — alias int32 для Unicode code point; string — immutable последовательность байт, часто UTF-8.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6286,7 +6286,7 @@
     {
       "seed_key": "GO126",
       "question": "Что возвращают len и range для UTF-8 string?",
-      "short_answer": ".",
+      "short_answer": "len(string) возвращает число байт, а range декодирует UTF-8 и выдаёт byte index начала rune и сам rune.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6340,7 +6340,7 @@
     {
       "seed_key": "GO127",
       "question": "Какие основные pprof profiles есть в Go и какую проблему диагностирует каждый из них?",
-      "short_answer": ".",
+      "short_answer": "CPU profile показывает время CPU, heap/allocs — память и allocations, goroutine — stacks goroutines, block — блокировки, mutex — contention, threadcreate — создание OS threads.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6393,7 +6393,7 @@
     {
       "seed_key": "GO128",
       "question": "Когда применять race detector, fuzzing, benchmarks и testing/ synctest ?",
-      "short_answer": ".",
+      "short_answer": "-race ищет data races, fuzzing — неожиданные inputs/invariants, benchmarks — производительность/allocations, synctest — детерминированнее тестирует concurrent/time-dependent поведение.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6446,7 +6446,7 @@
     {
       "seed_key": "GO129",
       "question": "Как работают Go modules, go.mod , go.sum , replace , workspace и vendoring?",
-      "short_answer": ".",
+      "short_answer": "go.mod фиксирует module и зависимости, go.sum — checksums; replace подменяет module, workspace объединяет несколько modules локально, vendor хранит копии зависимостей в репозитории.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6502,7 +6502,7 @@
     {
       "seed_key": "GO130",
       "question": "Какие изменения Go 1.24–1.27 особенно важны для backend-разработчика и почему?",
-      "short_answer": ".",
+      "short_answer": "Для backend важны изменения runtime/scheduler/GC, net/http, crypto, database, tooling и language semantics конкретных релизов; при обновлении нужно сверять release notes и совместимость зависимостей.",
       "full_answer": ".",
       "source": ".",
       "domain": "go",
@@ -6555,7 +6555,7 @@
     {
       "seed_key": "DB001",
       "question": "Чем INNER JOIN отличается от LEFT JOIN и когда строки исчезают из результата?",
-      "short_answer": ".",
+      "short_answer": "INNER JOIN оставляет только строки с совпадением по условию, LEFT JOIN сохраняет все строки слева и заполняет правую часть NULL при отсутствии совпадения.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6605,7 +6605,7 @@
     {
       "seed_key": "DB002",
       "question": "Чем WHERE отличается от HAVING ?",
-      "short_answer": ".",
+      "short_answer": "WHERE фильтрует строки до GROUP BY/aggregation, HAVING фильтрует уже сформированные группы после aggregation.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6656,7 +6656,7 @@
     {
       "seed_key": "DB003",
       "question": "Как работают GROUP BY и aggregate functions?",
-      "short_answer": ".",
+      "short_answer": "GROUP BY объединяет строки с одинаковыми ключами, а aggregate functions вроде COUNT/SUM/AVG вычисляют одно значение для каждой группы.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6705,7 +6705,7 @@
     {
       "seed_key": "DB004",
       "question": "Чем CTE отличается от subquery и когда это влияет на план выполнения?",
-      "short_answer": ".",
+      "short_answer": "CTE — именованный результат запроса, удобный для читаемости и рекурсии; subquery встроен в выражение. В современных PostgreSQL не-recursive CTE часто inline'ится, но MATERIALIZED может стать optimization fence.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6754,7 +6754,7 @@
     {
       "seed_key": "DB005",
       "question": "Чем window functions отличаются от GROUP BY ?",
-      "short_answer": ".",
+      "short_answer": "GROUP BY схлопывает набор до одной строки на группу, а window functions вычисляют значения по окну, сохраняя исходные строки результата.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6802,7 +6802,7 @@
     {
       "seed_key": "DB006",
       "question": "Что такое index, когда он ускоряет запрос и когда может мешать?",
-      "short_answer": ".",
+      "short_answer": "Index — дополнительная структура для быстрого поиска/сортировки. Он помогает при селективных запросах, но занимает место и удорожает INSERT/UPDATE/DELETE.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6852,7 +6852,7 @@
     {
       "seed_key": "DB007",
       "question": "Как на высоком уровне работает B-tree index и для каких predicates он подходит?",
-      "short_answer": ".",
+      "short_answer": "B-tree хранит упорядоченные ключи в сбалансированном дереве и хорошо поддерживает equality, range, ordering и prefix части composite index.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6900,7 +6900,7 @@
     {
       "seed_key": "DB008",
       "question": "Как выбирать порядок columns в composite index?",
-      "short_answer": ".",
+      "short_answer": "Сначала ставят колонки, по которым запросы чаще эффективно ограничивают левый префикс; учитывают equality/range условия, сортировку и реальные query patterns.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6948,7 +6948,7 @@
     {
       "seed_key": "DB009",
       "question": "Что такое covering index и INCLUDE в PostgreSQL?",
-      "short_answer": ".",
+      "short_answer": "Covering index содержит все данные, нужные запросу, позволяя index-only scan; INCLUDE добавляет non-key columns без участия в порядке поиска.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -6994,7 +6994,7 @@
     {
       "seed_key": "DB010",
       "question": "Что такое partial index и когда он полезен?",
-      "short_answer": ".",
+      "short_answer": "Partial index индексирует только строки, удовлетворяющие predicate, уменьшая размер и write cost для часто запрашиваемого подмножества.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7040,7 +7040,7 @@
     {
       "seed_key": "DB011",
       "question": "Когда выбирать GIN, GiST или BRIN вместо B-tree?",
-      "short_answer": ".",
+      "short_answer": "GIN хорош для множественных значений/JSONB/arrays/full-text, GiST — для диапазонов/геометрии и extensible operators, BRIN — для очень больших физически коррелированных таблиц.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7090,7 +7090,7 @@
     {
       "seed_key": "DB012",
       "question": "Что такое selectivity/ cardinality и почему они важны query planner?",
-      "short_answer": ".",
+      "short_answer": "Cardinality — число различных значений, selectivity — доля строк, которую условие оставляет; planner использует их для оценки стоимости scan/join и выбора плана.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7140,7 +7140,7 @@
     {
       "seed_key": "DB013",
       "question": "Чем EXPLAIN отличается от EXPLAIN ANALYZE ?",
-      "short_answer": ".",
+      "short_answer": "EXPLAIN показывает предполагаемый plan и estimates без выполнения, EXPLAIN ANALYZE реально выполняет запрос и добавляет фактические времена и row counts.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7189,7 +7189,7 @@
     {
       "seed_key": "DB014",
       "question": "Почему PostgreSQL иногда выбирает Seq Scan, даже если подходящий index существует?",
-      "short_answer": ".",
+      "short_answer": "Seq Scan может быть дешевле, если условие возвращает большую долю таблицы, таблица мала, index poorly selective или random I/O по index слишком дорог.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7239,7 +7239,7 @@
     {
       "seed_key": "DB015",
       "question": "Как системно подходить к оптимизации медленного SQL-запроса?",
-      "short_answer": ".",
+      "short_answer": "Сначала измеряют EXPLAIN (ANALYZE, BUFFERS), проверяют estimates, filters/joins/indexes, объём данных и I/O, затем меняют запрос/индексы и повторно измеряют.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7291,7 +7291,7 @@
     {
       "seed_key": "DB016",
       "question": "Чем Primary Key, Foreign Key и UNIQUE constraint отличаются друг от друга?",
-      "short_answer": ".",
+      "short_answer": "Primary Key уникально идентифицирует строку и подразумевает NOT NULL; UNIQUE обеспечивает уникальность; Foreign Key поддерживает ссылочную целостность между таблицами.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7340,7 +7340,7 @@
     {
       "seed_key": "DB017",
       "question": "Что такое normalization и когда осознанная denormalization оправдана?",
-      "short_answer": ".",
+      "short_answer": "Normalization уменьшает дублирование и anomalies через разделение сущностей; denormalization оправдана для измеренного read-performance или упрощения критичных запросов ценой синхронизации данных.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7390,7 +7390,7 @@
     {
       "seed_key": "DB018",
       "question": "Что означает ACID?",
-      "short_answer": ".",
+      "short_answer": "ACID: Atomicity — всё или ничего, Consistency — соблюдение инвариантов, Isolation — контролируемое взаимодействие транзакций, Durability — сохранение committed данных после сбоя.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7441,7 +7441,7 @@
     {
       "seed_key": "DB019",
       "question": "Где проходят transaction boundaries и как autocommit меняет поведение?",
-      "short_answer": ".",
+      "short_answer": "Transaction boundary начинается BEGIN и заканчивается COMMIT/ROLLBACK; при autocommit каждый отдельный statement выполняется как самостоятельная transaction.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7491,7 +7491,7 @@
     {
       "seed_key": "DB020",
       "question": "Какие уровни isolation существуют и какую проблему они решают?",
-      "short_answer": ".",
+      "short_answer": "Стандартные уровни — Read Uncommitted, Read Committed, Repeatable Read, Serializable; они ограничивают видимость конкурентных изменений и предотвращают разные anomalies.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7541,7 +7541,7 @@
     {
       "seed_key": "DB021",
       "question": "Чем dirty read, non-repeatable read, phantom read и write skew отличаются друг от друга?",
-      "short_answer": ".",
+      "short_answer": "Dirty read читает uncommitted данные; non-repeatable read — повторное чтение строки меняется; phantom — меняется набор строк; write skew — две транзакции нарушают общий инвариант без прямого write conflict.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7591,7 +7591,7 @@
     {
       "seed_key": "DB022",
       "question": "Какие гарантии реально даёт PostgreSQL Read Committed?",
-      "short_answer": ".",
+      "short_answer": "Read Committed в PostgreSQL даёт новый snapshot на каждый statement: statement не видит uncommitted данные, но следующий statement той же transaction может увидеть новые commits.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7640,7 +7640,7 @@
     {
       "seed_key": "DB023",
       "question": "Как ведёт себя PostgreSQL Repeatable Read?",
-      "short_answer": ".",
+      "short_answer": "Repeatable Read в PostgreSQL использует один snapshot на transaction, поэтому повторные reads стабильны; возможны serialization-like conflicts и некоторые write-skew сценарии.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7688,7 +7688,7 @@
     {
       "seed_key": "DB024",
       "question": "Как работает Serializable в PostgreSQL и почему приложение должно уметь retry transaction?",
-      "short_answer": ".",
+      "short_answer": "Serializable использует SSI, обнаруживает опасные зависимости и может откатить одну transaction с serialization failure, поэтому приложение обязано безопасно retry весь transaction block.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7739,7 +7739,7 @@
     {
       "seed_key": "DB025",
       "question": "Что такое MVCC и зачем PostgreSQL хранит несколько версий row?",
-      "short_answer": ".",
+      "short_answer": "MVCC хранит несколько версий rows, чтобы readers и writers меньше блокировали друг друга и каждый snapshot видел согласованный набор версий.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7788,7 +7788,7 @@
     {
       "seed_key": "DB026",
       "question": "Как snapshots и tuple visibility связаны с MVCC?",
-      "short_answer": ".",
+      "short_answer": "Snapshot фиксирует видимые transaction IDs, а tuple visibility по xmin/xmax определяет, какая версия строки должна быть видна этому snapshot.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7837,7 +7837,7 @@
     {
       "seed_key": "DB027",
       "question": "Какие locks существуют в PostgreSQL и когда они появляются?",
-      "short_answer": ".",
+      "short_answer": "Есть table-level и row-level locks плюс predicate/advisory механизмы; они появляются из DDL, DML и SELECT FOR UPDATE и могут конфликтовать согласно lock matrix.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7886,7 +7886,7 @@
     {
       "seed_key": "DB028",
       "question": "Для чего нужны SELECT ... FOR UPDATE , NOWAIT и SKIP LOCKED ?",
-      "short_answer": ".",
+      "short_answer": "FOR UPDATE блокирует выбранные rows для конкурентного изменения; NOWAIT сразу ошибается вместо ожидания, SKIP LOCKED пропускает уже заблокированные rows, удобно для queues.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7935,7 +7935,7 @@
     {
       "seed_key": "DB029",
       "question": "Как в базе возникает deadlock и как его предотвращать?",
-      "short_answer": ".",
+      "short_answer": "Deadlock возникает при циклическом ожидании locks. Предотвращают единым порядком захвата, короткими transactions и минимизацией lock scope; PostgreSQL обнаруживает и откатывает одну transaction.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -7984,7 +7984,7 @@
     {
       "seed_key": "DB030",
       "question": "Чем optimistic locking отличается от pessimistic locking?",
-      "short_answer": ".",
+      "short_answer": "Optimistic locking предполагает редкие конфликты и проверяет version/condition при update; pessimistic заранее берёт lock и заставляет конкурентов ждать.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8034,7 +8034,7 @@
     {
       "seed_key": "DB031",
       "question": "Для чего PostgreSQL нужен WAL?",
-      "short_answer": ".",
+      "short_answer": "WAL сначала записывает изменения в последовательный журнал, обеспечивая crash recovery, durability и основу для physical replication.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8084,7 +8084,7 @@
     {
       "seed_key": "DB032",
       "question": "Чем synchronous replication отличается от asynchronous и что такое replication lag?",
-      "short_answer": ".",
+      "short_answer": "Synchronous replication ждёт подтверждения replica перед commit и снижает риск потери данных ценой latency; asynchronous не ждёт, поэтому возможен replication lag и потеря последних commits при failover.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8135,7 +8135,7 @@
     {
       "seed_key": "DB033",
       "question": "Чем partitioning отличается от sharding и replication?",
-      "short_answer": ".",
+      "short_answer": "Partitioning делит одну логическую таблицу внутри БД, sharding распределяет данные между независимыми узлами, replication хранит копии тех же данных для HA/read scaling.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8184,7 +8184,7 @@
     {
       "seed_key": "DB034",
       "question": "Для чего нужны VACUUM и autovacuum?",
-      "short_answer": ".",
+      "short_answer": "VACUUM очищает/переиспользует dead tuples и поддерживает visibility map/freeze, а autovacuum запускает это автоматически, предотвращая bloat и transaction ID wraparound.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8233,7 +8233,7 @@
     {
       "seed_key": "DB035",
       "question": "Как PostgreSQL statistics и ANALYZE влияют на query plan?",
-      "short_answer": ".",
+      "short_answer": "ANALYZE собирает statistics о распределении данных, а planner использует их для row-count/cost estimates; устаревшая статистика может привести к плохому plan.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8280,7 +8280,7 @@
     {
       "seed_key": "DB036",
       "question": "Чем OFFSET/ LIMIT pagination отличается от keyset pagination?",
-      "short_answer": ".",
+      "short_answer": "OFFSET/LIMIT требует пропустить предыдущие строки и нестабилен при изменениях; keyset использует последний ключ и индекс, поэтому быстрее и стабильнее для глубоких страниц.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8331,7 +8331,7 @@
     {
       "seed_key": "DB037",
       "question": "Что такое N+1 query problem и как его обнаружить?",
-      "short_answer": ".",
+      "short_answer": "N+1 — один запрос списка плюс отдельный запрос на каждый элемент. Ищут по query logs/tracing и устраняют JOIN, batch query или eager loading.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8382,7 +8382,7 @@
     {
       "seed_key": "DB038",
       "question": "Как корректно работать с transaction через Go database/ sql , особенно при cancellation?",
-      "short_answer": ".",
+      "short_answer": "Транзакцию создают BeginTx(ctx), передают tx всем операциям, при любой ошибке/cancellation делают Rollback, а Commit вызывают только после полного успеха и проверяют его error.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8436,7 +8436,7 @@
     {
       "seed_key": "DB039",
       "question": "Как настраивать database connection pool и какие симптомы у неправильного sizing?",
-      "short_answer": ".",
+      "short_answer": "Pool ограничивают с учётом capacity БД и числа replicas сервиса; слишком малый pool даёт ожидание connections, слишком большой — overload, contention и рост latency на БД.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8485,7 +8485,7 @@
     {
       "seed_key": "DB040",
       "question": "Как возникает SQL injection и почему parameterized queries её предотвращают?",
-      "short_answer": ".",
+      "short_answer": "SQL injection возникает, когда пользовательский ввод становится частью SQL syntax. Parameterized queries передают значения отдельно от текста запроса, поэтому ввод не интерпретируется как SQL.",
       "full_answer": ".",
       "source": ".",
       "domain": "database",
@@ -8533,7 +8533,7 @@
     {
       "seed_key": "NET001",
       "question": "Из каких основных частей состоят HTTP request и response?",
-      "short_answer": ".",
+      "short_answer": "HTTP request обычно содержит method, target, version, headers и optional body; response — status line, headers и optional body.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8579,7 +8579,7 @@
     {
       "seed_key": "NET002",
       "question": "Какие semantics есть у основных HTTP methods?",
-      "short_answer": ".",
+      "short_answer": "GET читает, POST создаёт/запускает обработку, PUT заменяет ресурс, PATCH частично изменяет, DELETE удаляет; semantics важнее конкретной реализации endpoint.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8625,7 +8625,7 @@
     {
       "seed_key": "NET003",
       "question": "Что означают safe и idempotent HTTP methods?",
-      "short_answer": ".",
+      "short_answer": "Safe method не должен менять server state как часть своей семантики; idempotent можно повторить несколько раз с тем же ожидаемым эффектом, что и один вызов.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8671,7 +8671,7 @@
     {
       "seed_key": "NET004",
       "question": "Чем GET отличается от POST с точки зрения semantics?",
-      "short_answer": ".",
+      "short_answer": "GET предназначен для получения representation и обычно safe/idempotent; POST отправляет данные для обработки и не обязан быть idempotent.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8720,7 +8720,7 @@
     {
       "seed_key": "NET005",
       "question": "Чем PUT отличается от PATCH?",
-      "short_answer": ".",
+      "short_answer": "PUT обычно передаёт полное новое representation ресурса и идемпотентен, PATCH описывает частичное изменение и его идемпотентность зависит от формата операции.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8768,7 +8768,7 @@
     {
       "seed_key": "NET006",
       "question": "Что означают классы HTTP status codes?",
-      "short_answer": ".",
+      "short_answer": "1xx — informational, 2xx — success, 3xx — redirection, 4xx — client error, 5xx — server error.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8814,7 +8814,7 @@
     {
       "seed_key": "NET007",
       "question": "Когда возвращать 200, 201, 202 и 204?",
-      "short_answer": ".",
+      "short_answer": "200 — успешный запрос с результатом, 201 — ресурс создан, 202 — принят на асинхронную обработку, 204 — успешно без response body.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8861,7 +8861,7 @@
     {
       "seed_key": "NET008",
       "question": "Как выбирать между 400, 401, 403, 404, 409, 422 и 429?",
-      "short_answer": ".",
+      "short_answer": "400 — malformed request, 401 — нет/невалидная authentication, 403 — запрещено, 404 — не найдено, 409 — conflict state, 422 — semantic validation error, 429 — rate limit.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8915,7 +8915,7 @@
     {
       "seed_key": "NET009",
       "question": "Чем Content-Type отличается от Accept ?",
-      "short_answer": ".",
+      "short_answer": "Content-Type описывает формат отправленного body, Accept сообщает, какие response media types клиент предпочитает получить.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -8962,7 +8962,7 @@
     {
       "seed_key": "NET010",
       "question": "Как работают persistent connections в HTTP/1.1?",
-      "short_answer": ".",
+      "short_answer": "В HTTP/1.1 connection по умолчанию может переиспользоваться для нескольких последовательных requests, что экономит TCP/TLS handshakes; сервер/клиент могут закрыть её через Connection: close.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9009,7 +9009,7 @@
     {
       "seed_key": "NET011",
       "question": "Какие главные изменения принёс HTTP/2 по сравнению с HTTP/1.1?",
-      "short_answer": ".",
+      "short_answer": "HTTP/2 добавил бинарное framing, multiplexing нескольких streams в одном TCP connection и header compression HPACK, уменьшая overhead и проблему множества connections.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9059,7 +9059,7 @@
     {
       "seed_key": "NET012",
       "question": "Что меняет HTTP/ 3 и почему он использует QUIC?",
-      "short_answer": ".",
+      "short_answer": "HTTP/3 переносит HTTP semantics на QUIC поверх UDP, даёт быстрее establishment и независимые streams без TCP-level head-of-line blocking между ними.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9107,7 +9107,7 @@
     {
       "seed_key": "NET013",
       "question": "Что такое head-of-line blocking и как эта проблема отличается в HTTP/1.1, HTTP/2 и HTTP/3?",
-      "short_answer": ".",
+      "short_answer": "HOL blocking — когда один потерянный/медленный элемент задерживает другие: HTTP/1.1 страдает на уровне очереди запросов, HTTP/2 — от потери TCP packet для всех streams, HTTP/3 изолирует streams в QUIC.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9158,7 +9158,7 @@
     {
       "seed_key": "NET014",
       "question": "Чем TCP отличается от UDP?",
-      "short_answer": ".",
+      "short_answer": "TCP — connection-oriented, reliable, ordered byte stream с congestion control; UDP — connectionless datagrams без встроенных гарантий доставки и порядка.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9204,7 +9204,7 @@
     {
       "seed_key": "NET015",
       "question": "Как на высоком уровне устанавливается и закрывается TCP connection?",
-      "short_answer": ".",
+      "short_answer": "TCP обычно устанавливается three-way handshake SYN/SYN-ACK/ACK, а закрывается обменом FIN/ACK с каждой стороны либо аварийно через RST.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9252,7 +9252,7 @@
     {
       "seed_key": "NET016",
       "question": "За счёт чего TCP обеспечивает reliable ordered delivery?",
-      "short_answer": ".",
+      "short_answer": "TCP использует sequence numbers, ACK, retransmission, checksums, receive windows и congestion control, чтобы доставлять байты надёжно и по порядку.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9301,7 +9301,7 @@
     {
       "seed_key": "NET017",
       "question": "Как в общих чертах работает TLS handshake и проверка certificate?",
-      "short_answer": ".",
+      "short_answer": "TLS handshake согласует параметры и ключи, сервер предоставляет certificate, клиент проверяет цепочку доверия и hostname, после чего стороны используют симметричное шифрование с сессионными ключами.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9352,7 +9352,7 @@
     {
       "seed_key": "NET018",
       "question": "Чем HTTP отличается от HTTPS?",
-      "short_answer": ".",
+      "short_answer": "HTTPS — это HTTP поверх TLS: TLS добавляет encryption, integrity и authentication peer, обычно сервера.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9402,7 +9402,7 @@
     {
       "seed_key": "NET019",
       "question": "Как на высоком уровне происходит DNS resolution?",
-      "short_answer": ".",
+      "short_answer": "Resolver проверяет local cache, затем рекурсивный DNS resolver запрашивает hierarchy/root/TLD/authoritative servers и возвращает записи вроде A/AAAA/CNAME с TTL.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9452,7 +9452,7 @@
     {
       "seed_key": "NET020",
       "question": "Что происходит от момента ввода URL до получения HTTP response?",
-      "short_answer": ".",
+      "short_answer": "Браузер разбирает URL, резолвит DNS, устанавливает TCP/QUIC и TLS при HTTPS, отправляет HTTP request, получает response и затем обрабатывает content и дополнительные resources.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9509,7 +9509,7 @@
     {
       "seed_key": "NET021",
       "question": "Что такое socket, port и TCP connection tuple?",
-      "short_answer": ".",
+      "short_answer": "Socket — endpoint сетевого взаимодействия, port идентифицирует сервис на host, TCP connection уникально задаётся протоколом и парой source IP:port + destination IP:port.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9559,7 +9559,7 @@
     {
       "seed_key": "NET022",
       "question": "Как соотносятся OSI и TCP/IP models и где находятся HTTP, TCP и IP?",
-      "short_answer": ".",
+      "short_answer": "OSI — концептуальная 7-layer модель, TCP/IP практичнее; HTTP находится на application layer, TCP — transport, IP — network/internet layer.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9609,7 +9609,7 @@
     {
       "seed_key": "NET023",
       "question": "Чем forward proxy отличается от reverse proxy?",
-      "short_answer": ".",
+      "short_answer": "Forward proxy действует от имени клиента к внешним servers, reverse proxy стоит перед servers и принимает клиентский traffic от их имени.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9656,7 +9656,7 @@
     {
       "seed_key": "NET024",
       "question": "Чем L4 load balancer отличается от L7?",
-      "short_answer": ".",
+      "short_answer": "L4 балансирует по IP/port и не обязан понимать HTTP, L7 анализирует application protocol и может маршрутизировать по host/path/headers.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -9708,7 +9708,7 @@
     {
       "seed_key": "NET025",
       "question": "Что такое REST и какие ограничения определяют RESTful API?",
-      "short_answer": ".",
+      "short_answer": "REST — архитектурный стиль с client-server, stateless, cacheable, uniform interface, layered system и optional code-on-demand; ресурсы адресуются URI и меняются через representations.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -9758,7 +9758,7 @@
     {
       "seed_key": "NET026",
       "question": "Когда выбирать REST/HTTP API, а когда gRPC?",
-      "short_answer": ".",
+      "short_answer": "REST/HTTP удобен для публичных, browser-friendly и loosely coupled API; gRPC хорош для внутренних typed RPC, streaming и эффективной binary serialization.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -9811,7 +9811,7 @@
     {
       "seed_key": "NET027",
       "question": "Что такое idempotency key и как его использовать для unsafe operation?",
-      "short_answer": ".",
+      "short_answer": "Idempotency key — уникальный client-generated ключ операции; сервер сохраняет результат/состояние обработки и повторный одинаковый запрос возвращает тот же эффект вместо дублирования.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -9861,7 +9861,7 @@
     {
       "seed_key": "NET028",
       "question": "Когда retry безопасен и зачем нужны exponential backoff и jitter?",
-      "short_answer": ".",
+      "short_answer": "Retry безопасен для идемпотентных или защищённых idempotency key операций; exponential backoff уменьшает нагрузку, jitter не даёт множеству клиентов повторять синхронно.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -9914,7 +9914,7 @@
     {
       "seed_key": "NET029",
       "question": "Какие timeouts нужны HTTP client/ server и почему одного общего timeout часто недостаточно?",
-      "short_answer": ".",
+      "short_answer": "Нужны отдельные limits на connect, TLS handshake, headers, body/read/write, idle и общий operation deadline; один общий timeout плохо диагностирует и контролирует разные фазы.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -9966,7 +9966,7 @@
     {
       "seed_key": "NET030",
       "question": "Как http.Client и http.Transport переиспользуют connections и какие ошибки вызывают connection leaks?",
-      "short_answer": ".",
+      "short_answer": "http.Transport держит pool idle keep-alive connections; чтобы connection переиспользовалась, response body обычно нужно прочитать/закрыть. Не закрытые bodies и неверные transport settings вызывают leaks/connection churn.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -10016,7 +10016,7 @@
     {
       "seed_key": "NET031",
       "question": "Чем cookies, server-side sessions и JWT отличаются как способы хранения authentication state?",
-      "short_answer": ".",
+      "short_answer": "Cookies — browser storage/transport mechanism, server-side session хранит state на сервере по session ID, JWT обычно самонесущий signed token и сложнее немедленно отзывать.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -10067,7 +10067,7 @@
     {
       "seed_key": "NET032",
       "question": "Что такое CORS и когда браузер отправляет preflight request?",
-      "short_answer": ".",
+      "short_answer": "CORS — browser policy для cross-origin requests. Preflight OPTIONS отправляется для non-simple method/headers/content type, чтобы проверить разрешения сервера.",
       "full_answer": ".",
       "source": ".",
       "domain": "web",
@@ -10116,7 +10116,7 @@
     {
       "seed_key": "NET033",
       "question": "Как работают Cache-Control, ETag и conditional requests?",
-      "short_answer": ".",
+      "short_answer": "Cache-Control задаёт правила кэширования, ETag — validator версии representation, а If-None-Match позволяет получить 304 без повторной передачи body.",
       "full_answer": ".",
       "source": ".",
       "domain": "networking",
@@ -10165,7 +10165,7 @@
     {
       "seed_key": "NET034",
       "question": "Когда выбирать WebSocket, SSE или polling?",
-      "short_answer": ".",
+      "short_answer": "WebSocket — двунаправленный постоянный канал, SSE — server-to-client stream поверх HTTP, polling — периодические запросы; выбор зависит от направления, latency и инфраструктуры.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -10211,7 +10211,7 @@
     {
       "seed_key": "NET035",
       "question": "Как корректно выполнить graceful shutdown HTTP service?",
-      "short_answer": ".",
+      "short_answer": "Сервис перестаёт принимать новые requests, ждёт активные в пределах deadline, отменяет фоновые операции, закрывает ресурсы и завершает процесс после graceful timeout.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -10264,7 +10264,7 @@
     {
       "seed_key": "GIT001",
       "question": "Чем working tree, index/ staging area и HEAD отличаются друг от друга?",
-      "short_answer": ".",
+      "short_answer": "Working tree — файлы на диске, index/staging area — снимок для следующего commit, HEAD — ссылка на текущий commit/branch.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10308,7 +10308,7 @@
     {
       "seed_key": "GIT002",
       "question": "Что такое commit object, branch, tag и ref?",
-      "short_answer": ".",
+      "short_answer": "Commit object хранит tree, parents и metadata; branch и tag — refs на commits, причём branch обычно двигается, а tag обычно фиксирован.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10357,7 +10357,7 @@
     {
       "seed_key": "GIT003",
       "question": "Как связаны git add , git diff , git status и git commit ?",
-      "short_answer": ".",
+      "short_answer": "git status показывает состояния файлов, git diff — различия, git add записывает изменения в index, git commit создаёт commit из содержимого index.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10409,7 +10409,7 @@
     {
       "seed_key": "GIT004",
       "question": "Чем merge отличается от rebase и когда выбирать каждый подход?",
-      "short_answer": ".",
+      "short_answer": "Merge объединяет histories и сохраняет их форму, rebase переносит commits на новую базу и переписывает их IDs; rebase удобен для линейной локальной истории, merge безопаснее для опубликованной общей истории.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10459,7 +10459,7 @@
     {
       "seed_key": "GIT005",
       "question": "Что такое fast-forward merge?",
-      "short_answer": ".",
+      "short_answer": "Fast-forward merge — просто передвинуть branch ref вперёд, когда target branch является прямым предком source и merge commit не нужен.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10504,7 +10504,7 @@
     {
       "seed_key": "GIT006",
       "question": "Как работает three-way merge и откуда берётся merge conflict?",
-      "short_answer": ".",
+      "short_answer": "Three-way merge сравнивает общий ancestor и две версии; conflict возникает, когда Git не может автоматически совместить пересекающиеся несовместимые изменения.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10552,7 +10552,7 @@
     {
       "seed_key": "GIT007",
       "question": "Чем git reset --soft , --mixed и --hard отличаются?",
-      "short_answer": ".",
+      "short_answer": "--soft двигает HEAD, оставляя index и working tree; --mixed ещё сбрасывает index; --hard также перезаписывает working tree и может уничтожить незакоммиченные изменения.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10605,7 +10605,7 @@
     {
       "seed_key": "GIT008",
       "question": "Чем git revert отличается от git reset ?",
-      "short_answer": ".",
+      "short_answer": "reset переписывает указатель/history локальной ветки, revert создаёт новый commit, обратный изменениям выбранного commit, поэтому безопаснее для опубликованной истории.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10654,7 +10654,7 @@
     {
       "seed_key": "GIT009",
       "question": "Что делает git cherry-pick ?",
-      "short_answer": ".",
+      "short_answer": "cherry-pick применяет diff выбранного commit поверх текущего HEAD и создаёт новый commit с новым hash.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10700,7 +10700,7 @@
     {
       "seed_key": "GIT010",
       "question": "Что такое reflog и как с его помощью восстановить «потерянный» commit?",
-      "short_answer": ".",
+      "short_answer": "Reflog хранит локальную историю перемещений refs/HEAD, поэтому по старому hash можно найти и восстановить commit после reset/rebase до истечения reflog.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10749,7 +10749,7 @@
     {
       "seed_key": "GIT011",
       "question": "Чем git fetch отличается от git pull ?",
-      "short_answer": ".",
+      "short_answer": "fetch скачивает refs/objects и обновляет remote-tracking branches без изменения текущей ветки; pull обычно делает fetch, затем merge или rebase.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10799,7 +10799,7 @@
     {
       "seed_key": "GIT012",
       "question": "Что такое remote-tracking branch и upstream?",
-      "short_answer": ".",
+      "short_answer": "Remote-tracking branch вроде origin/main — локальная запись состояния remote branch после fetch; upstream — branch, относительно которого local branch по умолчанию pull/push/status сравнивает изменения.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10847,7 +10847,7 @@
     {
       "seed_key": "GIT013",
       "question": "Что такое detached HEAD и почему commits в таком состоянии легко потерять из виду?",
-      "short_answer": ".",
+      "short_answer": "Detached HEAD означает, что HEAD указывает прямо на commit, не на branch; новые commits существуют, но без branch ref их легко потерять из обычного вида истории.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10895,7 +10895,7 @@
     {
       "seed_key": "GIT014",
       "question": "Что делает git commit --amend и почему он переписывает history?",
-      "short_answer": ".",
+      "short_answer": "commit --amend создаёт новый commit вместо последнего, поэтому меняется hash и фактически переписывается history.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10940,7 +10940,7 @@
     {
       "seed_key": "GIT015",
       "question": "Чем --force-with-lease безопаснее обычного --force ?",
-      "short_answer": ".",
+      "short_answer": "--force-with-lease перезаписывает remote только если его текущий ref всё ещё равен ожидаемому, поэтому снижает риск затереть чужие новые commits.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -10988,7 +10988,7 @@
     {
       "seed_key": "GIT016",
       "question": "Для чего нужен git stash и что именно он сохраняет?",
-      "short_answer": ".",
+      "short_answer": "stash временно сохраняет изменения working tree и index в служебных commits, чтобы очистить рабочее состояние; untracked файлы включаются только с соответствующими флагами.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -11036,7 +11036,7 @@
     {
       "seed_key": "GIT017",
       "question": "Для чего используют interactive rebase?",
-      "short_answer": ".",
+      "short_answer": "Interactive rebase позволяет reorder, squash, fixup, edit, drop commits и переписать messages перед публикацией или для очистки истории.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -11084,7 +11084,7 @@
     {
       "seed_key": "GIT018",
       "question": "Когда полезны git bisect и git blame ?",
-      "short_answer": ".",
+      "short_answer": "bisect бинарным поиском находит commit, внесший regression, а blame показывает, какой commit последним изменил конкретные строки файла.",
       "full_answer": ".",
       "source": ".",
       "domain": "tooling",
@@ -11128,7 +11128,7 @@
     {
       "seed_key": "INF001",
       "question": "Чем container отличается от virtual machine?",
-      "short_answer": ".",
+      "short_answer": "Container делит kernel host OS и изолирует процессы namespaces/cgroups, поэтому легче; VM виртуализирует hardware и запускает отдельную guest OS с собственным kernel.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11172,7 +11172,7 @@
     {
       "seed_key": "INF002",
       "question": "Чем Docker image отличается от container?",
-      "short_answer": ".",
+      "short_answer": "Image — immutable шаблон слоёв и metadata, container — runtime instance image с writable layer и собственным process state.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11219,7 +11219,7 @@
     {
       "seed_key": "INF003",
       "question": "Как устроены image layers и Docker build cache?",
-      "short_answer": ".",
+      "short_answer": "Image состоит из content-addressed layers; build cache переиспользует результат instruction, если её inputs и предыдущий слой не изменились.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11266,7 +11266,7 @@
     {
       "seed_key": "INF004",
       "question": "Чем Dockerfile RUN , CMD и ENTRYPOINT отличаются?",
-      "short_answer": ".",
+      "short_answer": "RUN выполняется во время build и создаёт слой, CMD задаёт default command/args, ENTRYPOINT задаёт основной executable и обычно комбинируется с CMD как default args.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11315,7 +11315,7 @@
     {
       "seed_key": "INF005",
       "question": "Чем COPY отличается от ADD ?",
-      "short_answer": ".",
+      "short_answer": "COPY просто копирует local files/directories, ADD имеет дополнительные возможности вроде распаковки local tar и загрузки URL; обычно предпочитают COPY для явности.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11359,7 +11359,7 @@
     {
       "seed_key": "INF006",
       "question": "Зачем Go service собирать через multi-stage Docker build?",
-      "short_answer": ".",
+      "short_answer": "Multi-stage build отделяет compiler/toolchain от runtime image: бинарник собирается в builder stage, а финальный image получается меньше и с меньшей attack surface.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11410,7 +11410,7 @@
     {
       "seed_key": "INF007",
       "question": "Чем volume отличается от bind mount?",
-      "short_answer": ".",
+      "short_answer": "Volume управляется Docker и живёт вне lifecycle container; bind mount напрямую монтирует конкретный host path и сильнее связывает container с host filesystem.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11459,7 +11459,7 @@
     {
       "seed_key": "INF008",
       "question": "Как в общих чертах работает Docker networking и published ports?",
-      "short_answer": ".",
+      "short_answer": "Containers обычно подключаются к virtual bridge/network и получают IP; published port на host через NAT/proxy перенаправляет traffic на container port.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11509,7 +11509,7 @@
     {
       "seed_key": "INF009",
       "question": "Что такое Linux namespaces и какую часть container isolation они обеспечивают?",
-      "short_answer": ".",
+      "short_answer": "Namespaces дают отдельные представления PID, network, mount, user, UTS и IPC ресурсов, изолируя то, что процесс видит в системе.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11557,7 +11557,7 @@
     {
       "seed_key": "INF010",
       "question": "Что такое cgroups и чем они отличаются от namespaces?",
-      "short_answer": ".",
+      "short_answer": "Namespaces изолируют видимость ресурсов, cgroups ограничивают/учитывают их потребление — CPU, memory, pids и другие controller resources.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11606,7 +11606,7 @@
     {
       "seed_key": "INF011",
       "question": "Почему PID 1 внутри container требует особого отношения к signals и child processes?",
-      "short_answer": ".",
+      "short_answer": "PID 1 имеет особую signal и child-reaping semantics; приложение должно корректно обрабатывать SIGTERM и reaping либо использовать init-процесс.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11655,7 +11655,7 @@
     {
       "seed_key": "INF012",
       "question": "Как container CPU limit взаимодействует с GOMAXPROCS в современных версиях Go?",
-      "short_answer": ".",
+      "short_answer": "Современный Go runtime учитывает container CPU quota и может автоматически подобрать GOMAXPROCS ближе к доступному CPU limit, снижая лишний scheduler contention.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11703,7 +11703,7 @@
     {
       "seed_key": "INF013",
       "question": "Что проверяет Docker HEALTHCHECK и чем он отличается от application readiness?",
-      "short_answer": ".",
+      "short_answer": "HEALTHCHECK запускает команду и сообщает Docker о health container, но readiness — application-level решение, можно ли уже направлять production traffic.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11749,7 +11749,7 @@
     {
       "seed_key": "INF014",
       "question": "Чем image tag отличается от digest?",
-      "short_answer": ".",
+      "short_answer": "Tag — изменяемое человекочитаемое имя image, digest — immutable content-addressed hash конкретного manifest/image.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11796,7 +11796,7 @@
     {
       "seed_key": "INF015",
       "question": "Для чего нужен Docker Compose и где заканчиваются его задачи?",
-      "short_answer": ".",
+      "short_answer": "Docker Compose описывает и запускает несколько связанных containers, networks и volumes на одном окружении; это не полноценный production orchestrator уровня Kubernetes.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11843,7 +11843,7 @@
     {
       "seed_key": "INF016",
       "question": "Почему production container желательно запускать не от root и с минимальными capabilities?",
-      "short_answer": ".",
+      "short_answer": "Non-root и минимальные Linux capabilities уменьшают последствия compromise: атакующий получает меньше host/kernel privileges.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11893,7 +11893,7 @@
     {
       "seed_key": "INF017",
       "question": "Что такое Pod и почему Kubernetes планирует Pod, а не отдельный container?",
-      "short_answer": ".",
+      "short_answer": "Pod — минимальная scheduling unit Kubernetes: один или несколько containers разделяют network namespace, IP и часть volumes/lifecycle, поэтому scheduler размещает Pod целиком.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11940,7 +11940,7 @@
     {
       "seed_key": "INF018",
       "question": "Чем Deployment отличается от ReplicaSet?",
-      "short_answer": ".",
+      "short_answer": "Deployment управляет desired rollout/stateless replicas и создаёт ReplicaSets; ReplicaSet лишь поддерживает заданное число Pods конкретного template.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -11987,7 +11987,7 @@
     {
       "seed_key": "INF019",
       "question": "Когда StatefulSet нужен вместо Deployment?",
-      "short_answer": ".",
+      "short_answer": "StatefulSet нужен, когда важны стабильные pod identities, ordered lifecycle и стабильное persistent storage, например для stateful clustered systems.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12035,7 +12035,7 @@
     {
       "seed_key": "INF020",
       "question": "Чем DaemonSet, Job и CronJob отличаются от Deployment?",
-      "short_answer": ".",
+      "short_answer": "DaemonSet запускает Pod на подходящих nodes, Job выполняет конечную задачу до завершения, CronJob создаёт Jobs по расписанию, Deployment поддерживает долгоживущие replicas.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12085,7 +12085,7 @@
     {
       "seed_key": "INF021",
       "question": "Чем ClusterIP, NodePort и LoadBalancer Service отличаются?",
-      "short_answer": ".",
+      "short_answer": "ClusterIP доступен внутри cluster, NodePort открывает port на каждой node, LoadBalancer просит внешнюю LB-интеграцию и обычно публикует Service наружу.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12133,7 +12133,7 @@
     {
       "seed_key": "INF022",
       "question": "Какова роль Ingress и чем современный Gateway API концептуально отличается от него?",
-      "short_answer": ".",
+      "short_answer": "Ingress задаёт HTTP routing через controller, а Gateway API разделяет инфраструктурные и application roles и богаче моделирует gateways/routes/policies.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12181,7 +12181,7 @@
     {
       "seed_key": "INF023",
       "question": "Чем readiness, liveness и startup probes отличаются друг от друга?",
-      "short_answer": ".",
+      "short_answer": "Readiness решает, принимать ли traffic; liveness — нужно ли перезапустить зависший container; startup даёт медленно стартующему приложению время до включения других probes.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12229,7 +12229,7 @@
     {
       "seed_key": "INF024",
       "question": "Чем resource request отличается от limit?",
-      "short_answer": ".",
+      "short_answer": "Request — гарантируемая/учитываемая scheduler'ом потребность для размещения Pod, limit — верхняя граница: CPU throttles, memory превышение часто ведёт к OOMKill.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12277,7 +12277,7 @@
     {
       "seed_key": "INF025",
       "question": "Как работает Horizontal Pod Autoscaler и какие metrics могут использоваться?",
-      "short_answer": ".",
+      "short_answer": "HPA периодически меняет replicas по observed metrics относительно target; обычно использует CPU/memory resource metrics, custom и external metrics.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12327,7 +12327,7 @@
     {
       "seed_key": "INF026",
       "question": "Как Kubernetes scheduler на высоком уровне выбирает node для Pod?",
-      "short_answer": ".",
+      "short_answer": "Scheduler сначала фильтрует nodes по constraints/resources/taints/affinity, затем score'ит подходящие nodes и bind'ит Pod к лучшей.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12378,7 +12378,7 @@
     {
       "seed_key": "INF027",
       "question": "Чем ConfigMap отличается от Secret?",
-      "short_answer": ".",
+      "short_answer": "ConfigMap хранит неконфиденциальную конфигурацию, Secret предназначен для чувствительных данных, но base64 сам по себе не является encryption и нужны RBAC/encryption-at-rest.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12423,7 +12423,7 @@
     {
       "seed_key": "INF028",
       "question": "Как связаны Namespace, ServiceAccount и RBAC?",
-      "short_answer": ".",
+      "short_answer": "Namespace логически группирует resources, ServiceAccount задаёт identity workload, RBAC Roles/ClusterRoles и bindings определяют разрешённые API actions для этой identity.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12471,7 +12471,7 @@
     {
       "seed_key": "INF029",
       "question": "Как связаны PersistentVolume, PersistentVolumeClaim и StorageClass?",
-      "short_answer": ".",
+      "short_answer": "PV — предоставленное storage, PVC — запрос пользователя на storage, StorageClass описывает тип и dynamic provisioning policy, связывающую запрос с volume.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12519,7 +12519,7 @@
     {
       "seed_key": "INF030",
       "question": "Как Deployment выполняет rolling update и rollback?",
-      "short_answer": ".",
+      "short_answer": "Deployment постепенно создаёт новый ReplicaSet и уменьшает старый по rollingUpdate strategy; rollback возвращает предыдущую revision/template.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12566,7 +12566,7 @@
     {
       "seed_key": "INF031",
       "question": "Как диагностировать CrashLoopBackOff ?",
-      "short_answer": ".",
+      "short_answer": "Смотрят kubectl describe pod/events, container exit code/reason, current и previous logs, probes, config/secrets, command и resource limits.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12615,7 +12615,7 @@
     {
       "seed_key": "INF032",
       "question": "Почему Pod может оставаться в Pending и как искать причину?",
-      "short_answer": ".",
+      "short_answer": "Pending означает, что Pod ещё не запущен: частые причины — недостаток resources, unsatisfied affinity/taints, unbound PVC или image/runtime scheduling issues; помогают events/describe.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12665,7 +12665,7 @@
     {
       "seed_key": "INF033",
       "question": "Чем OOMKilled отличается от CPU throttling и как их диагностировать?",
-      "short_answer": ".",
+      "short_answer": "OOMKilled — процесс превысил memory limit и был убит, CPU throttling — kernel ограничивает CPU time при quota; диагностируют status/events и container/cgroup metrics.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12714,7 +12714,7 @@
     {
       "seed_key": "INF034",
       "question": "Как service discovery работает внутри Kubernetes cluster?",
-      "short_answer": ".",
+      "short_answer": "Services получают стабильное DNS name и virtual IP, а kube-proxy/другая dataplane реализация направляет traffic на ready EndpointSlices/Pods.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12761,7 +12761,7 @@
     {
       "seed_key": "INF035",
       "question": "Что происходит при termination Pod и как написать Go service, который завершится корректно?",
-      "short_answer": ".",
+      "short_answer": "При deletion Pod получает SIGTERM и grace period, endpoints убираются из service; Go service должен остановить приём traffic, завершить requests/jobs и выйти до SIGKILL.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12813,7 +12813,7 @@
     {
       "seed_key": "INF036",
       "question": "Чем process отличается от thread?",
-      "short_answer": ".",
+      "short_answer": "Process имеет отдельное address space и ресурсы ОС, threads внутри одного process разделяют память и большинство ресурсов, но имеют отдельные stacks/execution state.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12862,7 +12862,7 @@
     {
       "seed_key": "INF037",
       "question": "Что такое file descriptor и почему его утечки опасны для backend service?",
-      "short_answer": ".",
+      "short_answer": "File descriptor — числовой handle на open file/socket/pipe; утечки исчерпывают per-process/system limits и мешают принимать connections или открывать файлы.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12910,7 +12910,7 @@
     {
       "seed_key": "INF038",
       "question": "Чем SIGTERM отличается от SIGKILL?",
-      "short_answer": ".",
+      "short_answer": "SIGTERM — перехватываемый запрос на корректное завершение, SIGKILL нельзя обработать или игнорировать и kernel завершает process немедленно.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -12958,7 +12958,7 @@
     {
       "seed_key": "INF039",
       "question": "Чем zombie process отличается от orphan process?",
-      "short_answer": ".",
+      "short_answer": "Zombie уже завершился, но parent не забрал exit status; orphan ещё работает, но потерял parent и переподчиняется системному reaper/init.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13005,7 +13005,7 @@
     {
       "seed_key": "INF040",
       "question": "Как /proc помогает диагностировать процесс?",
-      "short_answer": ".",
+      "short_answer": "/proc exposes runtime information о processes, fd, memory maps, status, limits, network и kernel data, полезную для диагностики без специальных agents.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13052,7 +13052,7 @@
     {
       "seed_key": "INF041",
       "question": "Чем select , poll и epoll отличаются на высоком уровне?",
-      "short_answer": ".",
+      "short_answer": "select и poll каждый вызов проверяют набор descriptors, причём select имеет ограничения; epoll регистрирует интерес один раз и эффективно возвращает готовые events для больших наборов fd.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13102,7 +13102,7 @@
     {
       "seed_key": "INF042",
       "question": "Что такое virtual memory и RSS и почему они важны при диагностике memory usage?",
-      "short_answer": ".",
+      "short_answer": "Virtual memory — адресное пространство process, RSS — реально резидентные physical pages; большой virtual size не равен фактическому RAM usage, а RSS помогает оценивать pressure.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13151,7 +13151,7 @@
     {
       "seed_key": "INF043",
       "question": "Какие stages должны быть в CI/CD pipeline типичного Go service?",
-      "short_answer": ".",
+      "short_answer": "Обычно: checkout, dependency/cache, lint/static analysis, unit/integration tests, race/security scans, build, image/package, vulnerability scan, deploy to staging, smoke, controlled production rollout.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13205,7 +13205,7 @@
     {
       "seed_key": "INF044",
       "question": "Чем build artifact отличается от deployable container image?",
-      "short_answer": ".",
+      "short_answer": "Build artifact — результат компиляции вроде Go binary, deployable image добавляет runtime filesystem, config metadata, entrypoint и immutable packaging для запуска в container platform.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13252,7 +13252,7 @@
     {
       "seed_key": "INF045",
       "question": "Чем rolling, blue-green и canary deployment отличаются и когда выбирать каждый?",
-      "short_answer": ".",
+      "short_answer": "Rolling постепенно заменяет instances, blue-green переключает traffic между двумя полными environments, canary даёт новой версии малую долю traffic и расширяет её при успехе.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13300,7 +13300,7 @@
     {
       "seed_key": "INF046",
       "question": "Что такое Terraform state, plan/apply и infrastructure drift?",
-      "short_answer": ".",
+      "short_answer": "Terraform state сопоставляет config реальным resources, plan показывает предполагаемый diff, apply применяет его, drift — отличие реальной инфраструктуры от state/config.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13348,7 +13348,7 @@
     {
       "seed_key": "INF047",
       "question": "Почему Terraform state требует безопасного remote storage и locking?",
-      "short_answer": ".",
+      "short_answer": "State может содержать sensitive data и является общей точкой координации; remote secure storage даёт access control/backup, locking предотвращает конкурентные apply и corruption.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13394,7 +13394,7 @@
     {
       "seed_key": "INF048",
       "question": "Как выполнять database schema migration без downtime при rolling deployment?",
-      "short_answer": ".",
+      "short_answer": "Используют backward-compatible expand/contract: сначала добавляют совместимую schema, выкатывают код, backfill, переключают чтение/запись и только потом удаляют старое.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13444,7 +13444,7 @@
     {
       "seed_key": "INF049",
       "question": "Из каких основных компонентов состоит Kubernetes control plane и за что они отвечают?",
-      "short_answer": ".",
+      "short_answer": "API server принимает запросы, etcd хранит state, scheduler размещает Pods, controller manager reconciles desired state; cloud-controller интегрирует cloud resources при необходимости.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13494,7 +13494,7 @@
     {
       "seed_key": "INF050",
       "question": "Какие базовые меры нужны для ограничения сетевого и privilege access Pod?",
-      "short_answer": ".",
+      "short_answer": "Используют NetworkPolicy, non-root, drop capabilities, read-only FS, seccomp/AppArmor, least-privilege ServiceAccount/RBAC, resource limits и запрет privileged/host namespaces без необходимости.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -13543,7 +13543,7 @@
     {
       "seed_key": "MQ001",
       "question": "Что такое topic и partition в Kafka?",
-      "short_answer": ".",
+      "short_answer": "Topic — логический поток records, partition — упорядоченный append-only shard topic, который даёт масштабирование и является единицей ordering/replication.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13584,7 +13584,7 @@
     {
       "seed_key": "MQ002",
       "question": "Что делают Kafka producer и consumer?",
-      "short_answer": ".",
+      "short_answer": "Producer публикует records в topic/partition, consumer читает records по offsets и обрабатывает их.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13632,7 +13632,7 @@
     {
       "seed_key": "MQ003",
       "question": "Что такое consumer group?",
-      "short_answer": ".",
+      "short_answer": "Consumer group — набор consumers, между которыми Kafka распределяет partitions так, что одну partition в группе одновременно читает максимум один consumer.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13679,7 +13679,7 @@
     {
       "seed_key": "MQ004",
       "question": "Что такое offset и чем current position отличается от committed offset?",
-      "short_answer": ".",
+      "short_answer": "Offset — позиция record в partition; current position — до куда consumer уже дошёл в памяти, committed offset — сохранённая позиция, с которой группа восстановится после restart/rebalance.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13727,7 +13727,7 @@
     {
       "seed_key": "MQ005",
       "question": "Чем auto commit отличается от manual commit и какие failure modes у каждого подхода?",
-      "short_answer": ".",
+      "short_answer": "Auto commit периодически сохраняет offsets и проще, но может commit'ить до фактической обработки; manual commit даёт контроль, но неверный момент commit создаёт duplicates или loss semantics.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13778,7 +13778,7 @@
     {
       "seed_key": "MQ006",
       "question": "Какие ordering guarantees даёт Kafka?",
-      "short_answer": ".",
+      "short_answer": "Kafka гарантирует порядок только внутри одной partition; между partitions глобального порядка нет, а retries/idempotence/config могут влиять на наблюдаемый порядок.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13823,7 +13823,7 @@
     {
       "seed_key": "MQ007",
       "question": "Как выбирать Kafka partition key?",
-      "short_answer": ".",
+      "short_answer": "Key выбирают по бизнес-сущности, для которой нужен общий порядок/partition locality, одновременно следя за равномерностью распределения и избегая hot partitions.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13872,7 +13872,7 @@
     {
       "seed_key": "MQ008",
       "question": "Как на высоком уровне работает replication partitions?",
-      "short_answer": ".",
+      "short_answer": "Каждая partition имеет leader и replicas на других brokers; writes идут leader, followers реплицируют log, ISR позволяет выбрать новую leader при сбое в рамках настроек durability.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13918,7 +13918,7 @@
     {
       "seed_key": "MQ009",
       "question": "Что такое consumer group rebalance и почему он может влиять на latency?",
-      "short_answer": ".",
+      "short_answer": "Rebalance перераспределяет partitions при изменении membership/metadata и может временно остановить consumption, поэтому частые rebalances повышают latency.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -13965,7 +13965,7 @@
     {
       "seed_key": "MQ010",
       "question": "Что такое consumer lag и как искать его причину?",
-      "short_answer": ".",
+      "short_answer": "Consumer lag — разница между latest offset и обработанной/committed позицией; причины ищут в throughput consumer, slow dependencies, rebalances, hot partitions и insufficient parallelism.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14014,7 +14014,7 @@
     {
       "seed_key": "MQ011",
       "question": "Чем at-most-once, at-least-once и exactly-once semantics отличаются?",
-      "short_answer": ".",
+      "short_answer": "At-most-once может потерять, но не дублировать; at-least-once не теряет при корректной конфигурации, но допускает duplicates; exactly-once требует координации state/transactions и имеет ограниченную область действия.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14065,7 +14065,7 @@
     {
       "seed_key": "MQ012",
       "question": "Что такое idempotent Kafka producer?",
-      "short_answer": ".",
+      "short_answer": "Idempotent producer использует producer IDs и sequence numbers, чтобы broker дедуплицировал retries одной producer session и не записывал один record дважды из-за повторной отправки.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14112,7 +14112,7 @@
     {
       "seed_key": "MQ013",
       "question": "Для чего существуют Kafka transactions?",
-      "short_answer": ".",
+      "short_answer": "Kafka transactions атомарно публикуют records в несколько partitions и могут вместе с offsets реализовать consume-process-produce exactly-once pipeline внутри Kafka.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14157,7 +14157,7 @@
     {
       "seed_key": "MQ014",
       "question": "Чем retention по времени/ размеру отличается от log compaction?",
-      "short_answer": ".",
+      "short_answer": "Retention удаляет старые segments по времени/размеру независимо от key, log compaction сохраняет последнее значение каждого key, позволяя восстанавливать актуальное состояние.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14203,7 +14203,7 @@
     {
       "seed_key": "MQ015",
       "question": "Как retries могут приводить к duplicates или нарушению ожидаемого порядка обработки?",
-      "short_answer": ".",
+      "short_answer": "Если ack потерян, producer может retry уже записанный message и получить duplicate; без idempotence/правильных in-flight настроек retries также способны менять порядок records.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14251,7 +14251,7 @@
     {
       "seed_key": "MQ016",
       "question": "Как обрабатывать poison message и когда использовать DLQ/retry topic?",
-      "short_answer": ".",
+      "short_answer": "Poison message не стоит бесконечно retry'ить: ограничивают attempts/backoff, фиксируют причину и перемещают в retry topic или DLQ для отдельного разбора.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14300,7 +14300,7 @@
     {
       "seed_key": "MQ017",
       "question": "Что делать, если consumers стабильно обрабатывают сообщения медленнее producers?",
-      "short_answer": ".",
+      "short_answer": "Нужно увеличить processing capacity/partitions/consumers, оптимизировать handler/dependencies, применять batching/backpressure и контролировать lag; иначе backlog будет расти.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14350,7 +14350,7 @@
     {
       "seed_key": "MQ018",
       "question": "Чем Kafka отличается от RabbitMQ и для каких задач лучше подходит каждый?",
-      "short_answer": ".",
+      "short_answer": "Kafka — distributed durable log для high-throughput streams, replay и retention; RabbitMQ — broker очередей с гибким routing/ack и удобен для task messaging и сложной маршрутизации.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14403,7 +14403,7 @@
     {
       "seed_key": "MQ019",
       "question": "Что такое exchange и какие exchange types есть в RabbitMQ?",
-      "short_answer": ".",
+      "short_answer": "Exchange принимает messages и маршрутизирует их в queues: direct по точному key, topic по pattern, fanout во все bindings, headers по headers.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14452,7 +14452,7 @@
     {
       "seed_key": "MQ020",
       "question": "Как связаны queue, binding и routing key?",
-      "short_answer": ".",
+      "short_answer": "Producer отправляет в exchange с routing key, binding связывает exchange с queue и задаёт правило, по которому message попадёт в эту queue.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14500,7 +14500,7 @@
     {
       "seed_key": "MQ021",
       "question": "Как работают ACK, NACK и requeue?",
-      "short_answer": ".",
+      "short_answer": "ACK подтверждает успешную обработку, NACK/Reject сообщает о неуспехе; requeue=true возвращает message в очередь, false позволяет discard/dead-letter по policy.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14548,7 +14548,7 @@
     {
       "seed_key": "MQ022",
       "question": "Что регулирует prefetch/QoS у RabbitMQ consumer?",
-      "short_answer": ".",
+      "short_answer": "Prefetch ограничивает число unacked messages, одновременно выданных consumer, управляя backpressure, fairness и объёмом работы «в полёте».",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14597,7 +14597,7 @@
     {
       "seed_key": "MQ023",
       "question": "Чем durable queue отличается от persistent message?",
-      "short_answer": ".",
+      "short_answer": "Durable queue переживает restart broker как сущность, persistent message просит сохранять конкретное message на диск; для durability обычно нужны обе настройки и корректные publisher confirms.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14643,7 +14643,7 @@
     {
       "seed_key": "MQ024",
       "question": "Как работают Dead Letter Exchange и message TTL?",
-      "short_answer": ".",
+      "short_answer": "TTL истекает для messages/queues по настройке, а DLX получает rejected/expired/overflow messages согласно dead-letter policy и routing rules.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14689,7 +14689,7 @@
     {
       "seed_key": "MQ025",
       "question": "Что происходит с ordering при нескольких RabbitMQ consumers?",
-      "short_answer": ".",
+      "short_answer": "При нескольких consumers queue распределяет messages между ними, поэтому глобальный completion order не гарантируется даже если delivery из очереди последовательна.",
       "full_answer": ".",
       "source": ".",
       "domain": "messaging",
@@ -14737,7 +14737,7 @@
     {
       "seed_key": "SRV001",
       "question": "Что такое gRPC и для каких задач его обычно выбирают?",
-      "short_answer": ".",
+      "short_answer": "gRPC — RPC framework с typed contracts, protobuf и обычно HTTP/2; часто выбирают для внутренних service-to-service API, streaming и низкого serialization overhead.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -14781,7 +14781,7 @@
     {
       "seed_key": "SRV002",
       "question": "Для чего gRPC использует Protocol Buffers и IDL?",
-      "short_answer": ".",
+      "short_answer": "Protocol Buffers задают IDL/schema сообщений и services, генерируют client/server code и дают компактную backward-compatible binary serialization.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -14830,7 +14830,7 @@
     {
       "seed_key": "SRV003",
       "question": "Какие виды RPC поддерживает gRPC?",
-      "short_answer": ".",
+      "short_answer": "Есть unary, server streaming, client streaming и bidirectional streaming RPC.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -14880,7 +14880,7 @@
     {
       "seed_key": "SRV004",
       "question": "Как gRPC связан с HTTP/2?",
-      "short_answer": ".",
+      "short_answer": "gRPC обычно использует HTTP/2 streams, multiplexing, flow control и metadata/trailers, чтобы эффективно выполнять несколько RPC поверх одного connection.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -14930,7 +14930,7 @@
     {
       "seed_key": "SRV005",
       "question": "Как deadlines и cancellation должны распространяться через цепочку gRPC services?",
-      "short_answer": ".",
+      "short_answer": "Входной deadline/context нужно передавать downstream, ставя при необходимости более короткий budget; cancellation клиента должна прекращать ненужную работу по всей цепочке.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -14979,7 +14979,7 @@
     {
       "seed_key": "SRV006",
       "question": "Как gRPC status codes соотносятся с application errors?",
-      "short_answer": ".",
+      "short_answer": "Application errors маппят на canonical gRPC status codes и details; не следует возвращать Internal для любой ожидаемой бизнес-ошибки.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15027,7 +15027,7 @@
     {
       "seed_key": "SRV007",
       "question": "Для чего нужны gRPC metadata и interceptors?",
-      "short_answer": ".",
+      "short_answer": "Metadata переносит request-scoped headers вроде auth/tracing, interceptors добавляют cross-cutting logic вокруг RPC: logging, metrics, auth, retries и т.п.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15073,7 +15073,7 @@
     {
       "seed_key": "SRV008",
       "question": "Когда gRPC retry безопасен и как он связан с idempotency?",
-      "short_answer": ".",
+      "short_answer": "Retry безопасен для idempotent RPC или операций с deduplication/idempotency key; иначе повтор может дважды изменить state.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15122,7 +15122,7 @@
     {
       "seed_key": "SRV009",
       "question": "Какие правила нужны для backward-compatible evolution protobuf schema?",
-      "short_answer": ".",
+      "short_answer": "Нельзя переиспользовать/менять смысл field numbers, удалённые numbers/names стоит reserve, новые fields добавляют с новыми номерами и сохраняют совместимость wire format.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15170,7 +15170,7 @@
     {
       "seed_key": "SRV010",
       "question": "Для чего нужны gRPC health checking и reflection?",
-      "short_answer": ".",
+      "short_answer": "Health checking даёт стандартизированный сигнал готовности service, reflection позволяет tools динамически узнать descriptors/services без локальных proto files.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15215,7 +15215,7 @@
     {
       "seed_key": "SRV011",
       "question": "Когда Redis подходит для задачи и какие основные data types стоит знать?",
-      "short_answer": ".",
+      "short_answer": "Redis подходит для low-latency cache, counters, sessions, ephemeral coordination и некоторые queues; основные types: strings, hashes, lists, sets, sorted sets, streams.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15261,7 +15261,7 @@
     {
       "seed_key": "SRV012",
       "question": "Чем cache-aside, read-through и write-through отличаются?",
-      "short_answer": ".",
+      "short_answer": "Cache-aside: приложение само читает DB и заполняет cache; read-through cache сам загружает miss; write-through синхронно записывает cache и backing store через caching layer.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15308,7 +15308,7 @@
     {
       "seed_key": "SRV013",
       "question": "Как TTL и eviction policy взаимодействуют в Redis?",
-      "short_answer": ".",
+      "short_answer": "TTL удаляет keys по сроку, eviction policy выбирает keys при нехватке maxmemory; даже key с TTL может быть вытеснен раньше при подходящей policy.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15359,7 +15359,7 @@
     {
       "seed_key": "SRV014",
       "question": "Что такое cache stampede и как его предотвращать?",
-      "short_answer": ".",
+      "short_answer": "Cache stampede — много клиентов одновременно пересчитывают один expired hot key; помогают singleflight/locking, jittered TTL, stale-while-revalidate и предварительное обновление.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15410,7 +15410,7 @@
     {
       "seed_key": "SRV015",
       "question": "Что такое cache penetration и hot key problem?",
-      "short_answer": ".",
+      "short_answer": "Cache penetration — repeated misses по отсутствующим данным, hot key — чрезмерная нагрузка на один key; помогают negative caching/Bloom filters и replication/local cache/sharding.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15458,7 +15458,7 @@
     {
       "seed_key": "SRV016",
       "question": "Как поддерживать приемлемую consistency между cache и database?",
-      "short_answer": ".",
+      "short_answer": "Обычно применяют cache-aside с invalidate/update после успешной DB transaction, TTL и идемпотентные события; абсолютную синхронность обеспечить трудно, поэтому нужен понятный consistency contract.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15507,7 +15507,7 @@
     {
       "seed_key": "SRV017",
       "question": "Чем Redis transaction отличается от Lua script с точки зрения atomicity?",
-      "short_answer": ".",
+      "short_answer": "MULTI/EXEC сериализует queued commands, но не делает произвольную логику изолированным transaction; Lua script выполняется атомарно на server и удобно реализует read-modify-write без interleaving.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15554,7 +15554,7 @@
     {
       "seed_key": "SRV018",
       "question": "Чем RDB отличается от AOF?",
-      "short_answer": ".",
+      "short_answer": "RDB делает периодические point-in-time snapshots и компактен, AOF журналирует writes и может дать меньшую потерю данных ценой большего I/O/файла.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15601,7 +15601,7 @@
     {
       "seed_key": "SRV019",
       "question": "Чем Redis replication, Sentinel и Cluster решают разные задачи?",
-      "short_answer": ".",
+      "short_answer": "Replication создаёт replicas для read/HA, Sentinel следит за standalone primary/replicas и автоматизирует failover, Cluster добавляет sharding по hash slots и distributed topology.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15650,7 +15650,7 @@
     {
       "seed_key": "SRV020",
       "question": "Чем Redis Pub/ Sub отличается от Redis Streams?",
-      "short_answer": ".",
+      "short_answer": "Pub/Sub доставляет только текущим subscribers без persistence/replay, Streams хранят log entries, consumer groups, acknowledgements и позволяют повторное чтение.",
       "full_answer": ".",
       "source": ".",
       "domain": "backend",
@@ -15700,7 +15700,7 @@
     {
       "seed_key": "ARC001",
       "question": "Чем monolith отличается от microservices и какие trade-offs появляются после разделения?",
-      "short_answer": ".",
+      "short_answer": "Monolith развёртывается как единое приложение и проще операционно; microservices дают независимое масштабирование/релизы по bounded contexts, но добавляют сеть, distributed consistency, observability и orchestration complexity.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -15745,7 +15745,7 @@
     {
       "seed_key": "ARC002",
       "question": "По каким признакам определять границы microservice?",
-      "short_answer": ".",
+      "short_answer": "Границы выбирают по бизнес-capabilities и ownership данных, независимому lifecycle/scale, cohesion и минимизации chatty coupling; не по таблице или техническому слою.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -15793,7 +15793,7 @@
     {
       "seed_key": "ARC003",
       "question": "Когда services должны взаимодействовать синхронно, а когда через asynchronous messaging?",
-      "short_answer": ".",
+      "short_answer": "Синхронно — когда нужен немедленный ответ и сильная request/response связь; async messaging — когда важны decoupling, buffering, retries и eventual processing.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -15844,7 +15844,7 @@
     {
       "seed_key": "ARC004",
       "question": "Почему idempotency особенно важна в distributed system?",
-      "short_answer": ".",
+      "short_answer": "Сети и brokers повторяют requests/messages при timeout/failure; idempotency гарантирует, что retry не создаст двойной бизнес-эффект.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -15894,7 +15894,7 @@
     {
       "seed_key": "ARC005",
       "question": "Какую проблему решает Transactional Outbox?",
-      "short_answer": ".",
+      "short_answer": "Transactional Outbox атомарно сохраняет бизнес-изменение и event в одной DB transaction, а отдельный publisher позже отправляет event, устраняя dual-write gap.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -15945,7 +15945,7 @@
     {
       "seed_key": "ARC006",
       "question": "Чем Saga choreography отличается от orchestration?",
-      "short_answer": ".",
+      "short_answer": "Choreography — services реагируют на события без центрального координатора; orchestration — отдельный orchestrator явно управляет шагами и compensations saga.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -15993,7 +15993,7 @@
     {
       "seed_key": "ARC007",
       "question": "Чем strong consistency отличается от eventual consistency?",
-      "short_answer": ".",
+      "short_answer": "Strong consistency гарантирует чтение актуального согласованного состояния по выбранной модели, eventual допускает временные расхождения, обещая сходимость при отсутствии новых updates.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16039,7 +16039,7 @@
     {
       "seed_key": "ARC008",
       "question": "Что на практике означает CAP theorem?",
-      "short_answer": ".",
+      "short_answer": "CAP говорит: при network partition distributed system не может одновременно гарантировать strong consistency и availability каждого запроса; partition tolerance для реальных распределённых систем обычно неизбежна.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16088,7 +16088,7 @@
     {
       "seed_key": "ARC009",
       "question": "Чем retry отличается от circuit breaker и как retries могут усилить incident?",
-      "short_answer": ".",
+      "short_answer": "Retry повторяет конкретную операцию, circuit breaker временно перестаёт ходить к явно нездоровой dependency; агрессивные retries без budget/backoff могут умножить нагрузку и усилить outage.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16139,7 +16139,7 @@
     {
       "seed_key": "ARC010",
       "question": "Что такое bulkhead pattern?",
-      "short_answer": ".",
+      "short_answer": "Bulkhead изолирует ресурсы/пулы между классами работы, чтобы перегрузка одной dependency или tenant не исчерпала всё и не обрушила систему целиком.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16185,7 +16185,7 @@
     {
       "seed_key": "ARC011",
       "question": "Какие основные algorithms rate limiting существуют и как выбрать между ними?",
-      "short_answer": ".",
+      "short_answer": "Основные: fixed/sliding window, token bucket, leaky bucket; выбирают по требуемому burst, точности, распределённости и стоимости хранения/координации.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16235,7 +16235,7 @@
     {
       "seed_key": "ARC012",
       "question": "Чем load shedding отличается от backpressure?",
-      "short_answer": ".",
+      "short_answer": "Backpressure заставляет upstream замедлиться по capacity downstream, load shedding сознательно отклоняет часть новой работы, чтобы сохранить здоровье системы.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16285,7 +16285,7 @@
     {
       "seed_key": "ARC013",
       "question": "Чем replication, partitioning и sharding решают разные scaling-проблемы?",
-      "short_answer": ".",
+      "short_answer": "Replication создаёт копии для HA/read scale, partitioning делит dataset на части, sharding обычно означает partitioning между независимыми nodes/DB instances.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16333,7 +16333,7 @@
     {
       "seed_key": "ARC014",
       "question": "Почему stateless service легче горизонтально масштабировать?",
-      "short_answer": ".",
+      "short_answer": "Stateless instance не хранит уникальное session state локально, поэтому любой request можно отправить на любую replica и instances проще добавлять/заменять.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16380,7 +16380,7 @@
     {
       "seed_key": "ARC015",
       "question": "Как изменять API, не ломая существующих clients?",
-      "short_answer": ".",
+      "short_answer": "Используют backward-compatible additive changes, versioning только при необходимости, tolerant readers, deprecation period, contract tests и постепенный rollout.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16427,7 +16427,7 @@
     {
       "seed_key": "ARC016",
       "question": "Какие assumptions и failure modes есть у distributed lock?",
-      "short_answer": ".",
+      "short_answer": "Distributed lock зависит от failure detector, lease/clock/network assumptions и может потерять ownership при pause/partition; для защиты ресурса часто нужны fencing tokens, а не вера одному lock.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16476,7 +16476,7 @@
     {
       "seed_key": "ARC017",
       "question": "Как спроектировать URL shortener?",
-      "short_answer": ".",
+      "short_answer": "Нужны API создания/redirect, генерация уникального short key, persistent mapping key->URL, cache для hot reads, partitioning/replication и защита от abuse; redirect path должен быть очень дешёвым.",
       "full_answer": ".",
       "source": ".",
       "domain": "system_design",
@@ -16530,7 +16530,7 @@
     {
       "seed_key": "ARC018",
       "question": "Как спроектировать систему фоновых jobs/ notifications?",
-      "short_answer": ".",
+      "short_answer": "API принимает job и сохраняет durable state, queue/broker распределяет работу workers, retries имеют backoff/DLQ/idempotency, scheduler отвечает за delayed jobs, а status/observability позволяют отслеживать выполнение.",
       "full_answer": ".",
       "source": ".",
       "domain": "system_design",
@@ -16585,7 +16585,7 @@
     {
       "seed_key": "ARC019",
       "question": "Какие идеи SOLID полезны в Go и где буквальное следование SOLID может навредить?",
-      "short_answer": ".",
+      "short_answer": "Полезны SRP, явные зависимости и маленькие interfaces; буквальное дробление на множество абстракций заранее может сделать Go code сложнее без реальной выгоды.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16635,7 +16635,7 @@
     {
       "seed_key": "ARC020",
       "question": "Как dependency inversion обычно реализуется через Go interfaces?",
-      "short_answer": ".",
+      "short_answer": "High-level code принимает маленькие interfaces, определённые со стороны consumer, а concrete implementations передаются через constructors; compile-time implicit implementation убирает жёсткую зависимость.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16684,7 +16684,7 @@
     {
       "seed_key": "ARC021",
       "question": "Что дают Clean/ Hexagonal Architecture и когда они создают лишнюю сложность?",
-      "short_answer": ".",
+      "short_answer": "Hexagonal/Clean отделяют domain/use cases от transport/DB и облегчают замену adapters/testability; для простого CRUD лишние layers/interfaces могут стать ceremony.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16734,7 +16734,7 @@
     {
       "seed_key": "ARC022",
       "question": "Как выбирать package/ module boundaries в Go service?",
-      "short_answer": ".",
+      "short_answer": "Границы выбирают по cohesion, ownership и direction of dependencies; package должен иметь понятную ответственность, а module — самостоятельный version/dependency boundary, когда это действительно нужно.",
       "full_answer": ".",
       "source": ".",
       "domain": "architecture",
@@ -16783,7 +16783,7 @@
     {
       "seed_key": "ARC023",
       "question": "Чем logs, metrics и traces отвечают на разные вопросы о системе?",
-      "short_answer": ".",
+      "short_answer": "Logs дают подробные дискретные события, metrics — агрегированную динамику и alerts, traces — путь одного request через distributed services и latency breakdown.",
       "full_answer": ".",
       "source": ".",
       "domain": "observability",
@@ -16828,7 +16828,7 @@
     {
       "seed_key": "ARC024",
       "question": "Чем Counter, Gauge, Histogram и Summary отличаются?",
-      "short_answer": ".",
+      "short_answer": "Counter только растёт, Gauge может расти/падать, Histogram считает observations по buckets и агрегируется, Summary считает client-side quantiles и хуже агрегируется между instances.",
       "full_answer": ".",
       "source": ".",
       "domain": "observability",
@@ -16877,7 +16877,7 @@
     {
       "seed_key": "ARC025",
       "question": "Почему high-cardinality labels опасны для Prometheus?",
-      "short_answer": ".",
+      "short_answer": "Каждая уникальная комбинация labels создаёт time series; user ID/request ID и другие high-cardinality labels взрывают память, storage и query cost Prometheus.",
       "full_answer": ".",
       "source": ".",
       "domain": "observability",
@@ -16926,7 +16926,7 @@
     {
       "seed_key": "ARC026",
       "question": "Чем Histogram отличается от Summary при измерении latency?",
-      "short_answer": ".",
+      "short_answer": "Histogram хранит bucket counts и позволяет агрегировать между instances/считать server-side quantiles, Summary вычисляет quantiles локально и их нельзя корректно объединить.",
       "full_answer": ".",
       "source": ".",
       "domain": "observability",
@@ -16977,7 +16977,7 @@
     {
       "seed_key": "ARC027",
       "question": "Как trace context распространяется между services?",
-      "short_answer": ".",
+      "short_answer": "Trace/span IDs передаются через protocol metadata/headers по стандартному propagation format, а каждый service создаёт child span из полученного context.",
       "full_answer": ".",
       "source": ".",
       "domain": "observability",
@@ -17026,7 +17026,7 @@
     {
       "seed_key": "ARC028",
       "question": "Чем SLI, SLO и SLA отличаются друг от друга?",
-      "short_answer": ".",
+      "short_answer": "SLI — измеряемый показатель надёжности, SLO — целевая величина SLI, SLA — договорное обязательство с внешними последствиями.",
       "full_answer": ".",
       "source": ".",
       "domain": "observability",
@@ -17079,7 +17079,7 @@
     {
       "seed_key": "ARC029",
       "question": "На что лучше alert'ить: на симптомы пользователя или внутренние причины?",
-      "short_answer": ".",
+      "short_answer": "Лучше alert'ить на user-visible symptoms и SLO burn rate; internal causes полезны для диагностики, но сами по себе часто создают шум без impact.",
       "full_answer": ".",
       "source": ".",
       "domain": "observability",
@@ -17129,7 +17129,7 @@
     {
       "seed_key": "ARC030",
       "question": "Чем unit, integration и end-to-end tests отличаются?",
-      "short_answer": ".",
+      "short_answer": "Unit test изолирует небольшую часть, integration проверяет взаимодействие реальных компонентов, end-to-end проходит полный пользовательский flow через систему.",
       "full_answer": ".",
       "source": ".",
       "domain": "testing",
@@ -17172,7 +17172,7 @@
     {
       "seed_key": "ARC031",
       "question": "Чем mock, stub и fake отличаются и почему over-mocking вреден?",
-      "short_answer": ".",
+      "short_answer": "Stub возвращает заранее заданные данные, mock ещё проверяет ожидаемые interactions, fake — упрощённая работающая реализация; over-mocking привязывает tests к внутренней структуре и делает refactor дорогим.",
       "full_answer": ".",
       "source": ".",
       "domain": "testing",
@@ -17221,7 +17221,7 @@
     {
       "seed_key": "ARC032",
       "question": "Что такое table-driven tests и subtests в Go?",
-      "short_answer": ".",
+      "short_answer": "Table-driven test хранит cases как данные и запускает общую проверку, subtests через t.Run дают отдельные имена, parallelism и точные failures для каждого case.",
       "full_answer": ".",
       "source": ".",
       "domain": "testing",
@@ -17267,7 +17267,7 @@
     {
       "seed_key": "ARC033",
       "question": "Как тестировать concurrent Go code и недетерминированные edge cases?",
-      "short_answer": ".",
+      "short_answer": "Избегают sleep, используют synchronization/hooks/contexts, -race, repeated runs, deterministic fakes/virtual time и проверяют cancellation/leaks/deadlocks под разными interleavings.",
       "full_answer": ".",
       "source": ".",
       "domain": "testing",
@@ -17318,7 +17318,7 @@
     {
       "seed_key": "ARC034",
       "question": "Как бы ты построил CI pipeline для production Go service?",
-      "short_answer": ".",
+      "short_answer": "Pipeline: lint/static checks, unit/race/integration tests, build reproducible binary/image, security scan, publish immutable artifact, deploy staging, smoke, controlled production rollout и rollback gate.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -17369,7 +17369,7 @@
     {
       "seed_key": "ARC035",
       "question": "Как сделать release Go service безопасно откатываемым?",
-      "short_answer": ".",
+      "short_answer": "Выпускают immutable versioned artifacts, делают backward-compatible DB/API changes, health checks и progressive rollout; rollback должен переключать на предыдущий artifact без несовместимой schema.",
       "full_answer": ".",
       "source": ".",
       "domain": "infrastructure",
@@ -17418,7 +17418,7 @@
     {
       "seed_key": "ALG001",
       "question": "Что показывает Big O и как оценивать time и space complexity решения?",
-      "short_answer": ".",
+      "short_answer": "Big O описывает асимптотический рост времени или памяти относительно размера input; оценивают доминирующие операции/структуры и отбрасывают constants и младшие члены.",
       "full_answer": ".",
       "source": ".",
       "domain": "algorithms",
@@ -17461,7 +17461,7 @@
     {
       "seed_key": "ALG002",
       "question": "Что такое hash collision и какими подходами hash tables разрешают collisions?",
-      "short_answer": ".",
+      "short_answer": "Hash collision — разные keys дают один bucket/hash location; таблицы решают collisions chaining или open addressing с probing.",
       "full_answer": ".",
       "source": ".",
       "domain": "algorithms",
@@ -17508,7 +17508,7 @@
     {
       "seed_key": "ALG003",
       "question": "Чем stack отличается от queue и где используется каждый?",
-      "short_answer": ".",
+      "short_answer": "Stack — LIFO, используется для call stack/DFS/undo; queue — FIFO, используется для scheduling/BFS/buffering.",
       "full_answer": ".",
       "source": ".",
       "domain": "algorithms",
@@ -17552,7 +17552,7 @@
     {
       "seed_key": "ALG004",
       "question": "Что такое heap/ priority queue и как с ним решать top-K задачи?",
-      "short_answer": ".",
+      "short_answer": "Heap поддерживает быстрый доступ к min/max и вставку/удаление за O(log n); для top-K держат heap размера K, получая примерно O(n log K).",
       "full_answer": ".",
       "source": ".",
       "domain": "algorithms",
@@ -17601,7 +17601,7 @@
     {
       "seed_key": "ALG005",
       "question": "Какие preconditions нужны binary search и какие boundary bugs в нём типичны?",
-      "short_answer": ".",
+      "short_answer": "Binary search требует отсортированного/монотонного пространства поиска; типичные ошибки — неверные inclusive/exclusive bounds, overflow mid и бесконечный цикл из-за неправильного обновления границ.",
       "full_answer": ".",
       "source": ".",
       "domain": "algorithms",
@@ -17650,7 +17650,7 @@
     {
       "seed_key": "ALG006",
       "question": "Чем BFS отличается от DFS?",
-      "short_answer": ".",
+      "short_answer": "BFS идёт по слоям через queue и на невзвешенном графе находит кратчайшее число рёбер; DFS идёт в глубину через stack/recursion и удобен для обхода, cycles/topology-компонентных задач.",
       "full_answer": ".",
       "source": ".",
       "domain": "algorithms",
@@ -17698,7 +17698,7 @@
     {
       "seed_key": "ALG007",
       "question": "Как реализовать LRU cache с O(1) get/put?",
-      "short_answer": ".",
+      "short_answer": "Используют hash map key->node и doubly linked list по recency: get/put находят node за O(1), перемещают в head, eviction удаляет tail тоже за O(1).",
       "full_answer": ".",
       "source": ".",
       "domain": "algorithms",
@@ -17746,7 +17746,7 @@
     {
       "seed_key": "ALG008",
       "question": "Как развернуть singly linked list и как обнаружить cycle?",
-      "short_answer": ".",
+      "short_answer": "List разворачивают, проходя nodes и меняя next на previous; cycle находят Floyd slow/fast pointers: при цикле указатели встретятся.",
       "full_answer": ".",
       "source": ".",
       "domain": "algorithms",
@@ -17793,7 +17793,7 @@
     {
       "seed_key": "ALG009",
       "question": "Как выполнить N HTTP requests параллельно с ограничением concurrency, cancellation и сбором ошибок?",
-      "short_answer": ".",
+      "short_answer": "Создают общий context, semaphore/worker pool для лимита, запускают requests с этим context, собирают results/errors безопасно и при policy ошибки отменяют remaining work, затем ждут завершения всех goroutines.",
       "full_answer": ".",
       "source": ".",
       "domain": "practical_coding",
@@ -17847,7 +17847,7 @@
     {
       "seed_key": "ALG010",
       "question": "Чем symmetric encryption, asymmetric encryption и cryptographic hash отличаются?",
-      "short_answer": ".",
+      "short_answer": "Symmetric encryption использует один secret key и быстро шифрует данные; asymmetric использует public/private pair; hash необратимо отображает данные в digest и не предназначен для расшифровки.",
       "full_answer": ".",
       "source": ".",
       "domain": "security",
@@ -17889,7 +17889,7 @@
     {
       "seed_key": "ALG011",
       "question": "Почему passwords нужно hash'ить, а не encrypt'ить, и зачем нужен salt?",
-      "short_answer": ".",
+      "short_answer": "Password должен проверяться через медленный password-hash/KDF, а не обратимое encryption; уникальный salt не даёт одинаковым паролям иметь одинаковые hashes и ломает precomputed rainbow tables.",
       "full_answer": ".",
       "source": ".",
       "domain": "security",
@@ -17937,7 +17937,7 @@
     {
       "seed_key": "ALG012",
       "question": "Из чего состоит JWT и какие ошибки делают JWT authentication небезопасной?",
-      "short_answer": ".",
+      "short_answer": "JWT состоит из base64url header.payload.signature; типичные ошибки — доверие alg/none, слабые keys, отсутствие проверки exp/iss/aud, хранение sensitive plaintext и сложный revoke.",
       "full_answer": ".",
       "source": ".",
       "domain": "security",
@@ -17987,7 +17987,7 @@
     {
       "seed_key": "ALG013",
       "question": "Какие роли решает OAuth 2.0 и почему OAuth сам по себе не равен authentication?",
-      "short_answer": ".",
+      "short_answer": "OAuth 2.0 делегирует authorization между resource owner, client, authorization server и resource server; identity/authentication поверх него обычно решает OpenID Connect.",
       "full_answer": ".",
       "source": ".",
       "domain": "security",
@@ -18039,7 +18039,7 @@
     {
       "seed_key": "ALG014",
       "question": "Почему string concatenation пользовательского ввода в SQL опасна?",
-      "short_answer": ".",
+      "short_answer": "Конкатенация позволяет input изменить структуру SQL и выполнить неожиданные clauses; placeholders/parameterized queries передают ввод как данные, а не syntax.",
       "full_answer": ".",
       "source": ".",
       "domain": "security",
@@ -18086,7 +18086,7 @@
     {
       "seed_key": "ALG015",
       "question": "Чем TLS отличается от mTLS и когда mTLS имеет смысл между services?",
-      "short_answer": ".",
+      "short_answer": "TLS обычно аутентифицирует сервер сертификатом и шифрует канал, mTLS дополнительно требует client certificate и аутентифицирует обе стороны; полезно для service-to-service identity в контролируемой PKI.",
       "full_answer": ".",
       "source": ".",
       "domain": "security",

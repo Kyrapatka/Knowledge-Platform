@@ -264,7 +264,7 @@ func TestSeedImportImportsEdgesAndProfileLifecycle(t *testing.T) {
 		t.Fatal("missing seed edges", n)
 	}
 	again := decode[interview.ImportResult](t, f.request(f.user, "POST", "/interview/seed/import", map[string]any{"domains": []string{"go"}}), 200)
-	if again.Created != 0 || again.Updated != 130 {
+	if again.Created != 0 || again.Updated != 0 || again.Skipped != 130 {
 		t.Fatal("non-idempotent import", again)
 	}
 	var profile interview.Profile
@@ -274,6 +274,7 @@ func TestSeedImportImportsEdgesAndProfileLifecycle(t *testing.T) {
 	path := "/folders/" + imported.FolderIDs[0].String() + "/interview/questions/" + profile.MaterialID.String() + "/profile"
 	got := decode[interview.Profile](t, f.request(f.user, "GET", path, nil), 200)
 	got.Status = "ready"
+	f.exec(t, `UPDATE materials SET values=jsonb_set(values,'{short_answer}','"."') WHERE id=?`, got.MaterialID)
 	request := interview.ProfileRequest{Profile: got, ExpectedVersion: got.ProfileVersion}
 	decode[map[string]any](t, f.request(f.user, "PUT", path, request), 400)
 	f.exec(t, `UPDATE materials SET values=jsonb_set(values,'{answer}','"A goroutine is scheduled by the Go runtime."') WHERE id=?`, got.MaterialID)
@@ -282,7 +283,7 @@ func TestSeedImportImportsEdgesAndProfileLifecycle(t *testing.T) {
 		t.Fatal(ready)
 	}
 	result := decode[interview.ImportResult](t, f.request(f.user, "POST", "/interview/seed/import", map[string]any{"domains": []string{"go"}}), 200)
-	if result.Updated != 130 || result.Created != 0 {
+	if result.Updated != 1 || result.Created != 0 || result.Skipped != 129 {
 		t.Fatal("seed metadata not refreshed", result)
 	}
 	refreshed := decode[interview.Profile](t, f.request(f.user, "GET", path, nil), 200)
