@@ -24,6 +24,7 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
     message?: string,
+    public data?: Record<string, unknown>,
   ) {
     super(message || messages[code] || code.replaceAll("_", " "));
   }
@@ -36,6 +37,7 @@ async function decode<T>(response: Response): Promise<T> {
       response.status,
       data.error || "request_failed",
       data.message || messages[data.error],
+      data,
     );
   return data as T;
 }
@@ -110,6 +112,33 @@ export async function api<T>(
 }
 export const post = <T>(path: string, body: unknown = {}) =>
   api<T>(path, { method: "POST", body });
+export async function upload<T>(
+  path: string,
+  file: File,
+  retried = false,
+): Promise<T> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  const response = await fetch(`/api/v1${path}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: form,
+  });
+  if (response.status === 401 && !retried) {
+    try {
+      await refreshAuth();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        accessToken = "";
+        authLost?.();
+      }
+      throw error;
+    }
+    return upload<T>(path, file, true);
+  }
+  return decode<T>(response);
+}
 export function errorText(error: unknown) {
   return error instanceof TypeError
     ? "Could not reach the server. Check your connection and try again."

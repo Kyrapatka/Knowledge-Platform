@@ -1,0 +1,21 @@
+{
+  "format_version": 1,
+  "folder": {
+    "name": "English B2",
+    "description": "English vocabulary for work",
+    "template": "english_words"
+  },
+  "items": [
+    {
+      "word": "maintain",
+      "translation": "поддерживать",
+      "pronunciation": "/meɪnˈteɪn/",
+      "definition": "To keep something in good condition or continue it.",
+      "example": "We need to maintain the system.",
+      "example_translation": "Нам нужно поддерживать систему.",
+      "notes": "",
+      "topic": "Work",
+      "sources": []
+    }
+  ]
+}

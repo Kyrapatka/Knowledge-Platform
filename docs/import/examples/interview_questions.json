@@ -1,0 +1,30 @@
+{
+  "format_version": 1,
+  "folder": {
+    "name": "Go Interview",
+    "description": "Questions for Go interview preparation",
+    "template": "interview_questions"
+  },
+  "items": [
+    {
+      "question": "Что такое goroutine?",
+      "short_answer": "Goroutine — легковесная единица конкурентного выполнения под управлением runtime Go.",
+      "full_answer": "Goroutine выполняется планировщиком Go поверх ограниченного числа потоков операционной системы.",
+      "source": ".",
+      "topic": "Concurrency",
+      "subtopic": "Goroutines",
+      "difficulty": 2,
+      "frequency": 10,
+      "level": "middle",
+      "company": "",
+      "keywords": [
+        "goroutine",
+        "runtime"
+      ],
+      "concepts": [
+        "goroutine",
+        "scheduler"
+      ]
+    }
+  ]
+}

@@ -23,6 +23,18 @@ type Service struct {
 	folderRepository   folderrepository.Repository
 }
 
+// CreateInput is the regular material creation contract used by both the HTTP
+// create flow and transactional bulk operations such as folder import.
+type CreateInput struct {
+	Values     map[string]*string
+	Metadata   map[string]*string
+	Difficulty materialmodel.Difficulty
+}
+
+type batchRepository interface {
+	CreateBatch(ctx context.Context, materials []materialmodel.Material) error
+}
+
 func NewService(
 	materialRepository materialrepository.Repository,
 	folderRepository folderrepository.Repository,
@@ -108,6 +120,66 @@ func (s *Service) CreateWithDifficulty(
 	}
 
 	return m, nil
+}
+
+// CreateMany applies the same folder ownership and schema validation as
+// CreateWithDifficulty, but persists all materials as one repository batch.
+// The caller can wrap this operation together with folder creation in a wider
+// database transaction.
+func (s *Service) CreateMany(
+	ctx context.Context,
+	ownerID uuid.UUID,
+	folderID uuid.UUID,
+	inputs []CreateInput,
+) ([]materialmodel.Material, error) {
+	folderEntity, err := s.getOwnedFolder(ctx, ownerID, folderID)
+	if err != nil {
+		return nil, err
+	}
+
+	materials := make([]materialmodel.Material, 0, len(inputs))
+	now := time.Now().UTC()
+	for _, input := range inputs {
+		if !input.Difficulty.Valid() {
+			return nil, material.ErrInvalidDifficulty
+		}
+		values := input.Values
+		if values == nil {
+			values = make(map[string]*string)
+		}
+		metadata := input.Metadata
+		if metadata == nil {
+			metadata = make(map[string]*string)
+		}
+		if err := validateCreateFields(folderEntity.Config.Schema.Fields, values, material.ErrInvalidValues, false); err != nil {
+			return nil, err
+		}
+		if err := validateCreateFields(folderEntity.Config.MetadataSchema.Fields, metadata, material.ErrInvalidMetadata, true); err != nil {
+			return nil, err
+		}
+		materials = append(materials, materialmodel.Material{
+			ID:         uuid.New(),
+			FolderID:   folderID,
+			Values:     values,
+			Metadata:   metadata,
+			Difficulty: input.Difficulty,
+			CreatedAt:  now,
+			UpdatedAt:  now,
+		})
+	}
+
+	if repository, ok := s.materialRepository.(batchRepository); ok {
+		if err := repository.CreateBatch(ctx, materials); err != nil {
+			return nil, fmt.Errorf("create materials: %w", err)
+		}
+		return materials, nil
+	}
+	for _, item := range materials {
+		if err := s.materialRepository.Create(ctx, item); err != nil {
+			return nil, fmt.Errorf("create material: %w", err)
+		}
+	}
+	return materials, nil
 }
 
 func (s *Service) List(

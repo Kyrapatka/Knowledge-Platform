@@ -34,6 +34,7 @@ import {
   Sparkles,
   TrendingUp,
   Trash2,
+  Upload,
   X,
   Zap,
 } from "lucide-react";
@@ -53,6 +54,7 @@ import { TrainingPage, TrainingSetup, type SavedTraining } from "./training";
 import { StatisticsPage } from "./statistics";
 import { PlanSettings } from "./settings";
 import { InterviewPage } from "./interview";
+import { ImportFolder } from "./import-folder";
 
 type LibraryContextValue = {
   data: LibraryData | null;
@@ -306,12 +308,13 @@ export function TypeIcon({ kind, size = 23 }: { kind: string; size?: number }) {
 }
 function LibraryPage() {
   const navigate = useNavigate();
-  const { data, loading, error, reload, launch } = useLibrary();
+  const { data, loading, error, reload, launch, notify } = useLibrary();
   const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
   const [create, setCreate] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   if (loading) return <Spinner />;
   if (error) return <ErrorBox error={error} retry={reload} />;
   if (!data) return null;
@@ -336,10 +339,16 @@ function LibraryPage() {
           </h1>
           <p>A collection of ideas. A little more yours, every day.</p>
         </div>
-        <button className="button primary" onClick={() => setCreate(true)}>
-          <Plus size={17} />
-          Create folder
-        </button>
+        <div className="page-heading-actions">
+          <button className="button" onClick={() => setImportOpen(true)}>
+            <Upload size={17} />
+            Import folder
+          </button>
+          <button className="button primary" onClick={() => setCreate(true)}>
+            <Plus size={17} />
+            Create folder
+          </button>
+        </div>
       </div>
       <section className="library-overview">
         <div className="overview-copy">
@@ -512,6 +521,22 @@ function LibraryPage() {
           onSaved={() => {
             setCreate(false);
             void reload();
+          }}
+        />
+      )}
+      {importOpen && (
+        <ImportFolder
+          onClose={() => setImportOpen(false)}
+          onImported={(result) => {
+            setImportOpen(false);
+            void reload();
+            const kind =
+              result.template === "english_words"
+                ? "English words"
+                : "interview questions";
+            notify(
+              `Folder imported successfully — ${result.items_created} ${kind} added.`,
+            );
           }}
         />
       )}

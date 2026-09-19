@@ -560,6 +560,13 @@ p {
   gap: 20px;
   margin-bottom: 30px;
 }
+.page-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: none;
+}
 .page-heading .eyebrow {
   font-size: 9px;
   letter-spacing: 1.8px;
@@ -1400,6 +1407,200 @@ p {
   padding-top: 18px;
   border-top: 1px solid #303740;
   margin-top: 4px;
+}
+.import-folder {
+  min-width: 0;
+}
+.import-dropzone {
+  min-width: 0;
+  padding: 28px 20px;
+  border: 1px dashed #4b5a5a;
+  border-radius: 13px;
+  background: #1c2228;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  text-align: center;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.import-dropzone.dragging {
+  border-color: var(--accent);
+  background: #20302b;
+}
+.import-dropzone > svg {
+  color: #9dd7c1;
+}
+.import-dropzone > strong {
+  font-size: 14px;
+}
+.import-dropzone > span,
+.import-dropzone > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.import-file-name {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.import-preview {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid #3f6253;
+  border-radius: 12px;
+  background: #1b2925;
+}
+.import-preview > svg,
+.import-preview > div > span {
+  color: #9ed7bf;
+}
+.import-preview > div > span {
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.import-preview h3 {
+  margin: 5px 0 15px;
+  overflow-wrap: anywhere;
+}
+.import-preview dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.import-preview dl > div {
+  min-width: 0;
+}
+.import-preview dt {
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.import-preview dd {
+  margin: 4px 0 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.import-warning {
+  margin-top: 10px;
+  color: #d7bd83;
+  font-size: 11px;
+}
+.import-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+.import-errors li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(80px, auto) minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #65434a;
+  border-radius: 9px;
+  background: #2a2025;
+  font-size: 11px;
+}
+.import-errors span {
+  overflow-wrap: anywhere;
+}
+.import-guide {
+  min-width: 0;
+  border: 1px solid #353d46;
+  border-radius: 12px;
+  background: #181d23;
+  overflow: hidden;
+}
+.import-guide > summary {
+  padding: 16px 18px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+}
+.import-guide[open] > summary {
+  border-bottom: 1px solid #303740;
+}
+.import-guide-body {
+  min-width: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+.import-guide ol {
+  margin: 0;
+  padding-left: 20px;
+  color: #aab2bc;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.import-tabs {
+  align-self: flex-start;
+}
+.import-section-heading {
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+.import-section-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+.import-section-heading p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.65;
+}
+.import-section-heading > .button {
+  flex: none;
+}
+.import-code {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  max-height: 330px;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border: 1px solid #343d46;
+  border-radius: 10px;
+  background: #11151a;
+  color: #c6d7cf;
+  font: 10px/1.7 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre;
+}
+.import-ai {
+  min-width: 0;
+  padding-top: 17px;
+  border-top: 1px solid #303740;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.import-prompt {
+  max-height: 270px;
+}
+.import-folder > .import-actions {
+  order: initial;
+  position: static;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid #303740;
+  border-radius: 0;
+  padding: 18px 0 0;
+  box-shadow: none;
 }
 .template-options {
   display: grid;
@@ -2673,6 +2874,18 @@ kbd {
     margin-bottom: 23px;
     gap: 12px;
     align-items: flex-start;
+    flex-direction: column;
+  }
+  .page-heading-actions {
+    gap: 7px;
+    width: 100%;
+  }
+  .page-heading-actions .button {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 10px;
+    font-size: 10px;
   }
   .page-heading h1 {
     font-size: 29px;
@@ -2988,6 +3201,48 @@ kbd {
   }
   .dialog-actions > .button {
     font-size: 11px;
+  }
+  .folder-editor-actions {
+    width: 100%;
+    max-width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .folder-editor-actions .flex-spacer {
+    display: none;
+  }
+  .folder-editor-actions > .button {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+  }
+  .folder-editor-actions .folder-save {
+    order: 1;
+  }
+  .folder-editor-actions .folder-cancel {
+    order: 2;
+  }
+  .folder-editor-actions .folder-delete {
+    order: 3;
+  }
+  .import-preview dl {
+    grid-template-columns: 1fr;
+  }
+  .import-section-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .import-section-heading > .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .import-tabs {
+    width: 100%;
+  }
+  .import-tabs > button {
+    flex: 1;
+    min-width: 0;
   }
   .training-header {
     padding: 19px 20px;

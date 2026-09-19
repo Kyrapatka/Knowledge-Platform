@@ -206,11 +206,11 @@ export function FolderEditor({
             </button>
           </div>
         )}
-        <div className="dialog-actions">
+        <div className="dialog-actions folder-editor-actions">
           {folder && (
             <button
               type="button"
-              className="button danger-text"
+              className="button danger-text folder-delete"
               aria-label="Delete folder"
               onClick={() => setDeleting(true)}
             >
@@ -219,10 +219,10 @@ export function FolderEditor({
             </button>
           )}
           <span className="flex-spacer" />
-          <button type="button" className="button" onClick={close}>
+          <button type="button" className="button folder-cancel" onClick={close}>
             Cancel
           </button>
-          <button className="button primary" disabled={busy || !title.trim()}>
+          <button className="button primary folder-save" disabled={busy || !title.trim()}>
             {busy ? "Saving…" : folder ? "Save changes" : "Create folder"}
             <ArrowRight size={16} />
           </button>

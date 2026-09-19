@@ -19,6 +19,7 @@ import (
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/token"
 
 	folderhandler "github.com/Kyrapatka/knowledge-platform/internal/core/folder/handler"
+	folderimporter "github.com/Kyrapatka/knowledge-platform/internal/core/folder/importer"
 	folderpostgres "github.com/Kyrapatka/knowledge-platform/internal/core/folder/repository/postgres"
 	folderservice "github.com/Kyrapatka/knowledge-platform/internal/core/folder/service"
 	foldertemplate "github.com/Kyrapatka/knowledge-platform/internal/core/folder/template"
@@ -117,6 +118,10 @@ func New(
 		folderService,
 	)
 
+	folderImportHandler := folderimporter.NewHandler(
+		folderimporter.NewService(postgresDB.GORM, templateRegistry),
+	)
+
 	// --------------------
 	// Workshop
 	// --------------------
@@ -166,6 +171,7 @@ func New(
 	application.registerRoutes(
 		authHandler,
 		folderHandler,
+		folderImportHandler,
 		workshopHandler,
 		materialHandler,
 		tokenManager,
@@ -202,6 +208,7 @@ func (a *App) Close() error {
 func (a *App) registerRoutes(
 	authHandler *authhandler.Handler,
 	folderHandler *folderhandler.Handler,
+	folderImportHandler *folderimporter.Handler,
 	workshopHandler *workshophandler.Handler,
 	materialHandler *materialhandler.Handler,
 	tokenManager *token.JWTManager,
@@ -269,6 +276,16 @@ func (a *App) registerRoutes(
 	foldersGroup.POST(
 		"",
 		folderHandler.Create,
+	)
+
+	foldersGroup.POST(
+		"/import/validate",
+		folderImportHandler.Validate,
+	)
+
+	foldersGroup.POST(
+		"/import",
+		folderImportHandler.Import,
 	)
 
 	foldersGroup.GET(

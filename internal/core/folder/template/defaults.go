@@ -170,6 +170,8 @@ func interviewQuestionsTemplate() Template {
 						Required: false,
 						Active:   true,
 					},
+					{Key: "keywords", Label: "Keywords", Active: false},
+					{Key: "concepts", Label: "Concepts", Active: false},
 				},
 			},
 

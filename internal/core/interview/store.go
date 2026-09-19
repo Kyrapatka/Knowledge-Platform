@@ -172,6 +172,13 @@ func (s *Store) SaveProfile(ctx context.Context, user, folder, material uuid.UUI
 	return out, err
 }
 
+// SaveProfileTx persists a profile on the store's existing transaction. It is
+// used by operations that must atomically create a folder, its materials and
+// their interview profiles. The caller must hold the user row lock.
+func (s *Store) SaveProfileTx(ctx context.Context, user, folder, material uuid.UUID, req ProfileRequest) (Profile, error) {
+	return saveProfile(s.db.WithContext(ctx), user, folder, material, req)
+}
+
 func normalizeAlias(s string) string {
 	s = strings.ToLower(norm.NFKC.String(s))
 	s = strings.NewReplacer("ё", "е", "–", "-", "—", "-", "‑", "-").Replace(s)

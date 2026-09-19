@@ -58,6 +58,43 @@ func (r *Repository) Create(
 	})
 }
 
+func (r *Repository) CreateBatch(
+	ctx context.Context,
+	materials []materialmodel.Material,
+) error {
+	if len(materials) == 0 {
+		return nil
+	}
+	models := make([]materialModel, 0, len(materials))
+	for _, materialEntity := range materials {
+		model, err := toModel(materialEntity)
+		if err != nil {
+			return err
+		}
+		models = append(models, model)
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var owner struct{ ID uuid.UUID }
+		if err := tx.Table("folders").Select("owner_id AS id").Where("id=? AND deleted_at IS NULL", materials[0].FolderID).Take(&owner).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return material.ErrFolderNotFound
+			}
+			return err
+		}
+		if err := tx.Table("users").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id=?", owner.ID).Take(&owner).Error; err != nil {
+			return err
+		}
+		var count int64
+		if err := tx.Table("folders").Where("id=? AND deleted_at IS NULL", materials[0].FolderID).Count(&count).Error; err != nil {
+			return err
+		}
+		if count == 0 {
+			return material.ErrFolderNotFound
+		}
+		return tx.CreateInBatches(&models, 250).Error
+	})
+}
+
 func (r *Repository) GetByID(
 	ctx context.Context,
 	id uuid.UUID,
