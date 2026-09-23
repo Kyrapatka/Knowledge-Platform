@@ -13,7 +13,11 @@ func (t *runtimeTx) SaveUndo(s model.UndoSnapshot) error {
 	if err != nil {
 		return err
 	}
-	if err = t.db.Table("training_undo").Create(map[string]any{"event_id": s.EventID, "user_id": t.user, "plan_id": s.PlanID, "session_id": s.SessionID, "material_id": s.MaterialID, "expected_version": s.ExpectedVersion, "snapshot": raw}).Error; err != nil {
+	var planID any = s.PlanID
+	if s.PlanID == uuid.Nil {
+		planID = nil
+	}
+	if err = t.db.Table("training_undo").Create(map[string]any{"event_id": s.EventID, "user_id": t.user, "plan_id": planID, "session_id": s.SessionID, "material_id": s.MaterialID, "expected_version": s.ExpectedVersion, "snapshot": raw}).Error; err != nil {
 		return err
 	}
 	return t.db.Exec("DELETE FROM training_undo WHERE user_id=? AND id NOT IN (SELECT id FROM training_undo WHERE user_id=? ORDER BY id DESC LIMIT 3)", t.user, t.user).Error
@@ -60,8 +64,10 @@ func (t *runtimeTx) RestoreUndo(s model.UndoSnapshot, version int, now time.Time
 	if err := t.db.Table("training_sessions").Where("id=? AND user_id=?", s.SessionID, t.user).Updates(map[string]any{"status": "active", "finished_at": nil}).Error; err != nil {
 		return err
 	}
-	if err := t.db.Table("training_plans").Where("id=? AND user_id=?", s.PlanID, t.user).Updates(map[string]any{"status": "active", "updated_at": now}).Error; err != nil {
-		return err
+	if s.PlanID != uuid.Nil {
+		if err := t.db.Table("training_plans").Where("id=? AND user_id=?", s.PlanID, t.user).Updates(map[string]any{"status": "active", "updated_at": now}).Error; err != nil {
+			return err
+		}
 	}
 	result := t.db.Table("training_events").Where("id=? AND user_id=? AND undone_at IS NULL", s.EventID, t.user).Update("undone_at", now)
 	if result.Error != nil {

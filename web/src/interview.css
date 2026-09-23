@@ -750,3 +750,15 @@
     font-size: 12px;
   }
 }
+.interview-source-actions { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+.interview-weights { margin:12px 0; padding:12px; border:1px solid var(--border); border-radius:12px; min-width:0; }
+.interview-weights label { display:grid; grid-template-columns:minmax(0,1fr) 76px; align-items:center; gap:10px; margin:8px 0; }
+.interview-weights input { min-width:0; width:100%; }
+.interview-mode-help, .interview-weights small { overflow-wrap:anywhere; }
+.interview-distribution { margin:18px 0; font-size:13px; }
+.interview-distribution > div { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 10px; padding:8px 0; }
+.interview-distribution small { grid-column:1 / -1; }
+.interview-bank-warning { position:relative; padding-right:42px; }
+.interview-bank-warning > button { position:absolute; right:8px; top:8px; display:flex; padding:5px; border:0; background:transparent; color:inherit; cursor:pointer; }
+.interview-session-options { min-width:0; }
+.interview-session-options select { max-width:100%; min-width:0; width:100%; }

@@ -24,7 +24,7 @@ test("real question bank: import, metadata routes, undo, resume, drafts and fold
   await page.getByRole("combobox",{name:"Interview level",exact:true}).selectOption("3");
   await page.getByRole("checkbox",{name:/Bank testing mode/}).check();
   await page.locator(".interview-source").filter({hasText:"Interview / Go"}).getByRole("checkbox").check();
-  const started=page.waitForResponse(r=>r.url().includes("/interview-graph") && r.request().method()==="POST");
+  const started=page.waitForResponse(r=>r.url().endsWith("/training/mock-interviews") && r.request().method()==="POST");
   await page.getByRole("button",{name:"Start interview",exact:true}).click();
   const first=await (await started).json();
   expect(first.current.interview_graph.review_credit).toBe(false);
@@ -53,7 +53,7 @@ test("real question bank: import, metadata routes, undo, resume, drafts and fold
   expect(view.graph.selection.detected_concepts.every((c:{source:string})=>["answer","hook"].includes(c.source))).toBeTruthy();
   view=await act("Wrong","wrong");
   const beforeSwitch=view;
-  view=await act("Next Route","next_route");
+  view=await act("Next Root","next_route");
   expect(view.summary.correct).toBe(beforeSwitch.summary.correct);
   expect(view.summary.wrong).toBe(beforeSwitch.summary.wrong);
   const undo=page.waitForResponse(r=>r.url().endsWith("/undo"));
@@ -71,6 +71,15 @@ test("real question bank: import, metadata routes, undo, resume, drafts and fold
   await page.getByRole("button",{name:"End interview",exact:true}).click();
   await expect(page.getByRole("heading",{name:"A little more prepared."})).toBeVisible();
   await page.setViewportSize({width:1440,height:1000});
+  await page.getByRole("button",{name:"Choose another interview"}).click();
+  await page.getByRole("button",{name:"Select all",exact:true}).click();
+  await page.getByRole("checkbox",{name:/Bank testing mode/}).check();
+  const allStarted=page.waitForResponse(r=>r.url().endsWith("/training/mock-interviews")&&r.request().method()==="POST");
+  await page.getByRole("button",{name:"Start interview",exact:true}).click();
+  const allResult=await allStarted;expect(allResult.status()).toBe(200);
+  expect((await allResult.json()).session.selection).toHaveLength(15);
+  await page.getByRole("button",{name:"End interview",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"A little more prepared."})).toBeVisible();
   await page.locator(".interview-run-top").getByRole("link",{name:"Library"}).click();
   await page.getByRole("link",{name:"Interview / Go",exact:true}).click();
   const deletion=page.waitForResponse(r=>r.request().method()==="DELETE" && r.url().includes("/folders/"));

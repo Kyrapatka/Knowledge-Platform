@@ -3,22 +3,27 @@ package config
 import (
 	"errors"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
 const (
-	defaultHTTPAddress    = ":8080"
-	defaultJWTIssuer      = "knowledge-platform"
-	defaultAccessTokenTTL = 15 * time.Minute
-	defaultRefreshTTL     = 30 * 24 * time.Hour
+	defaultHTTPAddress         = ":8080"
+	defaultHTTPShutdownTimeout = 15 * time.Second
+	defaultJWTIssuer           = "knowledge-platform"
+	defaultAccessTokenTTL      = 15 * time.Minute
+	defaultRefreshTTL          = 30 * 24 * time.Hour
 )
 
 type Config struct {
+	LogLevel    string
+	LogFormat   string
 	DatabaseURL string
 
-	HTTPAddress string
+	HTTPAddress         string
+	HTTPShutdownTimeout time.Duration
 
 	JWTSecret       string
 	JWTIssuer       string
@@ -65,16 +70,42 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	shutdownTimeout, err := durationFromEnv("HTTP_SHUTDOWN_TIMEOUT", defaultHTTPShutdownTimeout)
+	if err != nil {
+		return Config{}, err
+	}
+	logLevel, err := choiceFromEnv("LOG_LEVEL", "info", []string{"debug", "info", "warn", "error"})
+	if err != nil {
+		return Config{}, err
+	}
+	logFormat, err := choiceFromEnv("LOG_FORMAT", "text", []string{"text", "json"})
+	if err != nil {
+		return Config{}, err
+	}
 	return Config{
+		LogLevel:    logLevel,
+		LogFormat:   logFormat,
 		DatabaseURL: databaseURL,
 
-		HTTPAddress: httpAddress,
+		HTTPAddress:         httpAddress,
+		HTTPShutdownTimeout: shutdownTimeout,
 
 		JWTSecret:       jwtSecret,
 		JWTIssuer:       jwtIssuer,
 		AccessTokenTTL:  accessTokenTTL,
 		RefreshTokenTTL: refreshTokenTTL,
 	}, nil
+}
+
+func choiceFromEnv(key, fallback string, allowed []string) (string, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback, nil
+	}
+	if !slices.Contains(allowed, value) {
+		return "", errors.New(key + " has an unsupported value")
+	}
+	return value, nil
 }
 
 func durationFromEnv(

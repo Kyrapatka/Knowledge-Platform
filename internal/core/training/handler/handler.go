@@ -38,6 +38,9 @@ func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.POST("/training/plans/:planID/sessions", h.StartSession)
 	api.POST("/training/plans/:planID/interview-graph", h.StartGraph)
 	api.GET("/training/interview-graph/config", h.GraphConfig)
+	api.POST("/training/mock-interviews", h.StartMock)
+	api.GET("/training/mock-interviews/active", h.ActiveMock)
+	api.POST("/training/mock-interviews/preview", h.PreviewMock)
 	api.POST("/training/sessions/:sessionID/undo", h.UndoGraph)
 	api.GET("/training/sessions/:sessionID", h.GetSession)
 	api.GET("/training/sessions/:sessionID/current", h.GetSession)
@@ -73,6 +76,8 @@ func respond(c *gin.Context, status int, value any, err error) {
 		return
 	}
 	switch {
+	case errors.Is(err, service.ErrMockActive):
+		c.JSON(http.StatusConflict, gin.H{"error": "active_mock_interview", "message": err.Error()})
 	case errors.Is(err, repository.ErrNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "training_not_found"})
 	case errors.Is(err, repository.ErrConflict):

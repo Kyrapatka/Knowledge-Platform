@@ -52,7 +52,7 @@ func (s *Service) UndoGraph(ctx context.Context, user, sessionID uuid.UUID, req 
 		if snapshot.EventID != req.EventID || snapshot.SessionID != sessionID || snapshot.GraphStateBefore == nil {
 			return repository.ErrConflict
 		}
-		p, err := tx.Plan(session.PlanID)
+		p, err := sessionPlan(tx, session)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,10 @@ func (s *Service) UndoGraph(ctx context.Context, user, sessionID uuid.UUID, req 
 		if _, err = tx.Material(snapshot.MaterialID); err != nil {
 			return err
 		}
-		progress, err := tx.Progress().Get(ctx, keyFor(p, snapshot.MaterialID))
+		progress := model.UserMaterialProgress{}
+		if !snapshot.GraphStateBefore.PracticeOnly {
+			progress, err = tx.Progress().Get(ctx, keyFor(p, snapshot.MaterialID))
+		}
 		if errors.Is(err, repository.ErrNotFound) && snapshot.GraphProbe && snapshot.ExpectedVersion == 0 {
 			progress = model.UserMaterialProgress{}
 			err = nil
@@ -79,7 +82,7 @@ func (s *Service) UndoGraph(ctx context.Context, user, sessionID uuid.UUID, req 
 		}
 		now := s.now().UTC()
 		version := progress.Version
-		if !snapshot.GraphProbe {
+		if !snapshot.GraphStateBefore.PracticeOnly && !snapshot.GraphProbe {
 			before := snapshot.Before
 			before.Version = version
 			before.UpdatedAt = now

@@ -31,13 +31,37 @@ func (g *graphTx) candidates(p model.TrainingPlan, s model.TrainingSession, now 
 		Where("COALESCE(btrim(m.values->>'question'),'') NOT IN ('','.')").
 		Where("(p.material_id IS NULL OR (p.algorithm_key=? AND p.algorithm_version=?))", p.AlgorithmKey, p.AlgorithmVersion)
 	query = selectedMaterials(query, s.Selection)
+	if p.ID == uuid.Nil {
+		// No progress join: existing schedules/algorithm versions cannot hide mock
+		// candidates or create progress. Profile-less ordinary imports use metadata.
+		query = g.t.db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").Joins("LEFT JOIN interview_question_profiles q ON q.material_id=m.id AND q.folder_id=m.folder_id").
+			Where("f.owner_id=? AND f.deleted_at IS NULL AND m.deleted_at IS NULL AND f.template_key='interview_questions' AND m.folder_id IN ? AND COALESCE(q.status,'ready') IN ('ready','draft')", g.t.user, p.SourceFolderIDs).
+			Where("COALESCE(btrim(m.values->>'question'),'') NOT IN ('','.')")
+		query = selectedMaterials(query, s.Selection)
+		if root {
+			query = query.Where("COALESCE(q.root_weight,5)>0")
+		}
+		err := query.Select(`m.id AS material_id,m.folder_id,f.title AS folder_title,COALESCE(m.metadata->>'keywords','') AS keywords,
+ m.values->>'question' AS question,COALESCE(NULLIF(m.metadata->>'topic',''),m.metadata->>'category','') AS topic,
+ COALESCE(q.domain,m.metadata->>'domain','') AS domain,COALESCE(q.subtopic,m.metadata->>'subtopic',m.metadata->>'category','') AS subtopic,
+ COALESCE(q.status,'ready') AS status,COALESCE(q.frequency,5) AS frequency,COALESCE(q.interview_difficulty,3) AS interview_difficulty,
+ COALESCE(q.specificity,2) AS specificity,COALESCE(q.root_weight,5) AS root_weight,COALESCE(q.followup_weight,5) AS followup_weight,
+ COALESCE(q.level_min,1) AS level_min,COALESCE(q.level_max,5) AS level_max,q.seed_key,q.profile_version,
+ (COALESCE(btrim(m.values->>'answer'),'') NOT IN ('','.') OR COALESCE(btrim(m.values->>'short_answer'),'') NOT IN ('','.')) AS has_answer`).Order("m.id").Limit(5000).Scan(&out).Error
+		if err != nil {
+			return nil, err
+		}
+	}
 	if root {
 		query = query.Where("q.root_weight>0")
 	}
-	err := query.Select(`q.*,m.id AS material_id,m.folder_id,m.values->>'question' AS question,COALESCE(m.metadata->>'topic',m.metadata->>'category','') AS topic,
+	var err error
+	if p.ID != uuid.Nil {
+		err = query.Select(`q.*,m.id AS material_id,m.folder_id,m.values->>'question' AS question,COALESCE(m.metadata->>'topic',m.metadata->>'category','') AS topic,
  (COALESCE(btrim(m.values->>'answer'),'') NOT IN ('','.') OR COALESCE(btrim(m.values->>'short_answer'),'') NOT IN ('','.')) AS has_answer, (p.material_id IS NULL) AS new, COALESCE(p.next_review_at<=?,FALSE) AS due,
  CASE WHEN p.material_id IS NULL THEN 1.0 ELSE LEAST(1.0,GREATEST(0.0,(p.wrong_count+1.0)/(p.correct_count+p.wrong_count+2.0))) END AS learning_need`, now).
-		Order("m.id").Limit(5000).Scan(&out).Error
+			Order("m.id").Limit(5000).Scan(&out).Error
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +221,7 @@ func (g *graphTx) Statistics(session uuid.UUID) (model.GraphStatistics, error) {
 	}
 	// Join via the exact displayed snapshot, so edits/deletion cannot rewrite coverage.
 	err := g.t.db.Raw(`SELECT e.action,e.review_credit,s.depth_after,s.snapshot,s.from_material_id FROM training_events e
- JOIN interview_graph_selection_events s ON s.session_id=e.session_id AND s.to_material_id=e.material_id
+ JOIN LATERAL (SELECT x.* FROM interview_graph_selection_events x WHERE x.session_id=e.session_id AND x.to_material_id=e.material_id AND x.undone_at IS NULL AND ((e.graph_selection_event_id IS NOT NULL AND x.id=e.graph_selection_event_id) OR (e.graph_selection_event_id IS NULL AND x.created_at<=e.created_at)) ORDER BY x.selection_order DESC,x.id LIMIT 1) s ON TRUE
  WHERE e.user_id=? AND e.session_id=? AND e.undone_at IS NULL AND s.undone_at IS NULL AND e.action IN ('correct','wrong') ORDER BY s.selection_order,e.id`, g.t.user, session).Scan(&rows).Error
 	if err != nil {
 		return out, err

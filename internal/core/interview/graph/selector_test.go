@@ -130,7 +130,7 @@ func TestLimitsAndAlreadyAsked(t *testing.T) {
 	}
 	s.Config.QuestionLimit = 24
 	s.Config.MaxRoots = 1
-	s.CurrentDepth = 10
+	s.CurrentDepth = s.Config.MaxDepthPerBranch
 	if got := SelectFollowUp(s, cs[0], "stack", "", false, cs, c); got.Candidate != nil {
 		t.Fatal(got)
 	}

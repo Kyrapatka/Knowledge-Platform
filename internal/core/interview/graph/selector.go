@@ -18,6 +18,18 @@ func clone(s State) State {
 	return out
 }
 func Eligible(c Candidate, s State) bool {
+	if s.PracticeOnly && s.Plan != nil {
+		allowed := false
+		for _, topic := range s.Plan.Topics {
+			if topic.Key == Classify(c) && topic.Weight > 0 {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return false
+		}
+	}
 	if strings.TrimSpace(c.Question) == "" || strings.TrimSpace(c.Question) == "." || c.Status == "archived" || (c.Status != "ready" && !(s.Config.IncludeDraft && c.Status == "draft")) || (!s.Config.IncludeDraft && !c.HasAnswer) {
 		return false
 	}
@@ -195,10 +207,13 @@ func finishSelection(out Selection, c Candidate, depth int, root bool) Selection
 		}
 	}
 	out.Candidate = &c
-	out.ReviewCredit = !s.Config.IncludeDraft && c.Status == "ready" && c.HasAnswer && (c.Due || (root && c.New))
+	out.ReviewCredit = !s.PracticeOnly && !s.Config.IncludeDraft && c.Status == "ready" && c.HasAnswer && (c.Due || (root && c.New))
 	return out
 }
 func SelectRoot(state State, candidates []Candidate) Selection {
+	if state.PracticeOnly {
+		return selectMockRoot(state, candidates)
+	}
 	out := Selection{State: clone(state), Matches: []Match{}, Scores: []Score{}}
 	if state.QuestionsAsked >= state.Config.QuestionLimit {
 		out.State.StopReason = "question_limit"
@@ -340,6 +355,9 @@ func SelectFollowUp(state State, current Candidate, answer, language string, wro
 // SelectMetadata is the runtime and CLI entry point. Routing only reads
 // question metadata; neither aliases nor user-authored answer prose are parsed.
 func SelectMetadata(state State, current Candidate, action string, candidates []Candidate, catalog Catalog) Selection {
+	if state.PracticeOnly {
+		return selectMockNext(state, current, action, candidates, catalog)
+	}
 	wrong := action == "wrong"
 	nextRoute := action == "next_route"
 	matches := []Match{}

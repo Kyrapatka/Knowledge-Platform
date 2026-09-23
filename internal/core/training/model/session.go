@@ -47,6 +47,7 @@ type SessionItem struct {
 }
 
 type TrainingEvent struct {
+	GraphSelectionEventID *uuid.UUID    `json:"graph_selection_event_id,omitempty"`
 	ReviewCredit          bool          `json:"review_credit"`
 	EventMode             string        `json:"event_mode"`
 	Direction             string        `json:"direction,omitempty"`

@@ -58,8 +58,13 @@ func newFixture(t *testing.T) *fixture {
 		}
 		baseSQL.Close()
 	})
-	scopedDSN:=dsn+" search_path="+schema
-	if u.Host!="" {query:=u.Query();query.Set("search_path",schema);u.RawQuery=query.Encode();scopedDSN=u.String()}
+	scopedDSN := dsn + " search_path=" + schema
+	if u.Host != "" {
+		query := u.Query()
+		query.Set("search_path", schema)
+		u.RawQuery = query.Encode()
+		scopedDSN = u.String()
+	}
 	db, err := gorm.Open(postgres.Open(scopedDSN), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatal(err)

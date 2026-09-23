@@ -8,6 +8,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormlog "gorm.io/gorm/logger"
 )
 
 const (
@@ -27,10 +28,13 @@ func OpenPostgres(databaseURL string) (*Postgres, error) {
 		postgres.Open(databaseURL),
 		&gorm.Config{
 			TranslateError: true,
+			// Default GORM error logs interpolate SQL parameters, including auth
+			// hashes/tokens. Return errors to the boundary; do not log them twice.
+			Logger: gormlog.Discard,
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("open PostgreSQL connection: %w", err)
+		return nil, fmt.Errorf("open PostgreSQL connection: %w", SafeConnectionError(err))
 	}
 
 	sqlDB, err := gormDB.DB()
@@ -51,7 +55,7 @@ func OpenPostgres(databaseURL string) (*Postgres, error) {
 	if err := sqlDB.PingContext(ctx); err != nil {
 		_ = sqlDB.Close()
 
-		return nil, fmt.Errorf("ping PostgreSQL: %w", err)
+		return nil, fmt.Errorf("ping PostgreSQL: %w", SafeConnectionError(err))
 	}
 
 	return &Postgres{

@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/database"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,7 +33,7 @@ func run() error {
 	defer cancel()
 	conn, err := pgx.Connect(ctx, dsn)
 	if err != nil {
-		return fmt.Errorf("connect to database: %w", err)
+		return fmt.Errorf("connect to database: %w", database.SafeConnectionError(err))
 	}
 	defer conn.Close(ctx)
 	// Hold a session-level lock for this runner; individual migrations are atomic.

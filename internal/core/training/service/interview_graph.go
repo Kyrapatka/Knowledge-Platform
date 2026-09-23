@@ -56,7 +56,12 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 		if !errors.Is(err, repository.ErrNotFound) {
 			return err
 		}
-		plan, err := tx.Plan(planID)
+		var plan model.TrainingPlan
+		if planID == uuid.Nil {
+			plan, err = mockContext(tx, user, req.Sources)
+		} else {
+			plan, err = tx.Plan(planID)
+		}
 		if err != nil {
 			return err
 		}
@@ -105,7 +110,10 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 			if err != nil {
 				return err
 			}
-			if !reflect.DeepEqual(active.Selection, sources) || state.Config != config {
+			if !reflect.DeepEqual(active.Selection, sources) || !reflect.DeepEqual(state.Config, config) {
+				if planID == uuid.Nil {
+					return ErrMockActive
+				}
 				return fmt.Errorf("%w: resume or end the existing interview before changing its settings", repository.ErrConflict)
 			}
 			out, err = s.graphView(ctx, tx, plan, active)
@@ -129,9 +137,17 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 			for _, source := range sources {
 				state.Sources = append(state.Sources, graph.Source{FolderID: source.FolderID, Topics: source.Topics})
 			}
+			state.PracticeOnly = planID == uuid.Nil
 			candidates, err := tx.InterviewGraph().RootCandidates(plan, session, now)
 			if err != nil {
 				return err
+			}
+			if state.PracticeOnly {
+				interviewPlan, e := graph.BuildPlan(state, candidates)
+				if e != nil {
+					return fmt.Errorf("%w: %s", ErrInvalid, e)
+				}
+				state.Plan = &interviewPlan
 			}
 			selected := graph.SelectRoot(state, candidates)
 			if _, err = s.persistGraphSelection(ctx, tx, plan, &session, state, selected, nil, ""); err != nil {
@@ -171,8 +187,11 @@ func (s *Service) persistGraphSelection(ctx context.Context, tx repository.Tx, p
 	if err != nil {
 		return nil, err
 	}
-	progress, err := tx.Progress().Get(ctx, keyFor(p, m.ID))
-	if selected.ReviewCredit && !selected.State.Config.IncludeDraft {
+	progress := model.UserMaterialProgress{MaterialID: m.ID, Stage: 1}
+	if !selected.State.PracticeOnly {
+		progress, err = tx.Progress().Get(ctx, keyFor(p, m.ID))
+	}
+	if !selected.State.PracticeOnly && selected.ReviewCredit && !selected.State.Config.IncludeDraft {
 		progress, err = s.ensureProgress(ctx, tx, p, m, now)
 	} else if errors.Is(err, repository.ErrNotFound) {
 		progress = model.UserMaterialProgress{MaterialID: m.ID, Stage: 1}

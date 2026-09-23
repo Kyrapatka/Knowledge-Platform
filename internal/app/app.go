@@ -1,14 +1,17 @@
 package app
 
 import (
+	"errors"
 	"fmt"
+	"log/slog"
+	"net/http"
+
 	"github.com/Kyrapatka/knowledge-platform/internal/core/dashboard"
 	interview "github.com/Kyrapatka/knowledge-platform/internal/core/interview"
 	traininghandler "github.com/Kyrapatka/knowledge-platform/internal/core/training/handler"
 	trainingpostgres "github.com/Kyrapatka/knowledge-platform/internal/core/training/repository/postgres"
 	trainingservice "github.com/Kyrapatka/knowledge-platform/internal/core/training/service"
 	"github.com/Kyrapatka/knowledge-platform/internal/webui"
-	"net/http"
 
 	"github.com/Kyrapatka/knowledge-platform/config"
 
@@ -32,21 +35,26 @@ import (
 	materialservice "github.com/Kyrapatka/knowledge-platform/internal/core/material/service"
 
 	"github.com/Kyrapatka/knowledge-platform/internal/platform/database"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/httpmiddleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 type App struct {
-	router *gin.Engine
-
-	httpAddress string
+	logger    *slog.Logger
+	server    *http.Server
+	readiness Readiness
 
 	closeDatabase func() error
 }
 
 func New(
 	cfg config.Config,
+	logger *slog.Logger,
 ) (*App, error) {
+	if logger == nil {
+		return nil, errors.New("application logger is required")
+	}
 	postgresDB, err := database.OpenPostgres(
 		cfg.DatabaseURL,
 	)
@@ -56,6 +64,7 @@ func New(
 			err,
 		)
 	}
+	logger.Info("database connected")
 
 	// --------------------
 	// Auth
@@ -77,12 +86,12 @@ func New(
 		cfg.AccessTokenTTL,
 	)
 	if err != nil {
-		_ = postgresDB.Close()
-
-		return nil, fmt.Errorf(
-			"create token manager: %w",
-			err,
-		)
+		startupErr := fmt.Errorf("create token manager: %w", err)
+		if closeErr := postgresDB.Close(); closeErr != nil {
+			return nil, errors.Join(startupErr, fmt.Errorf("close database after startup failure: %w", closeErr))
+		}
+		logger.Info("database closed")
+		return nil, startupErr
 	}
 
 	authService := authservice.New(
@@ -158,17 +167,19 @@ func New(
 	router := gin.New()
 
 	router.Use(
-		gin.Logger(),
-		gin.Recovery(),
+		httpmiddleware.RequestID(logger),
+		httpmiddleware.AccessLog(logger),
+		httpmiddleware.Recovery(),
 	)
 
 	application := &App{
-		router:        router,
-		httpAddress:   cfg.HTTPAddress,
+		logger:        logger,
+		server:        newHTTPServer(cfg.HTTPAddress, router),
 		closeDatabase: postgresDB.Close,
 	}
 
 	application.registerRoutes(
+		router,
 		authHandler,
 		folderHandler,
 		folderImportHandler,
@@ -183,29 +194,12 @@ func New(
 	interview.NewHandler(postgresDB.GORM).RegisterRoutes(trainingAPI)
 	webui.Register(router, "web/dist")
 
+	application.readiness.SetReady(true)
 	return application, nil
 }
 
-func (a *App) Run() error {
-	fmt.Printf(
-		"HTTP server started on %s\n",
-		a.httpAddress,
-	)
-
-	return a.router.Run(
-		a.httpAddress,
-	)
-}
-
-func (a *App) Close() error {
-	if a.closeDatabase == nil {
-		return nil
-	}
-
-	return a.closeDatabase()
-}
-
 func (a *App) registerRoutes(
+	router *gin.Engine,
 	authHandler *authhandler.Handler,
 	folderHandler *folderhandler.Handler,
 	folderImportHandler *folderimporter.Handler,
@@ -217,7 +211,7 @@ func (a *App) registerRoutes(
 	// Health
 	// --------------------
 
-	a.router.GET(
+	router.GET(
 		"/health",
 		func(c *gin.Context) {
 			c.JSON(
@@ -229,7 +223,9 @@ func (a *App) registerRoutes(
 		},
 	)
 
-	api := a.router.Group(
+	a.registerProbes(router)
+
+	api := router.Group(
 		"/api/v1",
 	)
 

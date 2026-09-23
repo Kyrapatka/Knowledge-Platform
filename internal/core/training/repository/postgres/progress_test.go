@@ -157,8 +157,8 @@ func TestProgressPostgres(t *testing.T) {
 		}
 	}
 	// Validate rollback migrations too, still entirely inside the private schema.
-	for i := len(files)-1; i >= 6; i-- {
-		content, e := os.ReadFile(strings.TrimSuffix(files[i],".up.sql")+".down.sql")
+	for i := len(files) - 1; i >= 6; i-- {
+		content, e := os.ReadFile(strings.TrimSuffix(files[i], ".up.sql") + ".down.sql")
 		if e != nil {
 			t.Fatal(e)
 		}

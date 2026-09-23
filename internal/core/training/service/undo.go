@@ -147,6 +147,17 @@ func availableUndos(ctx context.Context, tx repository.Tx, sessions []model.Trai
 		if !allowed[entry.SessionID] {
 			break
 		}
+		if entry.PlanID == uuid.Nil && entry.GraphStateBefore != nil && entry.GraphStateBefore.PracticeOnly {
+			latest, err := tx.LatestSession(uuid.Nil)
+			if err != nil {
+				return nil, err
+			}
+			if latest.ID != entry.SessionID || latest.Status == model.StatusCancelled {
+				break
+			}
+			result = append(result, entry.EventID)
+			continue
+		}
 		p, err := tx.Plan(entry.PlanID)
 		if err != nil {
 			return nil, err

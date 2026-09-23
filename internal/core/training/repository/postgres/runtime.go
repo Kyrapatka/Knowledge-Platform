@@ -172,6 +172,10 @@ func (t *runtimeTx) Session(id uuid.UUID) (model.TrainingSession, error) {
 }
 func (t *runtimeTx) ActiveSession(plan uuid.UUID) (model.TrainingSession, error) {
 	var s model.TrainingSession
+	if plan == uuid.Nil {
+		err := t.db.Table("training_sessions").Where("plan_id IS NULL AND user_id=? AND status='active'", t.user).Take(&s).Error
+		return s, translate(err)
+	}
 	err := t.db.Table("training_sessions").Where("plan_id=? AND user_id=? AND status='active'", plan, t.user).Take(&s).Error
 	return s, translate(err)
 }
@@ -184,6 +188,12 @@ func (t *runtimeTx) CreateSession(s model.TrainingSession) error {
 	}
 	if s.UserID != t.user {
 		return repository.ErrNotFound
+	}
+	if s.PlanID == uuid.Nil {
+		if s.SelectionStrategy != model.SelectionInterviewGraphV1 || s.Combined {
+			return repository.ErrConflict
+		}
+		return t.db.Table("training_sessions").Omit("PlanID").Create(&s).Error
 	}
 	if _, err := t.Plan(s.PlanID); err != nil {
 		return err
@@ -343,6 +353,9 @@ func (t *runtimeTx) SaveEvent(e model.TrainingEvent) error {
 		if err := t.db.Exec("DELETE FROM training_undo WHERE user_id=?", t.user).Error; err != nil {
 			return err
 		}
+	}
+	if e.PlanID == uuid.Nil {
+		return t.db.Table("training_events").Omit("PlanID").Create(&e).Error
 	}
 	return t.db.Table("training_events").Create(&e).Error
 }

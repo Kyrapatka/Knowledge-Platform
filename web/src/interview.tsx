@@ -11,11 +11,12 @@ import {
   RotateCcw,
   Settings2,
   Sparkles,
+  X,
 } from "lucide-react";
 import { api, ApiError, errorText, post, readStored, saveStored } from "./api";
 import { useAuth } from "./auth";
 import { useLibrary } from "./App";
-import type { Folder, Plan } from "./types";
+import type { Folder } from "./types";
 import { ErrorBox, Markdown, Spinner } from "./ui";
 import {
   defaultGraphConfig,
@@ -23,6 +24,7 @@ import {
   interviewLevels,
   type InterviewGraphConfig,
   type InterviewSession,
+  type InterviewPlan,
 } from "./interview-types";
 import { InterviewBankTools } from "./interview-editor";
 import "./interview.css";
@@ -47,14 +49,18 @@ export function InterviewPage() {
     () => readStored<string>(storageKey) || "",
   );
   const [view, setView] = useState<InterviewSession | null>(null);
-  const [loading, setLoading] = useState(!!sessionID);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   async function restore() {
-    if (!sessionID) return;
     setLoading(true);
     setError("");
     try {
-      setView(await api<InterviewSession>(`/training/sessions/${sessionID}`));
+      const restored = await api<InterviewSession>(sessionID ? `/training/sessions/${sessionID}` : "/training/mock-interviews/active");
+      if (restored.graph?.state.practice_only) setView(restored);
+      else { // Old plan-backed graph sessions retain their API/SRS semantics,
+        // but must never be presented as practice-only Mock Interview.
+        saveStored(storageKey, null);setSessionID("");setView(null);
+      }
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
         saveStored(storageKey, null);
@@ -108,39 +114,27 @@ function InterviewSetup({
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [topics, setTopics] = useState<Record<string, string[]>>({});
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [planID, setPlanID] = useState("");
+  const [preview, setPreview] = useState<InterviewPlan | null>(null);
+  const [previewError, setPreviewError] = useState("");
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [availableTopicKeys, setAvailableTopicKeys] = useState<string[]>([]);
+  const [canResume, setCanResume] = useState(false);
   const [config, setConfig] = useState(defaultGraphConfig);
   const [advanced, setAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const startCommand = useRef<{
     id: string;
-    planID: string;
     sources: { folder_id: string; topics?: string[] }[];
     config: InterviewGraphConfig;
   } | null>(null);
   useEffect(() => {
     let alive = true;
     async function load() {
-      const all: Plan[] = [];
-      for (let offset = 0; ; offset += 100) {
-        const batch = await api<Plan[]>(
-          `/training/plans?limit=100&offset=${offset}`,
-        );
-        all.push(...batch);
-        if (batch.length < 100) break;
-      }
       const defaults = await api<InterviewGraphConfig>(
         "/training/interview-graph/config",
       );
       if (alive) {
-        setPlans(
-          all.filter(
-            (p) =>
-              p.status === "active" && p.algorithm_key.startsWith("interview_"),
-          ),
-        );
         setConfig(defaults);
       }
     }
@@ -151,37 +145,37 @@ function InterviewSetup({
       alive = false;
     };
   }, []);
-  const selectedPlan = plans.find((p) => p.id === planID);
-  const available = folders.filter(
-    (f) => !selectedPlan || selectedPlan.source_folder_ids.includes(f.id),
-  );
+  const available = folders;
+  const sources = selected.map(folder_id => ({folder_id, ...(topics[folder_id]?.length ? {topics:topics[folder_id]} : {})}));
+  const previewKey = JSON.stringify({sources,config});
+  useEffect(() => {
+    let alive = true;
+    setPreview(null); setPreviewError(""); setPreviewBusy(!!selected.length);
+    if (!selected.length) {setAvailableTopicKeys([]);return;}
+    const timer = setTimeout(() => {
+      void post<InterviewPlan>("/training/mock-interviews/preview", {sources,config}).then(value => {
+        if (alive) {setPreview(value);setAvailableTopicKeys(value.topics.map(t=>t.key));}
+      }).catch(async e => {
+        if (alive) setPreviewError(errorText(e));
+        // Keep the controls for available topics even when all custom weights
+        // are zero, so the user can correct the invalid configuration.
+        if (config.interview_mode === "custom") {
+          try {const available = await post<InterviewPlan>("/training/mock-interviews/preview", {sources,config:{...config,interview_mode:"balanced",custom_weights:undefined}});if(alive)setAvailableTopicKeys(available.topics.map(t=>t.key));} catch { /* The original source/validation error remains visible. */ }
+        }
+      }).finally(() => {if (alive) setPreviewBusy(false);});
+    }, 200);
+    return () => { alive = false; clearTimeout(timer); };
+  }, [previewKey]);
   async function start(e: FormEvent) {
     e.preventDefault();
     if (busy || !selected.length) return;
     setBusy(true);
     setError("");
+    setCanResume(false);
     try {
       if (!startCommand.current) {
-        let target =
-          selectedPlan ||
-          plans.find(
-            (p) =>
-              p.algorithm_key === "interview_long_term" &&
-              selected.every((id) => p.source_folder_ids.includes(id)),
-          );
-        if (!target) {
-          target = await post<Plan>("/training/plans", {
-            source_folder_ids: selected,
-            algorithm_key: "interview_long_term",
-            horizon_days: 150,
-            pool_size: 5,
-          });
-          setPlans((items) => [...items, target!]);
-          setPlanID(target.id);
-        }
         startCommand.current = {
           id: crypto.randomUUID(),
-          planID: target.id,
           sources: selected.map((folder_id) => ({
             folder_id,
             ...(topics[folder_id]?.length ? { topics: topics[folder_id] } : {}),
@@ -191,7 +185,7 @@ function InterviewSetup({
       }
       const command = startCommand.current;
       const next = await post<InterviewSession>(
-        `/training/plans/${command.planID}/interview-graph`,
+        "/training/mock-interviews",
         {
           command_id: command.id,
           config: command.config,
@@ -204,6 +198,7 @@ function InterviewSetup({
       if (e instanceof ApiError && e.status >= 400 && e.status < 500)
         startCommand.current = null;
       setError(errorText(e));
+      if (e instanceof ApiError && e.code === "active_mock_interview") setCanResume(true);
     } finally {
       setBusy(false);
     }
@@ -233,36 +228,12 @@ function InterviewSetup({
               <h2>Choose your subjects</h2>
               <p>Ready questions from these folders shape your interview.</p>
             </div>
-            <span>{selected.length} selected</span>
+            <span>{selected.length && selected.length === available.length ? `All selected (${selected.length})` : `${selected.length} selected`}</span>
           </div>
-          {plans.length > 0 && (
-            <label className="interview-label">
-              Learning plan
-              <select
-                disabled={busy || !!startCommand.current}
-                value={planID}
-                onChange={(e) => {
-                  setPlanID(e.target.value);
-                  setSelected([]);
-                  setTopics({});
-                }}
-              >
-                <option value="">Use a shared long-term plan</option>
-                {plans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.algorithm_key === "interview_cram"
-                      ? "CRAM"
-                      : "Long-term"}{" "}
-                    ·{" "}
-                    {p.source_folder_ids
-                      .map((id) => folders.find((f) => f.id === id)?.title)
-                      .filter(Boolean)
-                      .join(", ")}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+          <div className="interview-source-actions">
+            <button type="button" className="button" disabled={busy || !!startCommand.current || !available.length} onClick={() => {setSelected(available.map(f => f.id));setTopics({});}}>Select all</button>
+            <button type="button" className="button" disabled={busy || !!startCommand.current || !selected.length} onClick={() => {setSelected([]);setTopics({});}}>Clear all</button>
+          </div>
           {!available.length ? (
             <div className="interview-empty-source">
               <BookOpen size={32} />
@@ -354,8 +325,24 @@ function InterviewSetup({
           <h2>Make room to think.</h2>
           <p>
             Explain in your own words. You decide whether your answer was
-            correct.
+            correct. Every mode is practice only — your SRS schedule stays unchanged.
           </p>
+          <label className="interview-label">Interview mode
+            <select value={config.interview_mode} disabled={busy || !!startCommand.current} onChange={e => setConfig({...config,interview_mode:e.target.value as InterviewGraphConfig["interview_mode"],custom_weights:config.custom_weights || {go:5,sql:3,http:2,architecture:1,messaging:1,ops:1,other:1}})}>
+              <option value="real">Real Interview</option><option value="balanced">Balanced</option><option value="custom">Custom</option><option value="deep">Deep Interview</option>
+            </select>
+          </label>
+          <p className="interview-mode-help">{{real:"A Go backend preset, adjusted to your selected subjects. Broad coverage with short branches.",balanced:"Give every available subject an equal share of the interview.",custom:"Set relative weights. For example, 5 / 3 / 2 means 50% / 30% / 20%.",deep:"Fewer starting topics, longer connected branches and more challenging follow-ups."}[config.interview_mode]}</p>
+          {config.interview_mode === "deep" && <label className="interview-label">Depth level
+            <select value={config.depth_level} disabled={busy || !!startCommand.current} onChange={e => setConfig({...config,depth_level:+e.target.value})}>
+              <option value={1}>1 — Focused</option><option value={2}>2 — In depth</option><option value={3}>3 — Expert deep dive</option>
+            </select>
+          </label>}
+          {config.interview_mode === "custom" && <fieldset className="interview-weights" disabled={busy || !!startCommand.current}>
+            <legend>Relative topic weights</legend>
+            {Object.entries({go:"Go",sql:"SQL",http:"HTTP / Networks",architecture:"Architecture",messaging:"Messaging",ops:"Testing / Ops",other:"Other"}).filter(([key])=>availableTopicKeys.includes(key)).map(([key,label]) => <label key={key}>{label}<input aria-label={`${label} weight`} type="number" min={0} max={1000000} step="any" value={config.custom_weights?.[key] ?? 0} onChange={e => setConfig({...config,custom_weights:{...config.custom_weights,[key]:+e.target.value}})} /></label>)}
+            <small>Only topics with eligible questions participate. Zero excludes a topic.</small>
+          </fieldset>}
           <label className="interview-label">
             Questions
             <input
@@ -397,7 +384,6 @@ function InterviewSetup({
             <div className="interview-advanced">
               {(
                 [
-                  ["max_roots", "Starting topics", 1, 10],
                   ["max_depth_per_branch", "Maximum depth", 1, 20],
                   ["max_forks_per_root", "Branches per topic", 0, 10],
                 ] as const
@@ -421,10 +407,18 @@ function InterviewSetup({
               ))}
             </div>
           )}
+          {previewBusy && <p role="status">Checking available questions…</p>}
+          {preview && <div className="interview-distribution" aria-label="Interview distribution">
+            <strong>{preview.strategy.target_roots} root branches planned</strong>
+            {preview.topics.map(topic => <div key={topic.key}><span>{topic.label}</span><b>{(topic.weight*100).toFixed(1)}%</b><small>{topic.roots} roots · {topic.available} available areas</small></div>)}
+            <small>Percentages are relative shares. Root counts account for rounding and available areas.</small>
+          </div>}
+          {previewError && <ErrorBox error={previewError} />}
           {error && <ErrorBox error={error} />}
+          {canResume && <button type="button" className="button" disabled={busy} onClick={() => {setBusy(true);void api<InterviewSession>("/training/mock-interviews/active").then(onStarted).catch(e=>setError(errorText(e))).finally(()=>setBusy(false));}}>Resume existing interview</button>}
           <button
             className="button primary interview-start"
-            disabled={busy || !selected.length}
+            disabled={busy || !selected.length || previewBusy || !!previewError}
           >
             {busy
               ? "Preparing…"
@@ -453,6 +447,7 @@ function InterviewRun({
   const { user } = useAuth();
   const pendingKey = `knowledge:interview:pending:${user.id}`;
   const [view, setView] = useState(initial);
+  const [bankWarningDismissed, setBankWarningDismissed] = useState(false);
   const [revealedID, setRevealedID] = useState("");
   const [debug, setDebug] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -600,7 +595,7 @@ function InterviewRun({
                   />
                 ))}
               </article>
-              {graph?.config.include_draft && <div className="interview-bank-warning" role="status"><strong>Bank testing mode</strong><span>Reference answers may be unfilled. All actions are practice only; your SRS schedule stays unchanged.</span></div>}
+              {graph?.config.include_draft && !bankWarningDismissed && <div className="interview-bank-warning" role="status"><strong>Bank testing mode</strong><span>Reference answers may be unfilled. All actions are practice only; your SRS schedule stays unchanged.</span><button type="button" aria-label="Dismiss bank testing warning" onClick={() => setBankWarningDismissed(true)}><X size={18} /></button></div>}
               {!graph?.config.include_draft && selection?.answer_incomplete && <p className="interview-bank-warning">Reference answer has not been filled in yet.</p>}
               <button
                 type="button"
@@ -643,7 +638,7 @@ function InterviewRun({
                 </button>
               </div>
               <button className="interview-next-route button" disabled={busy || !!pending.current} onClick={() => answer("next_route")}>
-                <GitBranch size={18} /> Next Route <ArrowRight size={17} />
+                <GitBranch size={18} /> Next Root <ArrowRight size={17} />
               </button>
             </>
           ) : (
@@ -708,8 +703,12 @@ function InterviewRun({
           </div>
           {graph && (
             <div className="interview-progress-detail">
-              <span>Shown <b>{graph.questions_asked} / {graph.config.question_limit}</b></span>
-              <span>Root <b>{graph.current_root} / {graph.config.max_roots}</b></span>
+              <span>Shown <b>{graph.questions_asked}</b></span>
+              <span>Answered <b>{graph.answered_questions ?? view.summary.correct + view.summary.wrong} / {graph.config.question_limit}</b></span>
+              <span>Root slot <b>{graph.current_root} / {graph.interview_plan?.strategy.target_roots ?? graph.config.max_roots}</b></span>
+              <span>Completed roots <b data-testid="completed-roots">{graph.completed_root_ids?.length ?? 0}</b></span>
+              <span>Skipped roots <b>{graph.skipped_root_ids?.length ?? 0}</b></span>
+              <span>Mode <b>{graph.interview_plan?.mode ?? "Graph"}{graph.interview_plan?.mode === "deep" ? ` · Depth ${graph.interview_plan.depth_level}` : ""}</b></span>
               <span>Branch <b>{graph.current_branch}</b></span>
               <span>Depth <b>{graph.current_depth} / {graph.config.max_depth_per_branch}</b></span>
               <span>Profile <b>{interviewProfiles.find(([slug])=>slug===graph.config.profile)?.[1] || graph.config.profile}</b></span>

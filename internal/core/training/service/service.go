@@ -264,7 +264,7 @@ func (s *Service) GetSession(ctx context.Context, user, id uuid.UUID) (model.Ses
 		if err != nil {
 			return err
 		}
-		p, err := tx.Plan(session.PlanID)
+		p, err := sessionPlan(tx, session)
 		if err != nil {
 			return err
 		}
@@ -305,7 +305,7 @@ func (s *Service) FinishSession(ctx context.Context, user, id uuid.UUID, status 
 			session.Status = status
 			session.FinishedAt = &now
 		}
-		p, err := tx.Plan(session.PlanID)
+		p, err := sessionPlan(tx, session)
 		if err != nil {
 			return err
 		}

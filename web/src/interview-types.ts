@@ -1,6 +1,9 @@
 import type { Presentation, SessionView } from "./types";
 
 export type InterviewGraphConfig = {
+	interview_mode: "real" | "balanced" | "custom" | "deep";
+	depth_level: number;
+	custom_weights?: Record<string, number>;
   max_roots: number;
   max_depth_per_branch: number;
   max_forks_per_root: number;
@@ -17,8 +20,10 @@ export type InterviewGraphConfig = {
 };
 
 export const defaultGraphConfig: InterviewGraphConfig = {
-  max_roots: 3,
-  max_depth_per_branch: 10,
+  interview_mode: "real",
+  depth_level: 1,
+  max_roots: 6,
+  max_depth_per_branch: 20,
   max_forks_per_root: 2,
   question_limit: 24,
   temperature: 0.85,
@@ -42,6 +47,13 @@ export const interviewProfiles = [
 export const interviewLevels = ["Junior", "Junior+", "Middle", "Strong middle", "Senior"];
 
 export type GraphMatch = { slug: string; strength: number; source?: string };
+export type InterviewPlan = {
+  mode: string;
+  depth_level: number;
+  strategy: { target_roots: number; target_branch: number };
+  topics: { key: string; label: string; available: number; weight: number; roots: number }[];
+  slots: string[];
+};
 export type GraphCandidate = {
   material_id: string;
   seed_key?: string;
@@ -68,6 +80,12 @@ export type InterviewSession = Omit<SessionView, "current"> & {
   undo_actions?: string[];
   graph?: {
     state: {
+      practice_only?: boolean;
+      answered_questions?: number;
+      shown_root_ids?: string[];
+      skipped_root_ids?: string[];
+      completed_root_ids?: string[];
+      interview_plan?: InterviewPlan;
       current_root: number;
       current_depth: number;
       roots_used: number;

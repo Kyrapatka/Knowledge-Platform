@@ -53,7 +53,7 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 		if !errors.Is(err, repository.ErrNotFound) {
 			return err
 		}
-		p, err := tx.Plan(session.PlanID)
+		p, err := sessionPlan(tx, session)
 		if err != nil {
 			return err
 		}

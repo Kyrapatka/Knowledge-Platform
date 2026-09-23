@@ -35,6 +35,10 @@ func selectedMaterials(query *gorm.DB, sources []model.SessionSource) *gorm.DB {
 
 func (t *runtimeTx) LatestSession(plan uuid.UUID) (model.TrainingSession, error) {
 	var session model.TrainingSession
+	if plan == uuid.Nil {
+		err := t.db.Table("training_sessions").Where("user_id=? AND plan_id IS NULL", t.user).Order("created_at DESC,id").Take(&session).Error
+		return session, translate(err)
+	}
 	err := t.db.Table("training_sessions").Where("user_id=? AND plan_id=?", t.user, plan).
 		Order("created_at DESC, id").Take(&session).Error
 	return session, translate(err)

@@ -44,7 +44,10 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 	if err != nil {
 		return out, err
 	}
-	progress, err := tx.Progress().Get(ctx, keyFor(p, item.MaterialID))
+	progress := model.UserMaterialProgress{MaterialID: item.MaterialID, Stage: shown.Stage}
+	if !state.PracticeOnly {
+		progress, err = tx.Progress().Get(ctx, keyFor(p, item.MaterialID))
+	}
 	if errors.Is(err, repository.ErrNotFound) && req.ExpectedVersion == 0 && !shown.InterviewGraph.ReviewCredit {
 		progress = model.UserMaterialProgress{MaterialID: item.MaterialID, Stage: shown.Stage}
 		err = nil
@@ -57,7 +60,7 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 	}
 	now := s.now().UTC()
 	next := progress
-	credit := shown.InterviewGraph.ReviewCredit && !state.Config.IncludeDraft && req.Action != "next_route"
+	credit := !state.PracticeOnly && shown.InterviewGraph.ReviewCredit && !state.Config.IncludeDraft && req.Action != "next_route"
 	if credit {
 		kind, due := progress.DueReview(now)
 		if !due || kind != shown.Kind {
@@ -84,6 +87,7 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 		mode = "graph_navigation"
 	}
 	event := model.TrainingEvent{ID: uuid.New(), CommandID: req.CommandID, UserID: p.UserID, PlanID: p.ID, SessionID: session.ID, MaterialID: item.MaterialID, PresentationID: &shown.ID, Action: string(req.Action), Kind: shown.Kind, AlgorithmKey: p.AlgorithmKey, AlgorithmVersion: p.AlgorithmVersion, StageBefore: progress.Stage, StageAfter: next.Stage, ProgressVersionBefore: progress.Version, ProgressVersionAfter: next.Version, ReviewCredit: credit, EventMode: mode, CreatedAt: now}
+	event.GraphSelectionEventID = &selection.ID
 	if err = tx.SaveEvent(event); err != nil {
 		return out, err
 	}
