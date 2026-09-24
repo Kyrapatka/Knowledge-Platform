@@ -68,7 +68,7 @@ func mockPlan(user uuid.UUID, sources []model.SessionSource) model.TrainingPlan 
 
 func (s *Service) ActiveMock(ctx context.Context, user uuid.UUID) (model.SessionView, error) {
 	var out model.SessionView
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		session, err := tx.ActiveSession(uuid.Nil)
 		if err != nil {
 			return err
@@ -88,7 +88,7 @@ func (s *Service) PreviewMock(ctx context.Context, user uuid.UUID, req StartGrap
 	if req.Config != nil {
 		config = *req.Config
 	}
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		p, err := mockContext(tx, user, req.Sources)
 		if err != nil {
 			return err

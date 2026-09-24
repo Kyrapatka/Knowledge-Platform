@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"time"
 
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/algorithm"
@@ -67,7 +68,7 @@ func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, r
 	}{"change_algorithm", planID, req})
 	sum := sha256.Sum256(raw)
 	hash := hex.EncodeToString(sum[:])
-	err = s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err = s.transact(ctx, user, func(tx repository.Tx) error {
 		plan, err := tx.Plan(planID)
 		if err != nil {
 			return err
@@ -92,6 +93,7 @@ func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, r
 			if err = tx.FinishSession(active.ID, model.StatusCancelled, s.now().UTC()); err != nil {
 				return err
 			}
+			sessionEvent(tx, analytics.TrainingAbandoned, plan, active, s.now().UTC())
 		} else if !errors.Is(activeErr, repository.ErrNotFound) {
 			return activeErr
 		}
@@ -177,7 +179,7 @@ func (s *Service) PlanChanges(ctx context.Context, user, planID uuid.UUID, limit
 		return nil, ErrInvalid
 	}
 	var out []model.PlanChange
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		var err error
 		out, err = tx.PlanChanges(planID, limit, offset)
 		return err

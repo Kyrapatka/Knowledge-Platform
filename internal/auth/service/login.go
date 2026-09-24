@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"time"
 
 	autherrors "github.com/Kyrapatka/knowledge-platform/internal/auth"
@@ -15,7 +16,12 @@ import (
 func (s *Service) Login(
 	ctx context.Context,
 	input LoginInput,
-) (AuthResult, error) {
+) (result AuthResult, resultErr error) {
+	defer func() {
+		if errors.Is(resultErr, ErrInvalidCredentials) || errors.Is(resultErr, ErrUserBlocked) {
+			s.Publish(ctx, analytics.New(analytics.LoginFailed, uuid.Nil))
+		}
+	}()
 	nickname := NormalizeNickname(input.Nickname)
 
 	if nickname == "" || input.Password == "" {
@@ -98,6 +104,7 @@ func (s *Service) Login(
 		)
 	}
 
+	s.Publish(ctx, analytics.New(analytics.UserLoggedIn, user.ID))
 	return AuthResult{
 		User:             user,
 		AccessToken:      accessToken.Value,

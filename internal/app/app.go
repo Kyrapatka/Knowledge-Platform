@@ -36,6 +36,7 @@ import (
 
 	"github.com/Kyrapatka/knowledge-platform/internal/platform/database"
 	"github.com/Kyrapatka/knowledge-platform/internal/platform/httpmiddleware"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/metrics"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,7 +46,8 @@ type App struct {
 	server    *http.Server
 	readiness Readiness
 
-	closeDatabase func() error
+	closeDatabase  func() error
+	closeAnalytics func() error
 }
 
 func New(
@@ -94,6 +96,12 @@ func New(
 		return nil, startupErr
 	}
 
+	observability := metrics.New()
+	publisher, closeAnalytics, err := startAnalytics(cfg.Analytics, observability, logger)
+	if err != nil {
+		return nil, errors.Join(err, postgresDB.Close())
+	}
+
 	authService := authservice.New(
 		userRepository,
 		sessionRepository,
@@ -101,6 +109,7 @@ func New(
 		tokenManager,
 		cfg.RefreshTokenTTL,
 	)
+	authService.SetPublisher(publisher)
 
 	authHandler := authhandler.New(
 		authService,
@@ -122,14 +131,15 @@ func New(
 		folderRepository,
 		templateRegistry,
 	)
+	folderService.SetPublisher(publisher)
 
 	folderHandler := folderhandler.NewHandler(
 		folderService,
 	)
 
-	folderImportHandler := folderimporter.NewHandler(
-		folderimporter.NewService(postgresDB.GORM, templateRegistry),
-	)
+	importService := folderimporter.NewService(postgresDB.GORM, templateRegistry)
+	importService.SetPublisher(publisher)
+	folderImportHandler := folderimporter.NewHandler(importService)
 
 	// --------------------
 	// Workshop
@@ -155,6 +165,7 @@ func New(
 		materialRepository,
 		folderRepository,
 	)
+	materialService.SetPublisher(publisher)
 
 	materialHandler := materialhandler.NewHandler(
 		materialService,
@@ -169,13 +180,16 @@ func New(
 	router.Use(
 		httpmiddleware.RequestID(logger),
 		httpmiddleware.AccessLog(logger),
+		observability.Middleware(),
 		httpmiddleware.Recovery(),
 	)
+	router.GET("/metrics", gin.WrapH(observability.Handler()))
 
 	application := &App{
-		logger:        logger,
-		server:        newHTTPServer(cfg.HTTPAddress, router),
-		closeDatabase: postgresDB.Close,
+		logger:         logger,
+		server:         newHTTPServer(cfg.HTTPAddress, router),
+		closeDatabase:  postgresDB.Close,
+		closeAnalytics: closeAnalytics,
 	}
 
 	application.registerRoutes(
@@ -189,11 +203,17 @@ func New(
 	)
 	trainingAPI := router.Group("/api/v1")
 	trainingAPI.Use(authhandler.AuthMiddleware(tokenManager))
-	traininghandler.NewHandler(trainingservice.NewService(trainingpostgres.NewRuntimeStore(postgresDB.GORM))).RegisterRoutes(trainingAPI)
+	trainingService := trainingservice.NewService(trainingpostgres.NewRuntimeStore(postgresDB.GORM))
+	trainingService.SetPublisher(publisher)
+	traininghandler.NewHandler(trainingService).RegisterRoutes(trainingAPI)
 	dashboard.NewHandler(postgresDB.GORM).RegisterRoutes(trainingAPI)
-	interview.NewHandler(postgresDB.GORM).RegisterRoutes(trainingAPI)
+	interviewHandler := interview.NewHandler(postgresDB.GORM)
+	interviewHandler.SetPublisher(publisher)
+	interviewHandler.RegisterRoutes(trainingAPI)
 	webui.Register(router, "web/dist")
 
+	// Publish readiness only after DB validation and all route/dependency wiring.
+	// New has not exposed the App yet; no shutdown can race this sole enable point.
 	application.readiness.SetReady(true)
 	return application, nil
 }
@@ -210,18 +230,6 @@ func (a *App) registerRoutes(
 	// --------------------
 	// Health
 	// --------------------
-
-	router.GET(
-		"/health",
-		func(c *gin.Context) {
-			c.JSON(
-				http.StatusOK,
-				gin.H{
-					"status": "ok",
-				},
-			)
-		},
-	)
 
 	a.registerProbes(router)
 

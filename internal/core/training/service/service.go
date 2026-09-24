@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 var ErrInvalid = errors.New("invalid training request")
 
 type Service struct {
+	analytics.Emitter
 	store    repository.RuntimeStore
 	registry *algorithm.Registry
 	now      func() time.Time
@@ -28,7 +30,7 @@ func NewServiceWithClock(store repository.RuntimeStore, clock func() time.Time) 
 	if err != nil {
 		panic(err)
 	}
-	return &Service{store, r, clock}
+	return &Service{store: store, registry: r, now: clock}
 }
 
 type CreatePlanRequest struct {
@@ -45,7 +47,7 @@ type FolderDefaults struct {
 
 func (s *Service) FolderDefaults(ctx context.Context, user, id uuid.UUID) (FolderDefaults, error) {
 	var out FolderDefaults
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		f, err := tx.Folder(id)
 		if err != nil {
 			return err
@@ -64,7 +66,7 @@ func (s *Service) UpdateDefaults(ctx context.Context, user, id uuid.UUID, c fold
 		return FolderDefaults{}, fmt.Errorf("%w: unsupported algorithm", ErrInvalid)
 	}
 	out := FolderDefaults{c, version + 1}
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		if _, err := tx.Folder(id); err != nil {
 			return err
 		}
@@ -75,7 +77,7 @@ func (s *Service) UpdateDefaults(ctx context.Context, user, id uuid.UUID, c fold
 
 func (s *Service) CreatePlan(ctx context.Context, user uuid.UUID, req CreatePlanRequest) (model.TrainingPlan, error) {
 	var out model.TrainingPlan
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		var err error
 		out, err = s.createPlan(tx, user, req)
 		return err
@@ -196,7 +198,7 @@ func validateCard(c folderconfig.FolderConfig) error {
 
 func (s *Service) GetPlan(ctx context.Context, user, id uuid.UUID) (model.TrainingPlan, error) {
 	var out model.TrainingPlan
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error { var err error; out, err = tx.Plan(id); return err })
+	err := s.transact(ctx, user, func(tx repository.Tx) error { var err error; out, err = tx.Plan(id); return err })
 	return out, err
 }
 func (s *Service) ListPlans(ctx context.Context, user uuid.UUID, limit, offset int) ([]model.TrainingPlan, error) {
@@ -204,12 +206,12 @@ func (s *Service) ListPlans(ctx context.Context, user uuid.UUID, limit, offset i
 		return nil, ErrInvalid
 	}
 	var out []model.TrainingPlan
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error { var err error; out, err = tx.Plans(limit, offset); return err })
+	err := s.transact(ctx, user, func(tx repository.Tx) error { var err error; out, err = tx.Plans(limit, offset); return err })
 	return out, err
 }
 func (s *Service) CancelPlan(ctx context.Context, user, id uuid.UUID) (model.TrainingPlan, error) {
 	var out model.TrainingPlan
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		p, err := tx.Plan(id)
 		if err != nil {
 			return err
@@ -218,8 +220,15 @@ func (s *Service) CancelPlan(ctx context.Context, user, id uuid.UUID) (model.Tra
 			return repository.ErrConflict
 		}
 		if p.Status == model.StatusActive {
+			active, activeErr := tx.ActiveSession(id)
+			if activeErr != nil && !errors.Is(activeErr, repository.ErrNotFound) {
+				return activeErr
+			}
 			if err = tx.CancelPlan(id, s.now().UTC()); err != nil {
 				return err
+			}
+			if activeErr == nil {
+				sessionEvent(tx, analytics.TrainingAbandoned, p, active, s.now().UTC())
 			}
 		}
 		out, err = tx.Plan(id)
@@ -230,7 +239,7 @@ func (s *Service) CancelPlan(ctx context.Context, user, id uuid.UUID) (model.Tra
 
 func (s *Service) StartSession(ctx context.Context, user, planID uuid.UUID) (model.SessionView, error) {
 	var out model.SessionView
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		p, err := tx.Plan(planID)
 		if err != nil {
 			return err
@@ -245,6 +254,7 @@ func (s *Service) StartSession(ctx context.Context, user, planID uuid.UUID) (mod
 			if err = tx.CreateSession(session); err != nil {
 				return err
 			}
+			sessionEvent(tx, analytics.TrainingStarted, p, session, now)
 		} else if err != nil {
 			return err
 		}
@@ -259,7 +269,7 @@ func (s *Service) StartSession(ctx context.Context, user, planID uuid.UUID) (mod
 
 func (s *Service) GetSession(ctx context.Context, user, id uuid.UUID) (model.SessionView, error) {
 	var out model.SessionView
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		session, err := tx.Session(id)
 		if err != nil {
 			return err
@@ -279,7 +289,7 @@ func (s *Service) FinishSession(ctx context.Context, user, id uuid.UUID, status 
 	if status != model.StatusCompleted && status != model.StatusCancelled {
 		return out, ErrInvalid
 	}
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		session, err := tx.Session(id)
 		if err != nil {
 			return err
@@ -287,6 +297,7 @@ func (s *Service) FinishSession(ctx context.Context, user, id uuid.UUID, status 
 		if session.Status != model.StatusActive && session.Status != status {
 			return repository.ErrConflict
 		}
+		changed := session.Status == model.StatusActive
 		if session.Status == model.StatusActive {
 			now := s.now().UTC()
 			if session.SelectionStrategy == model.SelectionInterviewGraphV1 {
@@ -308,6 +319,13 @@ func (s *Service) FinishSession(ctx context.Context, user, id uuid.UUID, status 
 		p, err := sessionPlan(tx, session)
 		if err != nil {
 			return err
+		}
+		if changed {
+			name := analytics.TrainingCompleted
+			if status == model.StatusCancelled {
+				name = analytics.TrainingAbandoned
+			}
+			sessionEvent(tx, name, p, session, *session.FinishedAt)
 		}
 		out, err = s.sessionView(ctx, tx, p, session)
 		return err

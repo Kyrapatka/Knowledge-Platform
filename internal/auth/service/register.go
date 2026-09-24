@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"time"
 
 	autherrors "github.com/Kyrapatka/knowledge-platform/internal/auth"
@@ -63,6 +64,8 @@ func (s *Service) Register(
 		)
 	}
 
+	// User creation is already committed, even if session issuance later fails.
+	s.Publish(ctx, analytics.New(analytics.UserRegistered, user.ID))
 	now := time.Now().UTC()
 
 	accessToken, err := s.tokens.CreateAccessToken(

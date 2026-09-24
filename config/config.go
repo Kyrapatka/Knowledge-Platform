@@ -18,6 +18,7 @@ const (
 )
 
 type Config struct {
+	Analytics   Analytics
 	LogLevel    string
 	LogFormat   string
 	DatabaseURL string
@@ -82,7 +83,12 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	analyticsConfig, err := analyticsFromEnv()
+	if err != nil {
+		return Config{}, err
+	}
 	return Config{
+		Analytics:   analyticsConfig,
 		LogLevel:    logLevel,
 		LogFormat:   logFormat,
 		DatabaseURL: databaseURL,

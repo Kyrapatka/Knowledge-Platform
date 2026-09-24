@@ -6,16 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sync/atomic"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
-
-type Readiness struct{ ready atomic.Bool }
-
-func (r *Readiness) SetReady(value bool) { r.ready.Store(value) }
-func (r *Readiness) IsReady() bool       { return r.ready.Load() }
 
 func newHTTPServer(address string, handler http.Handler) *http.Server {
 	return &http.Server{Addr: address, Handler: handler,
@@ -52,6 +44,15 @@ func (a *App) ForceClose() error {
 // Close releases infrastructure only; the owner must drain or close HTTP first.
 // database/sql.DB.Close is already safe to call repeatedly.
 func (a *App) Close() error {
+	// Even cleanup without a preceding Run/Shutdown must not leave readiness on.
+	a.readiness.SetReady(false)
+	// HTTP has drained (or was force-closed) before this cleanup boundary.
+	// Analytics is best-effort and must not prevent PostgreSQL cleanup.
+	if a.closeAnalytics != nil {
+		if err := a.closeAnalytics(); err != nil {
+			a.logger.Warn("analytics shutdown deadline exceeded")
+		}
+	}
 	if a.closeDatabase != nil {
 		if err := a.closeDatabase(); err != nil {
 			return fmt.Errorf("close database: %w", err)
@@ -59,14 +60,4 @@ func (a *App) Close() error {
 		a.logger.Info("database closed")
 	}
 	return nil
-}
-func (a *App) registerProbes(router *gin.Engine) {
-	router.GET("/live", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
-	router.GET("/ready", func(c *gin.Context) {
-		if !a.readiness.IsReady() {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "not_ready"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
 }

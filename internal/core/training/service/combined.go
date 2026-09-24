@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"reflect"
 	"sort"
 	"strings"
@@ -113,7 +114,7 @@ func (s *Service) StartCombined(ctx context.Context, user uuid.UUID, req Combine
 		}
 		sort.Strings(source.Topics)
 	}
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		var plans []model.TrainingPlan
 		for offset := 0; ; offset += 100 {
 			page, err := tx.Plans(100, offset)
@@ -243,6 +244,7 @@ func (s *Service) scopedSession(ctx context.Context, tx repository.Tx, plan mode
 		if err = tx.FinishSession(active.ID, model.StatusCancelled, s.now().UTC()); err != nil {
 			return active, err
 		}
+		sessionEvent(tx, analytics.TrainingAbandoned, plan, active, s.now().UTC())
 	} else if !errors.Is(err, repository.ErrNotFound) {
 		return active, err
 	}
@@ -270,6 +272,10 @@ func (s *Service) scopedSession(ctx context.Context, tx repository.Tx, plan mode
 	if err := tx.CreateSession(session); err != nil {
 		return session, err
 	}
+	sessionEvent(tx, analytics.TrainingStarted, plan, session, now)
+	if session.Status == model.StatusCompleted {
+		sessionEvent(tx, analytics.TrainingCompleted, plan, session, now)
+	}
 	// Return the persisted representation (including PostgreSQL time precision
 	// and timezone), just as a repeated launch does.
 	return tx.Session(session.ID)
@@ -283,7 +289,7 @@ func (s *Service) CurrentCombined(ctx context.Context, user uuid.UUID, req Combi
 	if len(req.SessionIDs) == 0 || len(req.SessionIDs) > 100 {
 		return result, ErrInvalid
 	}
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		var sessions []model.TrainingSession
 		seen := map[uuid.UUID]bool{}
 		for _, id := range req.SessionIDs {
@@ -359,6 +365,9 @@ func (s *Service) combinedView(ctx context.Context, tx repository.Tx, sessions [
 				session, err = tx.Session(session.ID)
 				if err != nil {
 					return result, err
+				}
+				if session.Status == model.StatusCompleted {
+					sessionEvent(tx, analytics.TrainingCompleted, plan, session, s.now().UTC())
 				}
 				plan, err = tx.Plan(plan.ID)
 				if err != nil {

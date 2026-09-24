@@ -38,7 +38,7 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 	}{sessionID, req})
 	sum := sha256.Sum256(b)
 	hash := hex.EncodeToString(sum[:])
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		session, err := tx.Session(sessionID)
 		if err != nil {
 			return err
@@ -75,7 +75,8 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 			return repository.ErrConflict
 		}
 		i := items[0]
-		if _, err := tx.Material(i.MaterialID); err != nil {
+		material, err := tx.Material(i.MaterialID)
+		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
 				return repository.ErrConflict
 			}
@@ -143,6 +144,7 @@ func (s *Service) Act(ctx context.Context, user, sessionID uuid.UUID, req Action
 			return err
 		}
 		out = model.ActionResult{Event: e, NextReviewAt: next.NextReviewAt(), Session: view}
+		queueAnswer(tx, answerEvent(e, p, session, material, shown, &progress, &next), false)
 		response, err := json.Marshal(out)
 		if err != nil {
 			return err

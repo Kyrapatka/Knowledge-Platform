@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/algorithm"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"sort"
 	"time"
 
@@ -63,6 +64,9 @@ func (s *Service) sessionView(ctx context.Context, tx repository.Tx, p model.Tra
 				out.Session, err = tx.Session(session.ID)
 				if err != nil {
 					return out, err
+				}
+				if out.Session.Status == model.StatusCompleted {
+					sessionEvent(tx, analytics.TrainingCompleted, p, out.Session, s.now().UTC())
 				}
 			}
 		}

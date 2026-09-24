@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"time"
 
 	folder "github.com/Kyrapatka/knowledge-platform/internal/core/folder"
@@ -19,6 +20,7 @@ import (
 )
 
 type Service struct {
+	analytics.Emitter
 	materialRepository materialrepository.Repository
 	folderRepository   folderrepository.Repository
 }
@@ -119,6 +121,10 @@ func (s *Service) CreateWithDifficulty(
 		)
 	}
 
+	event := analytics.New(analytics.MaterialCreated, ownerID)
+	event.FolderID, event.MaterialID, event.Template = folderID.String(), m.ID.String(), folderEntity.TemplateKey
+	event.Difficulty = analytics.Ptr(string(m.Difficulty))
+	s.Publish(ctx, event)
 	return m, nil
 }
 
@@ -430,6 +436,9 @@ func (s *Service) Delete(
 		)
 	}
 
+	event := analytics.New(analytics.MaterialDeleted, ownerID)
+	event.FolderID, event.MaterialID = folderID.String(), materialID.String()
+	s.Publish(ctx, event)
 	return nil
 }
 

@@ -26,7 +26,7 @@ func (s *Service) StartFinal(ctx context.Context, user, sessionID, materialID uu
 	}{"start_final", sessionID, materialID, req})
 	sum := sha256.Sum256(b)
 	hash := hex.EncodeToString(sum[:])
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		session, err := tx.Session(sessionID)
 		if err != nil {
 			return err

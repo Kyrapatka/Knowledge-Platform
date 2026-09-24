@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/model"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/repository"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"github.com/google/uuid"
 )
 
@@ -23,7 +24,7 @@ func (s *Service) UndoGraph(ctx context.Context, user, sessionID uuid.UUID, req 
 		SessionID uuid.UUID
 		Request   GraphUndoRequest
 	}{sessionID, req})
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		session, err := tx.Session(sessionID)
 		if err != nil {
 			return err
@@ -108,6 +109,10 @@ func (s *Service) UndoGraph(ctx context.Context, user, sessionID uuid.UUID, req 
 		if err = tx.RestoreUndo(snapshot, version, now); err != nil {
 			return err
 		}
+		e := analytics.New(analytics.TrainingRollback, user)
+		e.SessionID, e.MaterialID, e.RelatedEventID = sessionID.String(), snapshot.MaterialID.String(), req.EventID.String()
+		e.Result = "undo"
+		queueEvent(tx, e)
 		session, err = tx.Session(sessionID)
 		if err != nil {
 			return err

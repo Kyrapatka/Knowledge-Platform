@@ -13,6 +13,7 @@ import (
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/algorithm"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/model"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/repository"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"github.com/google/uuid"
 	"reflect"
 	"strings"
@@ -45,7 +46,7 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 		PlanID  uuid.UUID
 		Request StartGraphRequest
 	}{planID, req})
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		receipt, err := tx.Receipt(req.CommandID)
 		if err == nil {
 			if receipt.RequestHash != hash {
@@ -129,6 +130,7 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 			if err = tx.CreateSession(session); err != nil {
 				return err
 			}
+			sessionEvent(tx, analytics.TrainingStarted, plan, session, now)
 			var seed [8]byte
 			if _, err = rand.Read(seed[:]); err != nil {
 				return err
@@ -178,6 +180,7 @@ func (s *Service) persistGraphSelection(ctx context.Context, tx repository.Tx, p
 				return nil, err
 			}
 			session.Status = model.StatusCompleted
+			sessionEvent(tx, analytics.TrainingCompleted, p, *session, now)
 			session.FinishedAt = &now
 		}
 		return nil, nil

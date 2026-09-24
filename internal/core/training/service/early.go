@@ -23,7 +23,7 @@ func (s *Service) reviewEarly(ctx context.Context, user uuid.UUID, req CombinedC
 	raw, _ := json.Marshal(req)
 	sum := sha256.Sum256(append([]byte("review_early:"), raw...))
 	hash := hex.EncodeToString(sum[:])
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		receipt, err := tx.Receipt(req.CommandID)
 		if err == nil {
 			if receipt.RequestHash != hash {

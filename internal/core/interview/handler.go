@@ -3,15 +3,19 @@ package interview
 import (
 	"errors"
 	auth "github.com/Kyrapatka/knowledge-platform/internal/auth/handler"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"net/http"
 )
 
-type Handler struct{ store *Store }
+type Handler struct {
+	analytics.Emitter
+	store *Store
+}
 
-func NewHandler(db *gorm.DB) *Handler { return &Handler{NewStore(db)} }
+func NewHandler(db *gorm.DB) *Handler { return &Handler{store: NewStore(db)} }
 func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.GET("/interview/seed", h.seedInfo)
 	api.POST("/interview/seed/import", h.importSeed)
@@ -80,6 +84,16 @@ func (h *Handler) importSeed(c *gin.Context) {
 		return
 	}
 	v, e := h.store.ImportSeed(c.Request.Context(), u, req.Domains)
+	if e == nil {
+		h.publishCreatedMaterials(c, u, v)
+	}
+	if e == nil && (v.Created > 0 || v.Updated > 0) {
+		for _, id := range v.FolderIDs {
+			event := analytics.New(analytics.FolderImported, u)
+			event.FolderID, event.Template = id.String(), "interview_questions"
+			h.Publish(c.Request.Context(), event)
+		}
+	}
 	write(c, v, e)
 }
 func (h *Handler) concepts(c *gin.Context) {
@@ -155,5 +169,17 @@ func (h *Handler) bulk(c *gin.Context) {
 		return
 	}
 	v, e := h.store.Bulk(c.Request.Context(), u, f, req.Questions)
+	if e == nil {
+		h.publishCreatedMaterials(c, u, v)
+	}
 	write(c, v, e)
+}
+
+func (h *Handler) publishCreatedMaterials(c *gin.Context, user uuid.UUID, result ImportResult) {
+	for _, m := range result.CreatedMaterials {
+		e := analytics.New(analytics.MaterialCreated, user)
+		e.MaterialID, e.FolderID, e.Template = m.ID.String(), m.FolderID.String(), "interview_questions"
+		e.Difficulty = analytics.Ptr("medium")
+		h.Publish(c.Request.Context(), e)
+	}
 }

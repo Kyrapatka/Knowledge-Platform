@@ -35,7 +35,7 @@ func (s *Service) CreateExercise(ctx context.Context, user, materialID uuid.UUID
 	if err := req.validate(); err != nil {
 		return out, err
 	}
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		now := s.now().UTC()
 		out = model.FormulaExercise{ID: uuid.New(), MaterialID: materialID, Problem: req.Problem, Answer: req.Answer, Solution: req.Solution, Hint: req.Hint, Version: 1, CreatedAt: now, UpdatedAt: now}
 		return tx.CreateExercise(out)
@@ -47,7 +47,7 @@ func (s *Service) Exercises(ctx context.Context, user, materialID uuid.UUID, lim
 		return nil, ErrInvalid
 	}
 	var out []model.FormulaExercise
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		var err error
 		out, err = tx.Exercises(materialID, limit, offset)
 		return err
@@ -62,7 +62,7 @@ func (s *Service) UpdateExercise(ctx context.Context, user, materialID, id uuid.
 	if req.ExpectedVersion < 1 {
 		return out, ErrInvalid
 	}
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		var err error
 		out, err = tx.Exercise(materialID, id)
 		if err != nil {
@@ -79,5 +79,5 @@ func (s *Service) DeleteExercise(ctx context.Context, user, materialID, id uuid.
 	if version < 1 {
 		return ErrInvalid
 	}
-	return s.store.Transact(ctx, user, func(tx repository.Tx) error { return tx.DeleteExercise(materialID, id, version) })
+	return s.transact(ctx, user, func(tx repository.Tx) error { return tx.DeleteExercise(materialID, id, version) })
 }

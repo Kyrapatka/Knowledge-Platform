@@ -23,7 +23,7 @@ type MaterialProgressView struct {
 // Returns existing progress only; reading a material does not start its horizon.
 func (s *Service) MaterialProgress(ctx context.Context, user, sessionID, materialID uuid.UUID) (MaterialProgressView, error) {
 	var out MaterialProgressView
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		session, err := tx.Session(sessionID)
 		if err != nil {
 			return err

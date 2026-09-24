@@ -18,7 +18,10 @@ func TestGracefulDrain(t *testing.T) {
 	entered, release, finished := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	var once sync.Once
 	defer once.Do(func() { close(release) })
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router := gin.New()
+	server := httptest.NewUnstartedServer(router)
+	router.GET("/work", func(c *gin.Context) {
+		w, r := c.Writer, c.Request
 		close(entered)
 		select {
 		case <-release:
@@ -27,7 +30,7 @@ func TestGracefulDrain(t *testing.T) {
 		}
 		w.Write([]byte("completed"))
 		close(finished)
-	}))
+	})
 	a := &App{logger: testLogger(), server: server.Config, closeDatabase: func() error {
 		select {
 		case <-finished:
@@ -36,12 +39,14 @@ func TestGracefulDrain(t *testing.T) {
 		}
 		return nil
 	}}
+	a.registerProbes(router)
 	a.readiness.SetReady(true)
+	checkProbe(t, router, "/ready", 200, "ok")
 	server.Start()
 	defer func() { once.Do(func() { close(release) }); a.ForceClose(); server.Close() }()
 	clientDone := make(chan error, 1)
 	go func() {
-		res, err := server.Client().Get(server.URL)
+		res, err := server.Client().Get(server.URL + "/work")
 		if err == nil {
 			defer res.Body.Close()
 			var body []byte
@@ -71,6 +76,11 @@ func TestGracefulDrain(t *testing.T) {
 	if a.readiness.IsReady() {
 		t.Fatal("readiness not disabled before drain")
 	}
+	// The listener is already closed by Shutdown. Exercise the same handler
+	// directly to verify probe semantics while the real HTTP request still drains.
+	checkProbe(t, router, "/ready", 503, "not_ready")
+	checkProbe(t, router, "/live", 200, "ok")
+	checkProbe(t, router, "/health", 200, "ok")
 
 	select {
 	case err := <-drained:
@@ -89,6 +99,9 @@ func TestGracefulDrain(t *testing.T) {
 	}
 	if err := a.Run(); err != nil {
 		t.Fatalf("ErrServerClosed must be normal: %v", err)
+	}
+	if a.readiness.IsReady() {
+		t.Fatal("Run after shutdown re-enabled readiness")
 	}
 }
 func TestDrainDeadlineAndForceClose(t *testing.T) {

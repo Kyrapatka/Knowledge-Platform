@@ -40,13 +40,16 @@ type BulkQuestion struct {
 	Concepts            []QuestionConcept `json:"concepts"`
 }
 type ImportResult struct {
-	FolderIDs   []uuid.UUID `json:"folder_ids"`
-	Created     int         `json:"created"`
-	Updated     int         `json:"updated"`
-	Skipped     int         `json:"skipped"`
-	Revision    string      `json:"revision"`
-	ImportRunID uuid.UUID   `json:"import_run_id"`
+	// Internal committed outcome details; excluded from the existing API contract.
+	CreatedMaterials []CreatedMaterial `json:"-"`
+	FolderIDs        []uuid.UUID       `json:"folder_ids"`
+	Created          int               `json:"created"`
+	Updated          int               `json:"updated"`
+	Skipped          int               `json:"skipped"`
+	Revision         string            `json:"revision"`
+	ImportRunID      uuid.UUID         `json:"import_run_id"`
 }
+type CreatedMaterial struct{ ID, FolderID uuid.UUID }
 type SeedDomain struct {
 	Slug          string `json:"slug"`
 	Name          string `json:"name"`
@@ -190,6 +193,9 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		} else {
 			out.Created++
 		}
+		if !materialExists {
+			out.CreatedMaterials = append(out.CreatedMaterials, CreatedMaterial{ID: id, FolderID: actualFolder})
+		}
 	}
 	return out, nil
 }
@@ -291,6 +297,7 @@ func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string
 			}
 			out.FolderIDs = append(out.FolderIDs, row.FolderID)
 			out.Created += result.Created
+			out.CreatedMaterials = append(out.CreatedMaterials, result.CreatedMaterials...)
 			out.Updated += result.Updated
 			out.Skipped += result.Skipped
 		}

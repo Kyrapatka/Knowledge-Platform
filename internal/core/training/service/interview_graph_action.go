@@ -32,7 +32,8 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 	if shown.InterviewGraph == nil || shown.ID != req.PresentationID || shown.ProgressVersion != req.ExpectedVersion {
 		return out, repository.ErrConflict
 	}
-	if _, err = tx.Material(item.MaterialID); err != nil {
+	material, err := tx.Material(item.MaterialID)
+	if err != nil {
 		return out, repository.ErrConflict
 	}
 	gr := tx.InterviewGraph()
@@ -118,6 +119,11 @@ func (s *Service) graphAction(ctx context.Context, tx repository.Tx, p model.Tra
 		return out, err
 	}
 	out = model.ActionResult{Event: event, NextReviewAt: next.NextReviewAt(), Session: view}
+	var beforeSnapshot, afterSnapshot *model.UserMaterialProgress
+	if progress.Version > 0 {
+		beforeSnapshot, afterSnapshot = &progress, &next
+	}
+	queueAnswer(tx, answerEvent(event, p, session, material, shown, beforeSnapshot, afterSnapshot), true)
 	response, err := json.Marshal(out)
 	if err != nil {
 		return out, err

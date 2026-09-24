@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/model"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/repository"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"github.com/google/uuid"
 )
 
@@ -25,7 +26,7 @@ func (s *Service) Undo(ctx context.Context, user uuid.UUID, req UndoRequest) (mo
 	raw, _ := json.Marshal(req)
 	sum := sha256.Sum256(append([]byte("undo:"), raw...))
 	hash := hex.EncodeToString(sum[:])
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		receipt, err := tx.Receipt(req.CommandID)
 		if err == nil {
 			if receipt.RequestHash != hash {
@@ -95,6 +96,10 @@ func (s *Service) Undo(ctx context.Context, user uuid.UUID, req UndoRequest) (mo
 		if err = tx.RestoreUndo(snapshot, restored.Version, s.now().UTC()); err != nil {
 			return err
 		}
+		e := analytics.New(analytics.TrainingRollback, user)
+		e.SessionID, e.MaterialID, e.RelatedEventID = snapshot.SessionID.String(), snapshot.MaterialID.String(), req.EventID.String()
+		e.Result = "undo"
+		queueEvent(tx, e)
 		for i, session := range sessions {
 			sessions[i], err = tx.Session(session.ID)
 			if err != nil {

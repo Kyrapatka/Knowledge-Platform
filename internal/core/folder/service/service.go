@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	folderconfig "github.com/Kyrapatka/knowledge-platform/internal/core/folder/config"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"time"
 
 	folder "github.com/Kyrapatka/knowledge-platform/internal/core/folder"
@@ -16,6 +17,7 @@ import (
 )
 
 type Service struct {
+	analytics.Emitter
 	repository       folderrepository.Repository
 	templateRegistry *foldertemplate.Registry
 }
@@ -83,6 +85,9 @@ func (s *Service) Create(
 			)
 	}
 
+	event := analytics.New(analytics.FolderCreated, ownerID)
+	event.FolderID, event.Template = f.ID.String(), f.TemplateKey
+	s.Publish(ctx, event)
 	return f, nil
 }
 
@@ -205,5 +210,8 @@ func (s *Service) Delete(
 		)
 	}
 
+	event := analytics.New(analytics.FolderDeleted, ownerID)
+	event.FolderID, event.Template = folderID.String(), f.TemplateKey
+	s.Publish(ctx, event)
 	return nil
 }

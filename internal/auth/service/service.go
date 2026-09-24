@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"time"
 
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/password"
@@ -9,6 +10,7 @@ import (
 )
 
 type Service struct {
+	analytics.Emitter
 	users      repository.UserRepository
 	sessions   repository.SessionRepository
 	passwords  password.Hasher

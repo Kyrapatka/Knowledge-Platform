@@ -31,7 +31,7 @@ func (s *Service) SkipRecovery(ctx context.Context, user, sessionID, materialID 
 	}{"skip_recovery", sessionID, materialID, req})
 	sum := sha256.Sum256(b)
 	hash := hex.EncodeToString(sum[:])
-	err := s.store.Transact(ctx, user, func(tx repository.Tx) error {
+	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		session, err := tx.Session(sessionID)
 		if err != nil {
 			return err
@@ -93,6 +93,7 @@ func (s *Service) SkipRecovery(ctx context.Context, user, sessionID, materialID 
 			return err
 		}
 		out = model.ActionResult{Event: e, NextReviewAt: next.NextReviewAt(), Session: view}
+		queueAnswer(tx, answerEvent(e, p, session, m, nil, &before, &next), false)
 		response, err := json.Marshal(out)
 		if err != nil {
 			return err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"strings"
 
 	foldermodel "github.com/Kyrapatka/knowledge-platform/internal/core/folder/model"
@@ -33,6 +34,7 @@ type Result struct {
 }
 
 type Service struct {
+	analytics.Emitter
 	db       *gorm.DB
 	registry *foldertemplate.Registry
 }
@@ -52,6 +54,7 @@ func (s *Service) Import(ctx context.Context, ownerID uuid.UUID, data []byte) (R
 		return Result{}, &InvalidImportError{Preview: preview}
 	}
 	result := Result{Template: plan.Template, Warnings: preview.Warnings}
+	var events []analytics.Event
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var user struct{ ID uuid.UUID }
 		if err := tx.Table("users").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id=?", ownerID).Take(&user).Error; err != nil {
@@ -93,10 +96,23 @@ func (s *Service) Import(ctx context.Context, ownerID uuid.UUID, data []byte) (R
 		result.FolderID = createdFolder.ID
 		result.FolderName = createdFolder.Title
 		result.ItemsCreated = len(materials)
+		event := analytics.New(analytics.FolderImported, ownerID)
+		event.FolderID, event.Template = createdFolder.ID.String(), plan.Template
+		events = append(events, event)
+		for _, m := range materials {
+			e := analytics.New(analytics.MaterialCreated, ownerID)
+			e.FolderID, e.MaterialID, e.Template = createdFolder.ID.String(), m.ID.String(), plan.Template
+			e.Difficulty = analytics.Ptr(string(m.Difficulty))
+			events = append(events, e)
+		}
 		return nil
 	})
 	if err != nil {
 		return Result{}, err
+	}
+	// Nested services intentionally retain their no-op publishers until commit.
+	for _, e := range events {
+		s.Publish(ctx, e)
 	}
 	return result, nil
 }
