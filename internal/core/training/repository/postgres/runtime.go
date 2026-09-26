@@ -300,8 +300,9 @@ func (t *runtimeTx) Candidates(p model.TrainingPlan, session uuid.UUID, now time
 	if p.Track != model.ProgressTrackDefault || p.AlgorithmKey == "formula_adaptive" {
 		order = "random()"
 	}
+	// Normal recall eligibility is content + SRS state, not interview editorial
+	// status. Keep this independent of the graph selector (including draft policy).
 	query := t.db.Table("materials m").Joins("JOIN folders f ON f.id=m.folder_id").
-		Joins("LEFT JOIN interview_question_profiles iq ON iq.material_id=m.id").Where("iq.material_id IS NULL OR iq.status='ready'").
 		Joins(join, joinArgs...).
 		Where("f.owner_id=? AND m.deleted_at IS NULL AND f.deleted_at IS NULL", t.user).Where("("+strings.Join(alternatives, " OR ")+")", args...).
 		Where("(p.material_id IS NULL OR (p.algorithm_key=? AND p.algorithm_version=? AND p.next_review_at<=?))", p.AlgorithmKey, p.AlgorithmVersion, now).

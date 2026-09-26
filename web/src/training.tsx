@@ -71,7 +71,7 @@ export function TrainingSetup({
           ...(initial.ids.includes(f.id) && initial.topics
             ? { topics: initial.topics }
             : {}),
-          ...(initial.ids.length === 1 && initial.planId
+          ...(initial.ids.length === 1 && initial.ids[0] === f.id && initial.planId
             ? { plan_id: initial.planId }
             : f.selected_plan
               ? { plan_id: f.selected_plan.id }

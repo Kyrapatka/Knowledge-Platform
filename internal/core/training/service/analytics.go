@@ -133,6 +133,12 @@ func queueAnswer(tx repository.Tx, e analytics.Event, interview bool) {
 	if e.Result == "advance" {
 		return
 	} // Manual promotion is not an answer.
+	if interview && e.Mode == "mock" && e.EventName == analytics.TrainingAnswered {
+		// Practice-only answers must not inflate normal SRS answer analytics.
+		e.EventName = analytics.InterviewQuestionAnswered
+		queueEvent(tx, e)
+		return
+	}
 	queueEvent(tx, e)
 	derived := func(name analytics.Name) {
 		d := e

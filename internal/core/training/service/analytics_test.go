@@ -24,6 +24,30 @@ type capturePublisher struct {
 	t         *testing.T
 }
 
+func TestNormalAndMockAnswersUseSeparateAnalytics(t *testing.T) {
+	for _, mode := range []string{"mock", "long_term"} {
+		for _, graph := range []bool{false, true} {
+			tx := &eventTx{}
+			e := analytics.New(analytics.TrainingAnswered, uuid.New())
+			e.Mode, e.Result = mode, "correct"
+			queueAnswer(tx, e, graph)
+			if graph && mode == "mock" {
+				if len(tx.events) != 1 || tx.events[0].EventName != analytics.InterviewQuestionAnswered || tx.events[0].EventID != e.EventID {
+					t.Fatal("mock counted as normal answer", tx.events)
+				}
+			} else {
+				want := 1
+				if graph {
+					want = 2
+				} // Preserve explicit legacy plan-backed graph analytics.
+				if len(tx.events) != want || tx.events[0].EventName != analytics.TrainingAnswered {
+					t.Fatal("normal/legacy analytics changed", tx.events)
+				}
+			}
+		}
+	}
+}
+
 func (p *capturePublisher) Publish(_ context.Context, e analytics.Event) {
 	if p.committed != nil && !*p.committed {
 		p.t.Error("published before commit")
