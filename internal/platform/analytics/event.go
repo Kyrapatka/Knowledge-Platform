@@ -35,6 +35,9 @@ const (
 // Pointer fields represent unavailable dimensions as NULL, not fabricated zeros.
 // Producers transfer an immutable snapshot to Publish.
 type Event struct {
+	PlanID                   string     `json:"plan_id"`
+	InterviewMode            string     `json:"interview_mode"`
+	InterviewDepth           *int       `json:"interview_depth"`
 	EventID                  string     `json:"event_id"`
 	EventName                Name       `json:"event_name"`
 	OccurredAt               time.Time  `json:"occurred_at"`

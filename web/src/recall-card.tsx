@@ -47,7 +47,7 @@ export function RecallCard({
     (card.question[0]?.key === "native" ? "native" : "foreign");
   return (
     <article
-      className={`training-card recall-card ${english ? "word-card" : ""} ${swipe ? `swipe-${swipe}` : ""}`}
+      className={`training-card recall-card ${english ? "word-card" : algorithm.startsWith("interview_") ? "interview-card" : ""} ${swipe ? `swipe-${swipe}` : ""}`}
     >
       <div className="recall-top">
         <span className="recall-language">

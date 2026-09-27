@@ -4235,6 +4235,15 @@ select option:checked {
   .flip-scene {
     height: clamp(225px, 34dvh, 290px);
   }
+  .recall-card.interview-card .answer-field.recall-lead {
+    font-size: 24px;
+  }
+  .recall-card.interview-card .answer-field.recall-lead .markdown {
+    line-height: 1.5;
+  }
+  .recall-card.interview-card .answer-field .markdown pre {
+    white-space: pre-wrap;
+  }
   .recall-card.word-card .recall-lead {
     font-size: 37px;
   }

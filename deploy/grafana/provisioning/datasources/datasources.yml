@@ -1,0 +1,27 @@
+apiVersion: 1
+prune: true
+datasources:
+  - name: Prometheus
+    uid: knowledge-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
+  - name: ClickHouse
+    uid: knowledge-clickhouse
+    type: grafana-clickhouse-datasource
+    editable: false
+    jsonData:
+      host: clickhouse
+      port: 8123
+      protocol: http
+      username: grafana_reader
+      defaultDatabase: knowledge_analytics
+      dialTimeout: 5
+      queryTimeout: 30
+    secureJsonData:
+      password: $CLICKHOUSE_READER_PASSWORD

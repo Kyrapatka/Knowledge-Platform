@@ -183,3 +183,22 @@ func TestNoEventsOnReadOnlyOrReceiptReplayBoundary(t *testing.T) {
 		t.Fatal("duplicate replay event")
 	}
 }
+
+func TestAnalyticsDimensionsUseActualPlanAndPresentation(t *testing.T) {
+	planID := uuid.New()
+	e := model.TrainingEvent{ID: uuid.New(), PlanID: planID, UserID: uuid.New(), SessionID: uuid.New(), MaterialID: uuid.New(), Action: "correct", CreatedAt: time.Now().UTC()}
+	shown := &model.Presentation{CreatedAt: e.CreatedAt.Add(-time.Second), InterviewGraph: &model.InterviewGraphPresentation{Depth: 3}}
+	out := answerEvent(e, model.TrainingPlan{}, model.TrainingSession{}, material.Material{}, shown, nil, nil)
+	if out.PlanID != planID.String() || out.InterviewDepth == nil || *out.InterviewDepth != 3 {
+		t.Fatal("missing real plan/depth", out)
+	}
+	out = answerEvent(model.TrainingEvent{}, model.TrainingPlan{}, model.TrainingSession{}, material.Material{}, nil, nil, nil)
+	if out.PlanID != "" || out.InterviewDepth != nil || out.InterviewMode != "" {
+		t.Fatal("invented unavailable dimensions", out)
+	}
+	tx := &eventTx{}
+	sessionEvent(tx, analytics.TrainingStarted, model.TrainingPlan{}, model.TrainingSession{ID: uuid.New(), SelectionStrategy: model.SelectionInterviewGraphV1}, e.CreatedAt, "deep")
+	if len(tx.events) != 2 || tx.events[0].InterviewMode != "deep" || tx.events[1].EventName != analytics.InterviewStarted || tx.events[1].InterviewMode != "deep" {
+		t.Fatal("mock start lost configured mode", tx.events)
+	}
+}

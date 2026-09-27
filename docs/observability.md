@@ -1,29 +1,86 @@
-# Observability and analytics foundation
+# Observability and learning analytics
 
 ## Boundaries
 
 PostgreSQL remains the sole transactional source of truth. Prometheus measures
-technical behavior, ClickHouse stores best-effort event history, JSON stderr logs
-are ready for a Loki collector. No external stack is automatically deployed.
+technical behavior, ClickHouse stores best-effort event history. Compose deploys
+Prometheus, ClickHouse and provisioned Grafana alongside PostgreSQL and the API.
+Logs remain structured JSON on stderr; no logging or tracing backend is installed.
 No secrets, nicknames, emails, request bodies, answers, auth headers or arbitrary
 payload maps are copied into events. Topic/subtopic are explicitly selected
 content taxonomy metadata (maximum 200 bytes), not full material metadata.
 
-## Configuration and rollout
+## One-command local stack
 
-1. Keep `ANALYTICS_ENABLED=false` (default) until a ClickHouse database is ready.
-2. Apply `deploy/clickhouse/001_analytics_events.sql` with an administrator.
-   If changing `CLICKHOUSE_DATABASE`, adjust SQL database qualifiers too.
-3. Create a dedicated INSERT-only application account and a separate SELECT-only
-   Grafana account. Manage credentials outside source control.
-4. Set `CLICKHOUSE_ADDR` to an HTTP(S) endpoint, e.g. `https://host:8443`, not
-   native port 9000. TLS verification uses the system CA pool; no insecure skip.
-   HTTP is intended for local development only. Credentials use Basic Auth,
-   never URL query parameters. Redirects are refused.
-5. Set `CLICKHOUSE_DATABASE`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD`,
-   `APP_VERSION` and enable analytics. No startup Ping or automatic DDL occurs.
-6. Configure Prometheus to scrape the API's `/metrics`; keep this route private
-   at the reverse proxy/firewall in production. It is unauthenticated locally.
+```powershell
+docker compose up -d
+```
+
+Requirements: Docker Engine/Desktop running, Compose v2, available host ports and
+internet on first build for images, npm/Go dependencies and the Grafana plugin.
+The multi-stage Dockerfile builds React and the Go API/migrator; the non-root runtime
+serves both. PostgreSQL migrations run before the API. An idempotent, one-shot
+`clickhouse-init` applies `001`, `002`, `003` and provisions least-privilege accounts.
+It exits with code 0 normally. Backend depends only on healthy PostgreSQL: ClickHouse
+initialization/outages do not gate core readiness. Events during first initialization
+can be lost; wait for `clickhouse-init` to finish before exercising analytics.
+
+| Service | Local address | Purpose |
+| --- | --- | --- |
+| backend | http://localhost:8080 | App/API; `/metrics`, `/live`, `/ready` |
+| postgres | localhost:55432 | Separate Compose PostgreSQL database |
+| clickhouse | http://localhost:8123 | HTTP SQL endpoint; `/ping` |
+| prometheus | http://localhost:9090/targets | 15-second backend scrape, 30-day storage |
+| grafana | http://localhost:3000 | Provisioned dashboards/datasources |
+
+Grafana defaults: **admin / local-grafana-only**. ClickHouse accounts:
+`analytics_admin / local-clickhouse-admin-only`, INSERT-only
+`analytics_writer / local-writer-only`, SELECT-only `grafana_reader / local-reader-only`.
+PostgreSQL defaults: database `knowledge_platform`, user `knowledge`, password
+`local-postgres-only`. All are local development values, with host ports bound to
+127.0.0.1. Change secrets and apply appropriate TLS/network access controls before
+any shared deployment. Do not commit production passwords.
+
+Overrides in `.env` or the shell: `KP_BACKEND_PORT`, `KP_POSTGRES_PORT`,
+`KP_CLICKHOUSE_PORT`, `KP_PROMETHEUS_PORT`, `KP_GRAFANA_PORT`, `KP_POSTGRES_PASSWORD`,
+`KP_JWT_SECRET`, `KP_CLICKHOUSE_ADMIN_PASSWORD`, `KP_CLICKHOUSE_WRITER_PASSWORD`,
+`KP_CLICKHOUSE_READER_PASSWORD`, `KP_GRAFANA_USER`, `KP_GRAFANA_PASSWORD`.
+Passwords embedded in the PostgreSQL URL must be URL-safe (or percent-encoded in
+an override DATABASE_URL). `KP_ANALYTICS_ENABLED` defaults to true in Compose;
+the existing host `.env` value `ANALYTICS_ENABLED=false` does not override it.
+Host port changes do not affect internal datasource/scrape addresses.
+
+Named volumes preserve PostgreSQL, ClickHouse, Grafana and Prometheus data.
+`docker compose down` retains them; do not use `down -v` unless intentionally
+resetting data. PostgreSQL and Grafana bootstrap credentials initialize new volumes;
+changing their environment variables alone does not rotate existing database/admin
+passwords. Rotate through each service's supported administration commands.
+Writer/reader password changes apply on the next `clickhouse-init` run, with backend
+and Grafana recreated using matching environment values.
+
+After application edits use `docker compose up -d --build`. After SQL edits use
+`docker compose run --rm clickhouse-init`. Dashboard files are watched every 15s;
+restart Grafana after datasource/provisioning configuration edits. Regenerate JSON
+and inspectable panel SQL with `python deploy/grafana/generate_dashboards.py`.
+JSON/SQL outputs are committed, so Python is not required to start the stack.
+
+### Existing external ClickHouse / host development
+
+The existing `go run ./cmd/migrate` / `go run ./cmd/api` workflow is unchanged.
+For an existing ClickHouse, apply numeric SQL files with an administrator, provision
+an INSERT-only writer and SELECT-only reader, then set host `CLICKHOUSE_ADDR` to the
+HTTP(S) endpoint, `CLICKHOUSE_DATABASE`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD` and
+`ANALYTICS_ENABLED=true`. SQL and dashboards qualify `knowledge_analytics`; adjust
+all qualifiers together if using another database. Reader settings should include
+`readonly=1`, `join_use_nulls=1` and `max_execution_time=30 CHANGEABLE_IN_READONLY`.
+Use the system CA trust for TLS; the writer refuses redirects and never skips TLS
+verification. Keep `/metrics` private at the production reverse proxy/firewall.
+
+The default Compose file owns its local ClickHouse. To reuse an external one with
+Compose, use a local override: disable `clickhouse`/`clickhouse-init` via profiles,
+point backend `CLICKHOUSE_*` to the external HTTP endpoint, and mount a matching
+Grafana datasource configuration. Do not start a second server against an existing
+ClickHouse data directory. No existing ClickHouse was running on the verified host.
 
 Defaults: buffer 4096 events, batch 256, flush interval 5s, write timeout 5s,
 shutdown timeout 10s. Config keys are `ANALYTICS_BUFFER_SIZE`,
@@ -85,7 +142,7 @@ Folder/material services inside generic imports retain their zero-value no-op
 publisher; only the outer service publishes after commit. Custom callers wrapping
 standalone services in their own transaction must follow the same rule.
 
-`training_answered` includes folder/material IDs, available template/topic/subtopic,
+`training_answered` includes plan/folder/material IDs, available template/topic/subtopic,
 difficulty, mode, result, before/after stage, consecutive-correct and wrong counts,
 rehab flags, next-review timestamps and learned flags. It includes review credit
 to separate graph practice from schedule-affecting reviews. `answer_time_ms` is
@@ -94,7 +151,9 @@ time), not a client stopwatch. No answer content is copied. Retrievability and
 stability remain NULL: current progress has neither. Mock sessions with no
 persistent progress also have NULL progress snapshots. Template is populated
 from folders already read by the transaction; unavailable dimensions stay empty
-or NULL without additional analytics-only DB queries. Manual `advance` is not
+or NULL without additional analytics-only DB queries. New typed fields are `plan_id`,
+`interview_mode` (actual start configuration) and nullable `interview_depth` (actual
+shown question depth, not the configured maximum). Manual `advance` is not
 misclassified as an answer. Undo references the original event ID.
 
 ## Async delivery and lifecycle
@@ -140,50 +199,57 @@ TTL deletion is asynchronous. Legal/user-deletion workflows need a separately
 defined retention/erasure policy; internal UUIDs are still pseudonymous data.
 
 Lifecycle IDs are stable per session/event name (undo can reopen a completed
-session); MergeTree itself does not deduplicate. `queries.sql` provides an
-`events_unique` view and sample queries. This first-stage view sorts on reads;
+session); MergeTree itself does not deduplicate. `003_analytics_views.sql` creates
+`events_unique` using the latest occurrence, and `events_effective` excludes undone
+answers and their derived events. `queries.sql` supplies SQL-client examples.
+Views sort/join on reads;
 large deployments may need preaggregation after measuring actual workloads.
 
 ## Analytics and Grafana
 
-`deploy/clickhouse/queries.sql` covers DAU/WAU/MAU, registrations, mature-cohort
-calendar D1/D7/D30 retention, completion and answers/session, correctness by
-mode/version/experiment/stage/topic/difficulty, rehab entry/recovery, observed
-exposures and time until learned, difficult content and first-use funnel.
-Learning retention after 7/30 days must use later review outcomes of the same
-user/material after first learned date, with an explicitly chosen observation
-window; it is not the same metric as user return retention. Only observed return
-reviews are measurable, not unobserved memory retention. Compare cram and long-term
-with cohort controls; mode differences are not automatically causal effects.
+Two automatically provisioned dashboards in folder **Knowledge Platform**:
 
-Four planned dashboards and sources (no provisioned credentials or services):
+- [Knowledge Platform - System](http://localhost:3000/d/knowledge-system): RPS,
+  4xx and 5xx rates/totals/percentages, histogram p50/p95/p99 and route p95,
+  in-flight requests, goroutines/threads/GOMAXPROCS, heap/RSS, GC cycle rate and
+  pause summary, CPU usage in cores, scrape health, accepted/dropped/flush/error
+  analytics counters. Probes are excluded from business traffic and latency.
+- [Knowledge Platform - Learning Analytics](http://localhost:3000/d/knowledge-learning):
+  sessions, completion, answers and elapsed time; correctness by stage, difficulty,
+  topic and template; learning milestones, observed retention, rehab, cram versus
+  long-term, mock interviews, content usage, product cohorts/funnel and algorithm
+  comparisons. Rows group related panels; training views support mode/version/group
+  filters. Product user cohorts and funnel remain global.
 
-1. **Backend Overview — Prometheus**: RPS `sum(rate(http_requests_total[5m]))`;
-   p50/p95/p99 `histogram_quantile(0.95, sum by(le)(rate(http_request_duration_seconds_bucket[5m])))`;
-   4xx/5xx via status regex; `http_requests_in_flight`. Filter `/health|/live|/ready`
-   out of user-facing latency panels where appropriate.
-2. **Product Overview — ClickHouse**: active users, registrations, cohort return
-   retention, unique training starts/completions, funnel. Use the official Grafana
-   ClickHouse datasource plugin with the separate SELECT-only account.
-3. **Learning Analytics — ClickHouse**: correct rate by stage/topic/difficulty,
-   rehab entry/recovery, exposures until learned, observed 7/30-day review success,
-   cram vs long-term and algorithm-version comparison. Exclude undone events and
-   separate `review_credit=false` practice from scheduled learning.
-4. **Errors / Operations — Prometheus + Loki**: 5xx, rate of analytics drops and
-   flush errors; Loki queries for infrastructure DB errors and shutdown events.
-   No DB error counter is advertised that the code does not instrument.
+Stable datasource UIDs: `knowledge-prometheus` (default, Prometheus) and
+`knowledge-clickhouse` (official `grafana-clickhouse-datasource`, plugin 4.20.0
+installed synchronously by the Grafana container). Both use Docker service names.
+Grafana queries ClickHouse through HTTP with the separate SELECT-only account;
+reader max_execution_time is changeable in readonly mode as the plugin requires.
 
-Loki collects JSON stderr through an agent, not an in-process client. Use bounded
-labels such as service/environment; keep request IDs as searchable fields, not
-stream labels. Prometheus and ClickHouse are available now; Loki and Tempo
-datasources become usable only after their collectors/backends are deployed.
+### Definitions and denominators
 
-Tracing is a documented next stage, not fake spans/trace IDs: HTTP middleware can
-install an OTel context before business handlers; existing `context.Context`
-flows into GORM operations, and request-scoped slog can add valid trace/span IDs.
-An SDK/exporter would be App-owned, flushed after HTTP drain with its own budget.
-Never turn an arbitrary X-Request-ID into a trace ID. Full DB spans and export to
-Tempo are deliberately not implemented in this change.
+All cohort days and dashboard times are UTC. Missing observations are blank, not
+fabricated zero successes. Panel SQL is in `deploy/grafana/sql`, reusable views in
+`deploy/clickhouse/003_analytics_views.sql`.
+
+| Measure | Definition / scope |
+| --- | --- |
+| Session usage | Sessions started in selected range; their latest effective completion/cancellation observed through now. Undo reopens a session. Answers/session includes zero-answer sessions. Duration only for closed sessions. |
+| Normal correctness | Effective correct / (correct + wrong) `training_answered`, mode other than mock. |
+| Mock correctness | Only `interview_question_answered` with mode=mock. No normal-event duplication. Actual configured interview mode and presented depth are separate dimensions. |
+| Learned | First observed credited false-to-true learned transition per user/material/plan/mode/version/group. Attempts/time begin with first recorded effective credited answer. Unknown historical plan IDs are excluded. |
+| Learning retention 7/30 | First credited review of that same user/material/plan/mode/version/group in [N,N+1) days after learned. Include only fully mature windows. Correct / observed reviews, alongside eligible count and review coverage. No review is unobserved, not wrong. |
+| Rehab entry rate | Answers entering rehab / credited answers. Stage panel also shows wrong rate. |
+| Rehab recovery | Recovered episodes / observed entries. Only a correct rehab exit qualifies; manual skip does not. Attempts count rehab reviews, not the triggering normal wrong answer. |
+| Cram vs long-term | Real mode dimension: sessions/completion, correctness, rehab entry, answer time. Learning retention is grouped by mode in its own panel. Observational, not a causal comparison. |
+| DAU/WAU/MAU | Distinct users with recorded events in rolling 1/7/30 days ending at selected range end. No read-only page visits. |
+| D1/D7/D30 product retention | Return activity on exactly day N after registration (UTC), restricted to cohorts whose entire return day has elapsed. Shows eligible and returning counts. |
+| Funnel | Ordered registration, folder, material/import, start, completion, subsequent D1/D7 activity. D1/D7 refer to registration calendar day; return must also occur after completion. Eligible counts expose cohort maturity. |
+| Algorithm comparison | Recorded version/group correctness, completion, learned attempts/time, rehab rate and answer time; retention panel also groups by version/group. No assignment mechanism exists: groups remain unassigned. |
+| Content difficulty | ID/topic/template/difficulty only; material wrong-rate and low-correctness topic rankings require >=3 answers to reduce one-answer noise. |
+
+No Loki, Tempo, tracing collector or synthetic DB-error counter is introduced.
 
 ## Coverage limitations
 
@@ -201,25 +267,61 @@ are not inferred as events.
 References: [official Prometheus Go instrumentation](https://prometheus.io/docs/guides/go-application/)
 and [ClickHouse HTTP interface](https://clickhouse.com/docs/interfaces/http).
 
-## Verification — 2026-09-24
+## Verification
 
-- `go fmt ./...`: passed.
-- `go test ./...`: passed with both PostgreSQL test DSNs configured.
-- `go test -race ./...`: passed, no races (training HTTP suite: 144.886s).
-- `go vet ./...`: passed.
-- `go mod tidy`: completed; dependencies resolved.
-- `go build -buildvcs=false -o .cache/api-observability-check.exe ./cmd/api`: passed.
-- `git diff --check`: passed (Windows LF/CRLF advisory warnings only).
+Run from the repository root against the local stack:
 
-New tests cover metrics, queue saturation/nonblocking publish, timer/size/shutdown
-flush, sink failures, concurrent shutdown/publish, Noop, safe transport errors,
-config validation, optional-dependency startup, typed answer snapshots, anonymous
-login failures, and actual PostgreSQL deferred commit failure/receipt replay.
-JSON event field names were compared with the ClickHouse DDL column names.
+```powershell
+docker compose config --quiet
+docker compose up -d
+docker compose ps -a
+python deploy/verify_observability.py --require-events
+python deploy/test_analytics_sql.py
+python deploy/verify_analytics_resilience.py
+```
 
-No live ClickHouse instance was available or deployed. Transport tests use an
-HTTP test server; SQL DDL and analytical queries have not been executed against
-a real ClickHouse server. Before production enablement, apply schema and validate
-end-to-end ingestion and queries on the intended ClickHouse version.
+`verify_observability.py` checks backend UP, both datasource health endpoints,
+provisioned dashboard identities and every panel query (Prometheus API / Grafana
+ClickHouse plugin). `--require-events` additionally requires positive accepted and
+flush counters, so run it after real activity. SQL tests use a random, separate
+`analytics_test_*` database and drop only that database in finally; no synthetic
+rows are inserted into product analytics. They cover undo/recompletion, plan
+separation, observed/missing D7/D30 review denominators, rehab episodes and mock depth.
+The resilience check temporarily stops this stack's ClickHouse, creates QA content,
+answers a real training card and checks readiness plus flush errors. It restarts
+ClickHouse in finally and verifies a separate temporary Noop backend with real auth.
 
-The complete per-file inventory is in `observability-changes.md`.
+For browser checks (creates separate QA users/content, imports the Go question bank):
+
+```powershell
+$env:OBSERVABILITY_E2E='true'
+npm.cmd --prefix web ci
+npm.cmd --prefix web run test:e2e -- observability.spec.ts --trace off
+```
+
+Installed Edge is the default; set `PLAYWRIGHT_CHANNEL` or `E2E_BASE_URL` as needed.
+The test logs in, completes normal training, answers/ends a deep mock interview,
+checks real ClickHouse events/depth and opens both Grafana dashboards. Trace capture
+is disabled here to avoid retaining authentication exchanges. Python/browser checks
+read `KP_*` overrides from the shell (they do not load `.env` automatically).
+
+For Go integration tests, use PostgreSQL test DSNs with schema privileges:
+
+```powershell
+$env:TEST_DATABASE_URL='postgres://knowledge:local-postgres-only@127.0.0.1:55432/knowledge_platform?sslmode=disable'
+$env:TRAINING_TEST_DATABASE_URL=$env:TEST_DATABASE_URL
+go fmt ./...
+go test ./...
+go test -race ./...
+go vet ./...
+```
+
+Both repository/handler integration suites isolate their tables in random schemas.
+Worker tests cover queue saturation/nonblocking publish, flush timer/size/shutdown,
+sink failures, concurrent closure, Noop and optional dependency startup. Service
+tests cover actual commit failure/replay and truthful event dimensions. No business
+algorithm or mock interview behavior is changed by observability instrumentation.
+
+References: [Grafana ClickHouse datasource configuration](https://grafana.com/docs/plugins/grafana-clickhouse-datasource/latest/configure/),
+[query editor](https://grafana.com/docs/plugins/grafana-clickhouse-datasource/latest/query-editor/),
+[Grafana Docker configuration](https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/).

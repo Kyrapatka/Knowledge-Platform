@@ -1,0 +1,11 @@
+apiVersion: 1
+providers:
+  - name: Knowledge Platform
+    orgId: 1
+    folder: Knowledge Platform
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 15
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

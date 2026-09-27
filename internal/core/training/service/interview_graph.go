@@ -130,7 +130,7 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 			if err = tx.CreateSession(session); err != nil {
 				return err
 			}
-			sessionEvent(tx, analytics.TrainingStarted, plan, session, now)
+			sessionEvent(tx, analytics.TrainingStarted, plan, session, now, config.InterviewMode)
 			var seed [8]byte
 			if _, err = rand.Read(seed[:]); err != nil {
 				return err

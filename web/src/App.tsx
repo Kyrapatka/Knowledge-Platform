@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -13,6 +14,7 @@ import {
   Routes,
   useLocation,
   useNavigate,
+  useNavigationType,
 } from "react-router-dom";
 import {
   ArrowDownUp,
@@ -649,6 +651,14 @@ function FolderCard({
 }
 function FolderPage() {
   const folderID = useLocation().pathname.split("/")[2];
+  const navigationType = useNavigationType();
+  useLayoutEffect(() => {
+    // BrowserRouter keeps the document scroll on client-side navigation.
+    // New collections start at the top before paint; history traversal keeps
+    // the browser's restoration. Data refreshes must not reset the reader.
+    if (navigationType !== "POP")
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [folderID, navigationType]);
   const { data, reload, launch, notify } = useLibrary();
   const navigate = useNavigate();
   const folder = data?.folders.find((f) => f.id === folderID);

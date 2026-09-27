@@ -55,10 +55,16 @@ func mode(p model.TrainingPlan, session model.TrainingSession) string {
 	}
 	return string(p.Track)
 }
-func sessionEvent(tx repository.Tx, name analytics.Name, p model.TrainingPlan, session model.TrainingSession, at time.Time) {
+func sessionEvent(tx repository.Tx, name analytics.Name, p model.TrainingPlan, session model.TrainingSession, at time.Time, interviewMode ...string) {
 	e := analytics.New(name, session.UserID)
 	e.EventID = uuid.NewSHA1(uuid.NameSpaceOID, []byte(string(name)+":"+session.ID.String())).String()
 	e.OccurredAt, e.SessionID, e.Mode = at, session.ID.String(), mode(p, session)
+	if p.ID != uuid.Nil {
+		e.PlanID = p.ID.String()
+	}
+	if len(interviewMode) > 0 {
+		e.InterviewMode = interviewMode[0]
+	}
 	e.AlgorithmVersion = p.AlgorithmKey + ":" + strconv.Itoa(p.AlgorithmVersion)
 	if len(p.SourceFolderIDs) == 1 {
 		e.FolderID = p.SourceFolderIDs[0].String()
@@ -96,6 +102,9 @@ func answerEvent(e model.TrainingEvent, p model.TrainingPlan, session model.Trai
 	out.EventID, out.OccurredAt = e.ID.String(), e.CreatedAt
 	out.SessionID, out.FolderID, out.MaterialID = e.SessionID.String(), m.FolderID.String(), e.MaterialID.String()
 	out.Mode, out.Result = mode(p, session), e.Action
+	if e.PlanID != uuid.Nil {
+		out.PlanID = e.PlanID.String()
+	}
 	out.ReviewKind = string(e.Kind)
 	out.AlgorithmVersion = e.AlgorithmKey + ":" + strconv.Itoa(e.AlgorithmVersion)
 	out.ReviewCredit = analytics.Ptr(e.ReviewCredit)
@@ -106,6 +115,9 @@ func answerEvent(e model.TrainingEvent, p model.TrainingPlan, session model.Trai
 	}
 	out.Difficulty = analytics.Ptr(string(m.Difficulty))
 	if shown != nil {
+		if shown.InterviewGraph != nil {
+			out.InterviewDepth = analytics.Ptr(shown.InterviewGraph.Depth)
+		}
 		out.Difficulty = analytics.Ptr(string(shown.Difficulty))
 		if !shown.CreatedAt.IsZero() && !e.CreatedAt.Before(shown.CreatedAt) {
 			out.AnswerTimeMS = analytics.Ptr(e.CreatedAt.Sub(shown.CreatedAt).Milliseconds())

@@ -2,7 +2,30 @@
 
 First frontend MVP: an English-language, dark learning workspace built with React and TypeScript, backed by the Go API and PostgreSQL.
 
-## Run locally
+## Full local stack (Docker)
+
+With Docker Desktop/Engine and Compose available, run from this directory:
+
+```powershell
+docker compose up -d
+```
+
+The first run builds the frontend/API, applies PostgreSQL and ClickHouse migrations,
+and provisions Grafana automatically. Open the [app](http://localhost:8080),
+[Prometheus targets](http://localhost:9090/targets), or [Grafana](http://localhost:3000).
+Grafana local credentials: `admin` / `local-grafana-only`.
+The **Knowledge Platform - System** and **Knowledge Platform - Learning Analytics**
+dashboards are in the Knowledge Platform folder. ClickHouse HTTP is on port 8123;
+backend metrics are at [localhost:8080/metrics](http://localhost:8080/metrics).
+
+All published ports bind to loopback; bundled passwords are local development
+values. Set `KP_*` overrides from `.env.example` before deploying elsewhere.
+Compose enables analytics by default (`KP_ANALYTICS_ENABLED=true`) independently
+of host `ANALYTICS_ENABLED`. Named volumes retain data across restarts.
+Use `docker compose up -d --build` after changing application code.
+See [observability setup, definitions and checks](docs/observability.md).
+
+## Run locally (without Docker)
 
 Requirements: Go 1.25+, Node.js 22.12+ (the project was checked with 22.16), and a running PostgreSQL database.
 
@@ -47,7 +70,7 @@ Create a formula material, open its details and add a practice exercise before t
 
 The last training selection is remembered in this browser, separately for each account. Plans, progress and answers live on the server. There is no offline answer queue; a network failure shows a retry action using the same command ID.
 
-Folder copying from other users, global discovery/search, Russian localization and advanced analytics are outside this first frontend version.
+Folder copying from other users, global discovery/search and Russian localization are outside this first frontend version. Operational and learning analytics are available through the provisioned Grafana dashboards.
 
 ### Training refinements
 
@@ -78,6 +101,6 @@ go test ./internal/core/... ./internal/app ./internal/webui ./cmd/...
 go test ./internal/auth/handler ./internal/auth/service
 ```
 
-**Do not run `go test ./...` against a working database.** The older `internal/auth/repository/postgres` tests truncate their configured users/sessions tables. They require a disposable database and are deliberately excluded from the verification commands above.
+Full integration checks use `TEST_DATABASE_URL` and `TRAINING_TEST_DATABASE_URL`. Both authentication repository and training suites create/drop their own randomly named schemas; use a dedicated test database/account with schema permissions. See the Compose verification commands in [observability documentation](docs/observability.md#verification).
 
 API references: [Training API](internal/core/training/TRAINING_API.md) and [Frontend API additions](docs/frontend-api.md).
