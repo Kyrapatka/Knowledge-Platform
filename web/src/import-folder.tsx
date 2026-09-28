@@ -53,8 +53,9 @@ export function ImportFolder({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [template, setTemplate] =
-    useState<ImportTemplate>("interview_questions");
+  const [template, setTemplate] = useState<ImportTemplate>(
+    "interview_questions",
+  );
   const [copied, setCopied] = useState(false);
 
   async function validate(next: File) {
@@ -227,7 +228,9 @@ export function ImportFolder({
           <ul className="import-errors" aria-label="Validation errors">
             {issues.map((issue, index) => (
               <li key={`${issue.item}-${issue.field}-${index}`}>
-                <strong>{issue.item ? `Item ${issue.item}` : issue.field}</strong>
+                <strong>
+                  {issue.item ? `Item ${issue.item}` : issue.field}
+                </strong>
                 <span>{issue.message}</span>
               </li>
             ))}
@@ -265,10 +268,18 @@ export function ImportFolder({
               <div>
                 <h3>JSON example</h3>
                 <p>
-                  Required fields: {template === "interview_questions" ? "question and short_answer" : "word and translation"}.
+                  Required fields:{" "}
+                  {template === "interview_questions"
+                    ? "question and short_answer"
+                    : "word and translation"}
+                  .
                 </p>
               </div>
-              <button type="button" className="button" onClick={downloadExample}>
+              <button
+                type="button"
+                className="button"
+                onClick={downloadExample}
+              >
                 <Download size={15} /> Download example
               </button>
             </div>
@@ -303,7 +314,12 @@ export function ImportFolder({
         </details>
 
         <div className="dialog-actions import-actions">
-          <button type="button" className="button" disabled={busy} onClick={onClose}>
+          <button
+            type="button"
+            className="button"
+            disabled={busy}
+            onClick={onClose}
+          >
             Cancel
           </button>
           <button
@@ -326,7 +342,6 @@ function importErrors(error: unknown): ImportIssue[] {
   const direct = error.data?.errors;
   if (Array.isArray(direct)) return direct as ImportIssue[];
   const validation = error.data?.validation as
-    | { errors?: ImportIssue[] }
-    | undefined;
+    { errors?: ImportIssue[] } | undefined;
   return Array.isArray(validation?.errors) ? validation.errors : [];
 }

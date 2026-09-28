@@ -100,10 +100,7 @@ func validateFieldDefinitions(
 		seen[field.Key] = struct{}{}
 	}
 
-	// Старые keys не должны физически исчезать.
-	//
-	// Если пользователь "удаляет" поле,
-	// оно должно остаться в Config с Active=false.
+	// Deleted fields stay in the schema as inactive so stored values remain accessible.
 	for oldKey := range oldByKey {
 		if _, exists := seen[oldKey]; !exists {
 			return fmt.Errorf(

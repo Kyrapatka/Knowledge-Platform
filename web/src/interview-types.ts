@@ -1,9 +1,9 @@
 import type { Presentation, SessionView } from "./types";
 
 export type InterviewGraphConfig = {
-	interview_mode: "real" | "balanced" | "custom" | "deep";
-	depth_level: number;
-	custom_weights?: Record<string, number>;
+  interview_mode: "real" | "balanced" | "custom" | "deep";
+  depth_level: number;
+  custom_weights?: Record<string, number>;
   max_roots: number;
   max_depth_per_branch: number;
   max_forks_per_root: number;
@@ -38,20 +38,37 @@ export const defaultGraphConfig: InterviewGraphConfig = {
 };
 
 export const interviewProfiles = [
-  ["all", "All profiles"], ["go_core", "Go core"], ["go_middle", "Go middle"],
-  ["go_strong_middle", "Go strong middle"], ["go_postgres", "Go + PostgreSQL"],
-  ["backend_core", "Backend core"], ["backend_full", "Backend full"],
-  ["distributed_backend", "Distributed backend"], ["infrastructure", "Infrastructure"],
+  ["all", "All profiles"],
+  ["go_core", "Go core"],
+  ["go_middle", "Go middle"],
+  ["go_strong_middle", "Go strong middle"],
+  ["go_postgres", "Go + PostgreSQL"],
+  ["backend_core", "Backend core"],
+  ["backend_full", "Backend full"],
+  ["distributed_backend", "Distributed backend"],
+  ["infrastructure", "Infrastructure"],
   ["system_design", "System design"],
 ] as const;
-export const interviewLevels = ["Junior", "Junior+", "Middle", "Strong middle", "Senior"];
+export const interviewLevels = [
+  "Junior",
+  "Junior+",
+  "Middle",
+  "Strong middle",
+  "Senior",
+];
 
 export type GraphMatch = { slug: string; strength: number; source?: string };
 export type InterviewPlan = {
   mode: string;
   depth_level: number;
   strategy: { target_roots: number; target_branch: number };
-  topics: { key: string; label: string; available: number; weight: number; roots: number }[];
+  topics: {
+    key: string;
+    label: string;
+    available: number;
+    weight: number;
+    roots: number;
+  }[];
   slots: string[];
 };
 export type GraphCandidate = {
@@ -95,7 +112,12 @@ export type InterviewSession = Omit<SessionView, "current"> & {
       stop_reason?: string;
       current_branch?: string;
       random_index?: number;
-      frontier?: { material_id: string; root_index: number; source_depth: number; status: string }[];
+      frontier?: {
+        material_id: string;
+        root_index: number;
+        source_depth: number;
+        status: string;
+      }[];
     };
     selection?: {
       detected_concepts: GraphMatch[];
@@ -103,7 +125,12 @@ export type InterviewSession = Omit<SessionView, "current"> & {
       selection_reason: string;
       root_index: number;
       depth_after: number;
-      selected_question?: { seed_key?: string; topic?: string; subtopic?: string; status?: string };
+      selected_question?: {
+        seed_key?: string;
+        topic?: string;
+        subtopic?: string;
+        status?: string;
+      };
     };
     statistics: {
       scheduled_reviews: number;
@@ -142,7 +169,13 @@ export type InterviewProfile = {
   domain?: string;
   concepts: {
     slug: string;
-    role: "primary" | "tested" | "answer" | "hook" | "prerequisite" | "wrong_fallback";
+    role:
+      | "primary"
+      | "tested"
+      | "answer"
+      | "hook"
+      | "prerequisite"
+      | "wrong_fallback";
     weight?: number;
     ordinal?: number;
   }[];

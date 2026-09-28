@@ -112,16 +112,40 @@ export function FolderEditor({
       setBusy(false);
     }
   }
-  if (deleting && folder) return <Modal title={`Delete “${folder.title}”?`} onClose={() => {if (!busy) onClose()}}>
-    <div className="form-body">
-      <p>This removes the folder and its {folder.material_count} materials from your library and training. Past training history is retained.</p>
-      {error && <ErrorBox error={error} />}
-      <div className="dialog-actions">
-        <button className="button" disabled={busy} onClick={() => setDeleting(false)}>Keep folder</button>
-        <button className="button danger" disabled={busy} onClick={() => void remove()}><Trash2 size={18} />{busy ? "Deleting…" : "Delete folder"}</button>
-      </div>
-    </div>
-  </Modal>;
+  if (deleting && folder)
+    return (
+      <Modal
+        title={`Delete “${folder.title}”?`}
+        onClose={() => {
+          if (!busy) onClose();
+        }}
+      >
+        <div className="form-body">
+          <p>
+            This removes the folder and its {folder.material_count} materials
+            from your library and training. Past training history is retained.
+          </p>
+          {error && <ErrorBox error={error} />}
+          <div className="dialog-actions">
+            <button
+              className="button"
+              disabled={busy}
+              onClick={() => setDeleting(false)}
+            >
+              Keep folder
+            </button>
+            <button
+              className="button danger"
+              disabled={busy}
+              onClick={() => void remove()}
+            >
+              <Trash2 size={18} />
+              {busy ? "Deleting…" : "Delete folder"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    );
   return (
     <Modal
       title={folder ? "Edit folder" : "A new place to learn"}
@@ -219,10 +243,17 @@ export function FolderEditor({
             </button>
           )}
           <span className="flex-spacer" />
-          <button type="button" className="button folder-cancel" onClick={close}>
+          <button
+            type="button"
+            className="button folder-cancel"
+            onClick={close}
+          >
             Cancel
           </button>
-          <button className="button primary folder-save" disabled={busy || !title.trim()}>
+          <button
+            className="button primary folder-save"
+            disabled={busy || !title.trim()}
+          >
             {busy ? "Saving…" : folder ? "Save changes" : "Create folder"}
             <ArrowRight size={16} />
           </button>
@@ -373,7 +404,13 @@ export function MaterialEditor({
           .filter((f) => f.active)
           .map((field) => (
             <label key={field.key}>
-              {interview ? ({short_answer:"Short Answer",answer:"Detailed Answer",sources:"Source"}[field.key] || field.label) : field.label}
+              {interview
+                ? {
+                    short_answer: "Short Answer",
+                    answer: "Detailed Answer",
+                    sources: "Source",
+                  }[field.key] || field.label
+                : field.label}
               {!field.required && <span className="optional">optional</span>}
               {preview ? (
                 <div className="field-preview">

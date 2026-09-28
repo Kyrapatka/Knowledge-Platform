@@ -83,12 +83,12 @@ func (s *Service) Import(ctx context.Context, ownerID uuid.UUID, data []byte) (R
 			return err
 		}
 		if plan.Template == TemplateInterviewQuestions {
-			profiles := interview.NewStore(tx)
+			profiles := interview.NewService(interview.NewTransactionStore(tx))
 			for index, materialEntity := range materials {
 				if plan.Items[index].Profile == nil {
 					return errors.New("interview import plan has no profile")
 				}
-				if _, err := profiles.SaveProfileTx(ctx, ownerID, createdFolder.ID, materialEntity.ID, *plan.Items[index].Profile); err != nil {
+				if _, err := profiles.SaveProfile(ctx, ownerID, createdFolder.ID, materialEntity.ID, *plan.Items[index].Profile); err != nil {
 					return fmt.Errorf("create interview profile for item %d: %w", index+1, err)
 				}
 			}

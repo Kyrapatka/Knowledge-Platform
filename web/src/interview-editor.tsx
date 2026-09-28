@@ -10,7 +10,11 @@ import {
 import { api, errorText, post } from "./api";
 import { useLibrary } from "./App";
 import { ErrorBox, Modal, Spinner } from "./ui";
-import { interviewProfiles, interviewLevels, type InterviewProfile } from "./interview-types";
+import {
+  interviewProfiles,
+  interviewLevels,
+  type InterviewProfile,
+} from "./interview-types";
 import "./interview.css";
 
 type Alias = {
@@ -119,7 +123,9 @@ export function InterviewProfileFields({
         Drafts stay in your library. Mark a question ready when its answer is
         complete.
       </p>
-      {value.seed_key && <span className="interview-seed-key">{value.seed_key}</span>}
+      {value.seed_key && (
+        <span className="interview-seed-key">{value.seed_key}</span>
+      )}
       <label>
         Status
         <select
@@ -162,19 +168,45 @@ export function InterviewProfileFields({
         ))}
       </div>
       <div className="interview-profile-numbers">
-        {(["level_min", "level_max"] as const).map(key => <label key={key}>
-          {key === "level_min" ? "Minimum level" : "Maximum level"}
-          <select value={value[key]} onChange={e => onChange({...value, [key]: +e.target.value})}>
-            {interviewLevels.map((label, i) => <option key={label} value={i+1}>{label}</option>)}
-          </select>
-        </label>)}
+        {(["level_min", "level_max"] as const).map((key) => (
+          <label key={key}>
+            {key === "level_min" ? "Minimum level" : "Maximum level"}
+            <select
+              value={value[key]}
+              onChange={(e) => onChange({ ...value, [key]: +e.target.value })}
+            >
+              {interviewLevels.map((label, i) => (
+                <option key={label} value={i + 1}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
       </div>
       <div className="interview-profile-memberships">
         <span>Interview profiles</span>
-        {interviewProfiles.filter(([slug]) => slug !== "all").map(([slug, label]) => <label key={slug}>
-          <input type="checkbox" checked={(value.interview_profiles || []).includes(slug)} onChange={e => onChange({...value, interview_profiles: e.target.checked ? [...(value.interview_profiles || []), slug] : (value.interview_profiles || []).filter(v => v !== slug)})} />
-          {label}
-        </label>)}
+        {interviewProfiles
+          .filter(([slug]) => slug !== "all")
+          .map(([slug, label]) => (
+            <label key={slug}>
+              <input
+                type="checkbox"
+                checked={(value.interview_profiles || []).includes(slug)}
+                onChange={(e) =>
+                  onChange({
+                    ...value,
+                    interview_profiles: e.target.checked
+                      ? [...(value.interview_profiles || []), slug]
+                      : (value.interview_profiles || []).filter(
+                          (v) => v !== slug,
+                        ),
+                  })
+                }
+              />
+              {label}
+            </label>
+          ))}
       </div>
       <label>
         Frequency confidence
@@ -198,7 +230,14 @@ export function InterviewProfileFields({
           onChange={(e) => onChange({ ...value, domain: e.target.value })}
         />
       </label>
-      <label>Subtopic<input value={value.subtopic || ""} maxLength={200} onChange={e => onChange({...value, subtopic: e.target.value})} /></label>
+      <label>
+        Subtopic
+        <input
+          value={value.subtopic || ""}
+          maxLength={200}
+          onChange={(e) => onChange({ ...value, subtopic: e.target.value })}
+        />
+      </label>
       {roles.map(([role, label]) => (
         <ConceptInput
           key={role}

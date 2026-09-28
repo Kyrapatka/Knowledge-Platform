@@ -109,6 +109,7 @@ export function RecallCard({
                 (back ? answerFields : card.question).map((field, index) => (
                   <div
                     key={`${field.key}-${index}`}
+                    data-field={field.key}
                     className={`${back ? "answer-field" : "question-field"} ${index === 0 ? "recall-lead" : "recall-detail"} ${!back && index === 0 ? "lead-question" : ""}`}
                   >
                     {index > 0 && (

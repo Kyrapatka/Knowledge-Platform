@@ -46,7 +46,9 @@ async function material(
   await page.getByRole("button", { name: "Add material", exact: true }).click();
   const dialog = page.getByRole("dialog");
   for (const [label, value] of Object.entries(values))
-    await dialog.getByLabel(label, { exact: label !== "Detailed Answer" }).fill(value);
+    await dialog
+      .getByLabel(label, { exact: label !== "Detailed Answer" })
+      .fill(value);
   await dialog.getByLabel("Topic", { exact: true }).fill(topic);
   await dialog
     .getByRole("combobox", { name: "Difficulty", exact: true })
@@ -54,7 +56,9 @@ async function material(
   if (values.Question) {
     await dialog.getByLabel("Primary concept", { exact: true }).fill("index");
     await dialog.getByLabel("Tested concepts", { exact: true }).fill("index");
-    await dialog.getByRole("combobox", { name: "Status", exact: true }).selectOption("ready");
+    await dialog
+      .getByRole("combobox", { name: "Status", exact: true })
+      .selectOption("ready");
   }
   await dialog
     .getByRole("button", { name: "Save material", exact: true })

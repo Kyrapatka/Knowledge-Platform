@@ -17,6 +17,7 @@ type RuntimeStore interface {
 }
 
 type Tx interface {
+	ExerciseTx
 	InterviewGraph() InterviewGraphRepository
 	SaveUndo(model.UndoSnapshot) error
 	UndoHistory() ([]model.UndoSnapshot, error)
@@ -46,11 +47,6 @@ type Tx interface {
 	SaveItem(model.SessionItem) error
 	Candidates(model.TrainingPlan, uuid.UUID, time.Time, int) ([]material.Material, error)
 	Material(uuid.UUID) (material.Material, error)
-	Exercises(uuid.UUID, int, int) ([]model.FormulaExercise, error)
-	Exercise(uuid.UUID, uuid.UUID) (model.FormulaExercise, error)
-	CreateExercise(model.FormulaExercise) error
-	UpdateExercise(model.FormulaExercise, int) error
-	DeleteExercise(uuid.UUID, uuid.UUID, int) error
 	PickExercise(uuid.UUID, uuid.UUID) (model.FormulaExercise, error)
 	Progress() ProgressRepository
 	Receipt(uuid.UUID) (model.CommandReceipt, error)

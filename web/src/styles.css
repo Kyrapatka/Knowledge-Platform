@@ -1422,7 +1422,9 @@ p {
   align-items: center;
   gap: 9px;
   text-align: center;
-  transition: border-color 0.16s ease, background 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease;
 }
 .import-dropzone.dragging {
   border-color: var(--accent);
@@ -1578,7 +1580,11 @@ p {
   border-radius: 10px;
   background: #11151a;
   color: #c6d7cf;
-  font: 10px/1.7 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font:
+    10px/1.7 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
   white-space: pre;
 }
 .import-ai {
@@ -4235,12 +4241,6 @@ select option:checked {
   .flip-scene {
     height: clamp(225px, 34dvh, 290px);
   }
-  .recall-card.interview-card .answer-field.recall-lead {
-    font-size: 24px;
-  }
-  .recall-card.interview-card .answer-field.recall-lead .markdown {
-    line-height: 1.5;
-  }
   .recall-card.interview-card .answer-field .markdown pre {
     white-space: pre-wrap;
   }
@@ -4308,4 +4308,89 @@ select option:checked {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Interview prose has a separate hierarchy from vocabulary flashcards. */
+.training-main:has(.interview-card),
+.interview-conversation {
+  scroll-margin-top: 96px;
+}
+.recall-card.interview-card .flip-face {
+  text-align: left;
+}
+.recall-card.interview-card .question-field {
+  font-size: 24px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.recall-card.interview-card .answer-field {
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.recall-card.interview-card .answer-field[data-field="short_answer"] {
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.recall-card.interview-card .answer-field[data-field="sources"] {
+  font-size: 13px;
+}
+.recall-card.interview-card .recall-detail {
+  margin-top: 18px;
+}
+.recall-card.interview-card .recall-detail > .eyebrow {
+  font-size: 12px;
+}
+.recall-card.interview-card .markdown {
+  min-width: 0;
+  max-width: 70ch;
+  overflow-wrap: anywhere;
+}
+.recall-card.interview-card .markdown pre {
+  text-align: left;
+  line-height: 1.5;
+}
+.recall-card.interview-card .answer-buttons > .button {
+  font-size: 16px;
+  min-height: 56px;
+}
+@media (max-width: 540px) {
+  .training-main:has(.interview-card) {
+    width: 100%;
+  }
+  .recall-card.interview-card {
+    padding: 16px;
+  }
+  .recall-card.interview-card .flip-face {
+    padding: 16px 10px;
+  }
+  .recall-card.interview-card .question-field {
+    font-size: 19px;
+  }
+  .recall-card.interview-card .answer-field {
+    font-size: 15px;
+  }
+  .recall-card.interview-card .answer-field[data-field="short_answer"] {
+    font-size: 16px;
+  }
+  .recall-card.interview-card .recall-detail {
+    margin-top: 14px;
+  }
+  .recall-card.interview-card .recall-meta {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .recall-card.interview-card .answer-buttons {
+    gap: 10px;
+  }
+}
+
+.recall-card.interview-card .markdown {
+  line-height: inherit;
+  font-weight: inherit;
+}
+.recall-card.interview-card .markdown pre {
+  font-size: 13px;
 }

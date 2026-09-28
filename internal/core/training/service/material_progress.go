@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+type ProgressService struct {
+	store    repository.ProgressViewStore
+	registry *algorithm.Registry
+}
+
+func NewProgressService(store repository.ProgressViewStore, registry *algorithm.Registry) *ProgressService {
+	return &ProgressService{store, registry}
+}
+
 type MaterialProgressView struct {
 	MaterialID    uuid.UUID  `json:"material_id"`
 	Version       int        `json:"version"`
@@ -21,9 +30,9 @@ type MaterialProgressView struct {
 }
 
 // Returns existing progress only; reading a material does not start its horizon.
-func (s *Service) MaterialProgress(ctx context.Context, user, sessionID, materialID uuid.UUID) (MaterialProgressView, error) {
+func (s *ProgressService) MaterialProgress(ctx context.Context, user, sessionID, materialID uuid.UUID) (MaterialProgressView, error) {
 	var out MaterialProgressView
-	err := s.transact(ctx, user, func(tx repository.Tx) error {
+	err := s.store.ReadProgress(ctx, user, func(tx repository.ProgressViewTx) error {
 		session, err := tx.Session(sessionID)
 		if err != nil {
 			return err
@@ -39,7 +48,7 @@ func (s *Service) MaterialProgress(ctx context.Context, user, sessionID, materia
 		if _, ok := plan.Config.Cards[m.FolderID.String()]; !ok {
 			return repository.ErrNotFound
 		}
-		p, err := tx.Progress().Get(ctx, keyFor(plan, materialID))
+		p, err := tx.GetProgress(ctx, keyFor(plan, materialID))
 		if err != nil {
 			return err
 		}

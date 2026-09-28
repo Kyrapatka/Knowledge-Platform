@@ -246,11 +246,13 @@ function Shell({ children }: { children: ReactNode }) {
             <span>Workspace</span>
             <ChevronRight size={13} />
             <span>
-              {location.pathname === "/interview" ? "Mock interview" : location.pathname === "/statistics"
-                ? "Statistics"
-                : location.pathname === "/training"
-                  ? "Training"
-                  : "My library"}
+              {location.pathname === "/interview"
+                ? "Mock interview"
+                : location.pathname === "/statistics"
+                  ? "Statistics"
+                  : location.pathname === "/training"
+                    ? "Training"
+                    : "My library"}
             </span>
           </div>
           <div className="topbar-right">
@@ -756,7 +758,13 @@ function FolderPage() {
             <MoreHorizontal size={20} />
             Edit folder
           </button>
-          <button className="button danger-text" onClick={() => setDeleteFolder(true)}><Trash2 size={17} />Delete folder</button>
+          <button
+            className="button danger-text"
+            onClick={() => setDeleteFolder(true)}
+          >
+            <Trash2 size={17} />
+            Delete folder
+          </button>
           <button className="button" onClick={() => setSettings(true)}>
             <Settings2 size={16} />
             Settings
@@ -1018,7 +1026,10 @@ function FolderPage() {
         <FolderEditor
           folder={folder}
           initialDeleting={deleteFolder}
-          onClose={() => {setEditFolder(false);setDeleteFolder(false)}}
+          onClose={() => {
+            setEditFolder(false);
+            setDeleteFolder(false);
+          }}
           onSaved={() => {
             setEditFolder(false);
             setDeleteFolder(false);

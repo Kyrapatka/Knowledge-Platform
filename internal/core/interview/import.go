@@ -8,12 +8,8 @@ import (
 	"strings"
 	"time"
 
-	folderconfig "github.com/Kyrapatka/knowledge-platform/internal/core/folder/config"
-	foldertemplate "github.com/Kyrapatka/knowledge-platform/internal/core/folder/template"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/interview/seed"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type BulkQuestion struct {
@@ -91,12 +87,12 @@ func ReadSeed() (SeedBank, error) {
 	}
 	return b, nil
 }
-func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuestion) (ImportResult, error) {
+func importQuestions(tx Transaction, user, folder uuid.UUID, questions []BulkQuestion) (ImportResult, error) {
 	out := ImportResult{FolderIDs: []uuid.UUID{folder}}
 	if len(questions) == 0 || len(questions) > 1000 {
 		return out, ErrInvalid
 	}
-	if err := ownedFolder(db, user, folder); err != nil {
+	if err := ownedFolder(tx, folder); err != nil {
 		return out, err
 	}
 	seen := map[string]bool{}
@@ -112,10 +108,9 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		if err := p.validate(); err != nil {
 			return out, err
 		}
-		var existing Profile
-		err := db.Table("interview_question_profiles").Where("owner_id=? AND seed_key=?", user, q.SeedKey).Take(&existing).Error
+		existing, err := tx.SeedProfile(q.SeedKey)
 		exists := err == nil
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		if err != nil && !errors.Is(err, ErrNotFound) {
 			return out, err
 		}
 		actualFolder := folder
@@ -129,7 +124,7 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		var oldMaterial seedMaterial
 		materialExists, restored := false, false
 		if exists {
-			oldMaterial, materialExists, err = findSeedMaterial(db, user, id)
+			oldMaterial, materialExists, err = tx.SeedMaterial(id)
 			if err != nil {
 				return out, err
 			}
@@ -166,7 +161,7 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 		}
 		metadata := map[string]string{"topic": q.Topic, "category": q.Category}
 		if exists && !restored && existing.FolderID == actualFolder && !seedContentChanged(oldMaterial, values, metadata) {
-			full, err := loadProfile(db, id)
+			full, err := tx.Profile(id)
 			if err != nil {
 				return out, err
 			}
@@ -175,17 +170,11 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 				continue
 			}
 		}
-		if materialExists {
-			err = db.Exec(`UPDATE materials SET folder_id=?,deleted_at=NULL,values=values || ?::jsonb, metadata=metadata || ?::jsonb,updated_at=? WHERE id=?`, actualFolder, jsonBytes(values), jsonBytes(metadata), now, id).Error
-		} else {
-			// Physical deletion normally cascades to the profile. Retaining the
-			// known ID also reconciles legacy orphan profiles if one is present.
-			err = db.Table("materials").Create(map[string]any{"id": id, "folder_id": actualFolder, "values": jsonBytes(values), "metadata": jsonBytes(metadata), "difficulty": "medium", "created_at": now, "updated_at": now}).Error
-		}
+		err = tx.PutSeedMaterial(id, actualFolder, values, metadata, now, materialExists)
 		if err != nil {
 			return out, err
 		}
-		if _, err = saveProfile(db, user, actualFolder, id, ProfileRequest{Profile: p, ExpectedVersion: existing.ProfileVersion}); err != nil {
+		if _, err = saveProfile(tx, user, actualFolder, id, ProfileRequest{Profile: p, ExpectedVersion: existing.ProfileVersion}); err != nil {
 			return out, err
 		}
 		if exists && !restored {
@@ -199,16 +188,16 @@ func importQuestions(db *gorm.DB, user, folder uuid.UUID, questions []BulkQuesti
 	}
 	return out, nil
 }
-func (s *Store) Bulk(ctx context.Context, user, folder uuid.UUID, questions []BulkQuestion) (ImportResult, error) {
+func (s *Service) Bulk(ctx context.Context, user, folder uuid.UUID, questions []BulkQuestion) (ImportResult, error) {
 	var out ImportResult
-	err := s.transact(ctx, user, func(db *gorm.DB) error {
+	err := s.repository.Transact(ctx, user, func(tx Transaction) error {
 		var err error
-		out, err = importQuestions(db, user, folder, questions)
+		out, err = importQuestions(tx, user, folder, questions)
 		return err
 	})
 	return out, err
 }
-func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string) (ImportResult, error) {
+func (s *Service) ImportSeed(ctx context.Context, user uuid.UUID, domains []string) (ImportResult, error) {
 	out := ImportResult{FolderIDs: []uuid.UUID{}}
 	bank, err := ReadSeed()
 	if err != nil {
@@ -230,59 +219,17 @@ func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string
 			return out, ErrInvalid
 		}
 	}
-	err = s.transact(ctx, user, func(db *gorm.DB) error {
+	err = s.repository.Transact(ctx, user, func(tx Transaction) error {
 		started := time.Now().UTC()
-		if err := syncBankConcepts(db, user, bank.Source); err != nil {
+		if err := tx.SyncBank(bank); err != nil {
 			return err
-		}
-		if err := syncProfileDictionary(db); err != nil {
-			return err
-		}
-		for _, e := range bank.Edges {
-			var endpoints []Concept
-			if err := db.Table("interview_concepts").Where("owner_id=? AND slug IN ?", user, []string{e.From, e.To}).Find(&endpoints).Error; err != nil {
-				return err
-			}
-			var a, b uuid.UUID
-			for _, c := range endpoints {
-				if c.Slug == e.From {
-					a = c.ID
-				}
-				if c.Slug == e.To {
-					b = c.ID
-				}
-			}
-			if a == uuid.Nil || b == uuid.Nil {
-				continue
-			}
-			if e.Weight == 0 {
-				e.Weight = 1
-			}
-			if err := db.Table("interview_concept_edges").Clauses(clause.OnConflict{DoNothing: true}).Create(map[string]any{"from_concept_id": a, "to_concept_id": b, "relation": e.Relation, "weight": e.Weight}).Error; err != nil {
-				return err
-			}
 		}
 		for _, d := range bank.Domains {
 			if len(wanted) > 0 && !wanted[d.Slug] {
 				continue
 			}
-			var row struct{ FolderID uuid.UUID }
-			err := db.Table("interview_seed_folders s").Select("s.folder_id").Joins("JOIN folders f ON f.id=s.folder_id AND f.deleted_at IS NULL AND f.owner_id=? AND f.template_key='interview_questions'", user).Where("s.user_id=? AND s.domain=?", user, d.Slug).Take(&row).Error
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				tmpl, err := foldertemplate.NewRegistry(foldertemplate.DefaultTemplates()).Get("interview_questions")
-				if err != nil {
-					return err
-				}
-				row.FolderID = uuid.New()
-				now := time.Now().UTC()
-				err = db.Table("folders").Create(map[string]any{"id": row.FolderID, "owner_id": user, "title": "Interview / " + d.Name, "description": "Interview question bank · " + d.Name, "template_key": "interview_questions", "config": jsonBytes(tmpl.Config), "config_version": 1, "training_config": jsonBytes(folderconfig.DefaultTrainingConfig("interview_questions")), "training_config_version": 1, "created_at": now, "updated_at": now}).Error
-				if err != nil {
-					return err
-				}
-				if err = db.Table("interview_seed_folders").Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}, {Name: "domain"}}, DoUpdates: clause.AssignmentColumns([]string{"folder_id"})}).Create(map[string]any{"user_id": user, "domain": d.Slug, "folder_id": row.FolderID}).Error; err != nil {
-					return err
-				}
-			} else if err != nil {
+			folderID, err := tx.SeedFolder(d)
+			if err != nil {
 				return err
 			}
 			qs := []BulkQuestion{}
@@ -291,11 +238,11 @@ func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string
 					qs = append(qs, q)
 				}
 			}
-			result, err := importQuestions(db, user, row.FolderID, qs)
+			result, err := importQuestions(tx, user, folderID, qs)
 			if err != nil {
 				return err
 			}
-			out.FolderIDs = append(out.FolderIDs, row.FolderID)
+			out.FolderIDs = append(out.FolderIDs, folderID)
 			out.Created += result.Created
 			out.CreatedMaterials = append(out.CreatedMaterials, result.CreatedMaterials...)
 			out.Updated += result.Updated
@@ -303,7 +250,7 @@ func (s *Store) ImportSeed(ctx context.Context, user uuid.UUID, domains []string
 		}
 		out.Revision = bank.Version
 		out.ImportRunID = uuid.New()
-		return db.Table("interview_bank_import_runs").Create(map[string]any{"id": out.ImportRunID, "user_id": user, "seed_revision": bank.Version, "questions_sha256": bank.Source.QuestionsSHA256, "concepts_sha256": bank.Source.ConceptsSHA256, "domains": jsonBytes(domains), "started_at": started, "finished_at": time.Now().UTC(), "status": "completed", "created_count": out.Created, "updated_count": out.Updated, "skipped_count": out.Skipped}).Error
+		return tx.RecordImport(out, bank, domains, started)
 	})
 	return out, err
 }

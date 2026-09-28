@@ -39,6 +39,11 @@ const answers = [
   'Вызов `repository.FindByContextAndTransactionIdentifier` возвращает result.\n\n```go\nresult, err := repository.FindByContextAndTransactionIdentifier(ctx, transactionIdentifier)\nif err != nil { return fmt.Errorf("find transaction: %w", err) }\n```',
 ];
 
+const questionAt = (i: number) =>
+  i === 2
+    ? `Question 2: ${"Explain how transaction boundaries interact with concurrent requests. ".repeat(10)}`
+    : `Question ${i}`;
+
 async function fixture(page: Page) {
   const state = { index: 0, actions: [] as string[], edits: 0 };
   await page.addInitScript(() =>
@@ -68,7 +73,7 @@ async function fixture(page: Page) {
         kind: "stage",
         stage: 1,
         progress_version: state.index + 1,
-        question: [{ key: "question", value: `Question ${state.index}` }],
+        question: [{ key: "question", value: questionAt(state.index) }],
         // Both legacy answer-only and bank short/detailed presentations.
         answer: [
           {
@@ -175,7 +180,7 @@ async function fixture(page: Page) {
   return state;
 }
 
-for (const width of [360, 390, 430, 1440]) {
+for (const width of [320, 375, 390, 430, 768, 1440, 1920]) {
   test(`collection entry starts at top after a deep Library click (${width}px)`, async ({
     page,
   }) => {
@@ -230,7 +235,7 @@ for (const width of [360, 390, 430, 1440]) {
     const state = await fixture(page);
     await page.goto("/train");
     for (let i = 0; i < answers.length; i++) {
-      await expect(page.locator(".lead-question")).toHaveText(`Question ${i}`);
+      await expect(page.locator(".lead-question")).toHaveText(questionAt(i));
       await page
         .getByRole("button", { name: "Flip to answer", exact: true })
         .click();
@@ -252,11 +257,14 @@ for (const width of [360, 390, 430, 1440]) {
           line: parseFloat(getComputedStyle(el).lineHeight),
         }));
       if (width < 600) {
-        expect(typography.font).toBeGreaterThanOrEqual(22);
-        expect(typography.font).toBeLessThanOrEqual(26);
+        expect(typography.font).toBeGreaterThanOrEqual(15);
+        expect(typography.font).toBeLessThanOrEqual(16);
         expect(typography.line / typography.font).toBeGreaterThanOrEqual(1.4);
         expect(typography.line / typography.font).toBeLessThanOrEqual(1.65);
-      } else expect(typography.font).toBe(42);
+      } else {
+        expect(typography.font).toBeGreaterThanOrEqual(16);
+        expect(typography.font).toBeLessThanOrEqual(18);
+      }
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
@@ -310,9 +318,12 @@ for (const width of [360, 390, 430, 1440]) {
         .getByRole("button", { name: i % 2 ? "Wrong" : "Correct", exact: true })
         .click();
       await expect(page.locator(".lead-question")).toHaveText(
-        `Question ${i + 1}`,
+        questionAt(i + 1),
       );
       await expect(page.locator(".saved-status")).toHaveText("Progress saved");
+      await expect
+        .poll(() => page.locator(".flip-front").evaluate((el) => el.scrollTop))
+        .toBe(0);
     }
     await page.getByRole("button", { name: "Undo last answer" }).click();
     await expect(page.locator(".lead-question")).toHaveText("Question 7");

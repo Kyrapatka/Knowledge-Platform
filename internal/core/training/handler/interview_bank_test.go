@@ -16,7 +16,7 @@ import (
 
 func TestBankImportPreservesCanonicalIdentityAndProgress(t *testing.T) {
 	f := newFixture(t)
-	store := interview.NewStore(f.db)
+	store := interview.NewService(interview.NewStore(f.db))
 	ctx := context.Background()
 	b, err := seed.Load()
 	if err != nil {

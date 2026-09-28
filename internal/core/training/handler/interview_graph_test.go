@@ -252,7 +252,7 @@ func TestSeedImportImportsEdgesAndProfileLifecycle(t *testing.T) {
 	f := newFixture(t)
 	group := f.router.Group("/api/v1")
 	group.Use(auth.AuthMiddleware(testParser{}))
-	interview.NewHandler(f.db).RegisterRoutes(group)
+	interview.NewHandler(interview.NewService(interview.NewStore(f.db))).RegisterRoutes(group)
 	imported := decode[interview.ImportResult](t, f.request(f.user, "POST", "/interview/seed/import", map[string]any{"domains": []string{"go"}}), 200)
 	if imported.Created != 130 || len(imported.FolderIDs) != 1 {
 		t.Fatal(imported)

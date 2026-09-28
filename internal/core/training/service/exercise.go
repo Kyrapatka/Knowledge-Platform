@@ -4,11 +4,21 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/model"
 	"github.com/Kyrapatka/knowledge-platform/internal/core/training/repository"
 	"github.com/google/uuid"
 )
+
+type ExerciseService struct {
+	store repository.ExerciseStore
+	now   func() time.Time
+}
+
+func NewExerciseService(store repository.ExerciseStore, clock func() time.Time) *ExerciseService {
+	return &ExerciseService{store, clock}
+}
 
 type ExerciseRequest struct {
 	Problem         string `json:"problem"`
@@ -30,31 +40,31 @@ func (r ExerciseRequest) validate() error {
 	return nil
 }
 
-func (s *Service) CreateExercise(ctx context.Context, user, materialID uuid.UUID, req ExerciseRequest) (model.FormulaExercise, error) {
+func (s *ExerciseService) CreateExercise(ctx context.Context, user, materialID uuid.UUID, req ExerciseRequest) (model.FormulaExercise, error) {
 	var out model.FormulaExercise
 	if err := req.validate(); err != nil {
 		return out, err
 	}
-	err := s.transact(ctx, user, func(tx repository.Tx) error {
+	err := s.store.TransactExercises(ctx, user, func(tx repository.ExerciseTx) error {
 		now := s.now().UTC()
 		out = model.FormulaExercise{ID: uuid.New(), MaterialID: materialID, Problem: req.Problem, Answer: req.Answer, Solution: req.Solution, Hint: req.Hint, Version: 1, CreatedAt: now, UpdatedAt: now}
 		return tx.CreateExercise(out)
 	})
 	return out, err
 }
-func (s *Service) Exercises(ctx context.Context, user, materialID uuid.UUID, limit, offset int) ([]model.FormulaExercise, error) {
+func (s *ExerciseService) Exercises(ctx context.Context, user, materialID uuid.UUID, limit, offset int) ([]model.FormulaExercise, error) {
 	if limit < 1 || limit > 100 || offset < 0 {
 		return nil, ErrInvalid
 	}
 	var out []model.FormulaExercise
-	err := s.transact(ctx, user, func(tx repository.Tx) error {
+	err := s.store.TransactExercises(ctx, user, func(tx repository.ExerciseTx) error {
 		var err error
 		out, err = tx.Exercises(materialID, limit, offset)
 		return err
 	})
 	return out, err
 }
-func (s *Service) UpdateExercise(ctx context.Context, user, materialID, id uuid.UUID, req ExerciseRequest) (model.FormulaExercise, error) {
+func (s *ExerciseService) UpdateExercise(ctx context.Context, user, materialID, id uuid.UUID, req ExerciseRequest) (model.FormulaExercise, error) {
 	var out model.FormulaExercise
 	if err := req.validate(); err != nil {
 		return out, err
@@ -62,7 +72,7 @@ func (s *Service) UpdateExercise(ctx context.Context, user, materialID, id uuid.
 	if req.ExpectedVersion < 1 {
 		return out, ErrInvalid
 	}
-	err := s.transact(ctx, user, func(tx repository.Tx) error {
+	err := s.store.TransactExercises(ctx, user, func(tx repository.ExerciseTx) error {
 		var err error
 		out, err = tx.Exercise(materialID, id)
 		if err != nil {
@@ -75,9 +85,9 @@ func (s *Service) UpdateExercise(ctx context.Context, user, materialID, id uuid.
 	})
 	return out, err
 }
-func (s *Service) DeleteExercise(ctx context.Context, user, materialID, id uuid.UUID, version int) error {
+func (s *ExerciseService) DeleteExercise(ctx context.Context, user, materialID, id uuid.UUID, version int) error {
 	if version < 1 {
 		return ErrInvalid
 	}
-	return s.transact(ctx, user, func(tx repository.Tx) error { return tx.DeleteExercise(materialID, id, version) })
+	return s.store.TransactExercises(ctx, user, func(tx repository.ExerciseTx) error { return tx.DeleteExercise(materialID, id, version) })
 }

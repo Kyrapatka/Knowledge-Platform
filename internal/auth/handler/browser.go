@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/service"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/httpmiddleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,21 +35,7 @@ func (h *Handler) registerBrowserRoutes(router *gin.RouterGroup) {
 
 		origin, err := url.Parse(c.GetHeader("Origin"))
 
-		scheme := "http"
-
-		if c.Request.TLS != nil {
-			scheme = "https"
-		}
-
-		if forwardedProto := c.GetHeader("X-Forwarded-Proto"); forwardedProto != "" {
-			scheme = forwardedProto
-		}
-
-		host := c.Request.Host
-
-		if forwardedHost := c.GetHeader("X-Forwarded-Host"); forwardedHost != "" {
-			host = forwardedHost
-		}
+		scheme, host := httpmiddleware.RequestOrigin(c)
 
 		if err != nil ||
 			origin.Scheme != scheme ||
@@ -266,14 +253,8 @@ func writeBrowserAuth(
 }
 
 func requestIsHTTPS(c *gin.Context) bool {
-	if c.Request.TLS != nil {
-		return true
-	}
-
-	return strings.EqualFold(
-		c.GetHeader("X-Forwarded-Proto"),
-		"https",
-	)
+	scheme, _ := httpmiddleware.RequestOrigin(c)
+	return scheme == "https"
 }
 
 func browserError(c *gin.Context, err error) {

@@ -507,12 +507,15 @@ func prepareTestDatabase(t *testing.T) *gorm.DB {
 		}
 	})
 
-	err = postgresDB.GORM.AutoMigrate(
-		&postgres.UserModel{},
-		&postgres.AuthSessionModel{},
-	)
-	if err != nil {
-		t.Fatalf("migrate test database: %v", err)
+	// Exercise production constraints rather than a parallel AutoMigrate schema.
+	for _, name := range []string{"000001_create_users.up.sql", "000002_create_auth_sessions.up.sql"} {
+		sql, err := os.ReadFile(filepath.Join("../../../../migrations", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = postgresDB.GORM.Exec(string(sql)).Error; err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	return postgresDB.GORM

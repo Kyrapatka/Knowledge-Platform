@@ -9,10 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Repository содержит обычные CRUD-операции Folder.
-//
-// FolderService и MaterialService не должны знать,
-// что существует специальная Workshop-операция UpdateConfig.
+// Repository serves folder and material use cases without workshop-specific writes.
 type Repository interface {
 	Create(
 		ctx context.Context,
@@ -40,11 +37,7 @@ type Repository interface {
 	) error
 }
 
-// ConfigRepository содержит только те операции,
-// которые нужны Workshop.
-//
-// PostgreSQL Repository реализует одновременно
-// Repository и ConfigRepository.
+// ConfigRepository owns versioned workshop updates.
 type ConfigRepository interface {
 	GetByID(
 		ctx context.Context,

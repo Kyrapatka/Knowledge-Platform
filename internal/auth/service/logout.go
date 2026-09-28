@@ -47,7 +47,7 @@ func (s *Service) Logout(
 		time.Now().UTC(),
 	)
 	if err != nil {
-		// Сессия могла быть отозвана параллельным запросом.
+		// A concurrent logout may already have revoked this session.
 		if errors.Is(err, autherrors.ErrSessionNotFound) {
 			return nil
 		}

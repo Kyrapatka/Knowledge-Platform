@@ -66,12 +66,7 @@ func (s *Service) UpdateConfig(
 			folder.ErrNotFound
 	}
 
-	// Эта проверка быстро ловит запрос,
-	// который уже устарел к моменту чтения Folder.
-	//
-	// Она НЕ заменяет optimistic locking в PostgreSQL,
-	// потому что config может измениться между
-	// GetByID и UpdateConfig.
+	// This early check does not replace the database version guard against racing updates.
 	if currentFolder.ConfigVersion != expectedVersion {
 		return foldermodel.Folder{},
 			workshop.ErrConflict

@@ -6,16 +6,15 @@ import (
 	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 	"net/http"
 )
 
 type Handler struct {
 	analytics.Emitter
-	store *Store
+	service *Service
 }
 
-func NewHandler(db *gorm.DB) *Handler { return &Handler{store: NewStore(db)} }
+func NewHandler(service *Service) *Handler { return &Handler{service: service} }
 func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.GET("/interview/seed", h.seedInfo)
 	api.POST("/interview/seed/import", h.importSeed)
@@ -46,7 +45,7 @@ func write(c *gin.Context, v any, err error) {
 		return
 	}
 	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
+	case errors.Is(err, ErrNotFound):
 		c.JSON(404, gin.H{"error": "interview_not_found"})
 	case errors.Is(err, ErrConflict):
 		c.JSON(409, gin.H{"error": "interview_conflict", "message": err.Error()})
@@ -83,7 +82,7 @@ func (h *Handler) importSeed(c *gin.Context) {
 	if !read(c, &req) {
 		return
 	}
-	v, e := h.store.ImportSeed(c.Request.Context(), u, req.Domains)
+	v, e := h.service.ImportSeed(c.Request.Context(), u, req.Domains)
 	if e == nil {
 		h.publishCreatedMaterials(c, u, v)
 	}
@@ -101,7 +100,7 @@ func (h *Handler) concepts(c *gin.Context) {
 	if !ok {
 		return
 	}
-	v, e := h.store.Catalog(c.Request.Context(), u)
+	v, e := h.service.Catalog(c.Request.Context(), u)
 	write(c, v, e)
 }
 func (h *Handler) saveConcept(c *gin.Context) {
@@ -114,7 +113,7 @@ func (h *Handler) saveConcept(c *gin.Context) {
 		return
 	}
 	req.Slug = c.Param("slug")
-	v, e := h.store.SaveConcept(c.Request.Context(), u, req)
+	v, e := h.service.SaveConcept(c.Request.Context(), u, req)
 	write(c, v, e)
 }
 func (h *Handler) profile(c *gin.Context) {
@@ -130,7 +129,7 @@ func (h *Handler) profile(c *gin.Context) {
 	if !ok {
 		return
 	}
-	v, e := h.store.Profile(c.Request.Context(), u, f, m)
+	v, e := h.service.Profile(c.Request.Context(), u, f, m)
 	write(c, v, e)
 }
 func (h *Handler) saveProfile(c *gin.Context) {
@@ -150,7 +149,7 @@ func (h *Handler) saveProfile(c *gin.Context) {
 	if !read(c, &req) {
 		return
 	}
-	v, e := h.store.SaveProfile(c.Request.Context(), u, f, m, req)
+	v, e := h.service.SaveProfile(c.Request.Context(), u, f, m, req)
 	write(c, v, e)
 }
 func (h *Handler) bulk(c *gin.Context) {
@@ -168,7 +167,7 @@ func (h *Handler) bulk(c *gin.Context) {
 	if !read(c, &req) {
 		return
 	}
-	v, e := h.store.Bulk(c.Request.Context(), u, f, req.Questions)
+	v, e := h.service.Bulk(c.Request.Context(), u, f, req.Questions)
 	if e == nil {
 		h.publishCreatedMaterials(c, u, v)
 	}

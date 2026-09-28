@@ -3,8 +3,6 @@ package interview
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -29,20 +27,14 @@ func (s *Store) transact(ctx context.Context, user uuid.UUID, fn func(*gorm.DB) 
 		return fn(db)
 	})
 }
-func ownedFolder(db *gorm.DB, user, folder uuid.UUID) error {
+func folderTemplate(db *gorm.DB, user, folder uuid.UUID) (string, error) {
 	var f struct{ TemplateKey string }
 	if err := db.Table("folders").Select("template_key").Where("id=? AND owner_id=? AND deleted_at IS NULL", folder, user).Take(&f).Error; err != nil {
-		return err
+		return "", err
 	}
-	if f.TemplateKey != "interview_questions" {
-		return fmt.Errorf("%w: choose an interview folder", ErrInvalid)
-	}
-	return nil
+	return f.TemplateKey, nil
 }
 func materialValues(db *gorm.DB, user, folder, material uuid.UUID) (map[string]*string, error) {
-	if err := ownedFolder(db, user, folder); err != nil {
-		return nil, err
-	}
 	var row struct{ Values []byte }
 	if err := db.Table("materials").Select("values").Where("id=? AND folder_id=? AND deleted_at IS NULL", material, folder).Take(&row).Error; err != nil {
 		return nil, err
@@ -63,22 +55,6 @@ func loadProfile(db *gorm.DB, material uuid.UUID) (Profile, error) {
 	}
 	return p, err
 }
-func (s *Store) Profile(ctx context.Context, user, folder, material uuid.UUID) (Profile, error) {
-	var out Profile
-	err := s.transact(ctx, user, func(db *gorm.DB) error {
-		if _, err := materialValues(db, user, folder, material); err != nil {
-			return err
-		}
-		var err error
-		out, err = loadProfile(db, material)
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			out = Profile{MaterialID: material, FolderID: folder, Frequency: 5, FrequencyConfidence: .5, InterviewDifficulty: 2, Specificity: 2, RootWeight: 5, FollowupWeight: 5, LevelMin: 1, LevelMax: 5, Status: "draft", Concepts: []QuestionConcept{}, InterviewProfiles: []string{}}
-			return nil
-		}
-		return err
-	})
-	return out, err
-}
 func ensureConcept(db *gorm.DB, user uuid.UUID, slug, domain, topic string) (uuid.UUID, error) {
 	if !slugPattern.MatchString(slug) {
 		return uuid.Nil, ErrInvalid
@@ -92,91 +68,38 @@ func ensureConcept(db *gorm.DB, user uuid.UUID, slug, domain, topic string) (uui
 	err := db.Table("interview_concepts").Where("owner_id=? AND slug=?", user, slug).Take(&found).Error
 	return found.ID, err
 }
-func saveProfile(db *gorm.DB, user, folder, material uuid.UUID, req ProfileRequest) (Profile, error) {
-	p := req.Profile
-	if req.ExpectedVersion < 0 {
-		return p, ErrInvalid
+func (t *storeTx) PutProfile(p Profile) error {
+	db, user, material := t.db, t.user, p.MaterialID
+	if err := db.Table("interview_question_profiles").Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "material_id"}}, UpdateAll: true}).Create(&p).Error; err != nil {
+		return err
 	}
-	if err := p.validate(); err != nil {
-		return p, err
-	}
-	values, err := materialValues(db, user, folder, material)
-	if err != nil {
-		return p, err
-	}
-	nonempty := func(k string) bool { return values[k] != nil && UsableContent(*values[k]) }
-	if p.Status == "ready" && (!nonempty("question") || (!nonempty("answer") && !nonempty("short_answer"))) {
-		return p, fmt.Errorf("%w: ready questions need a question and a usable answer", ErrInvalid)
-	}
-	old, err := loadProfile(db, material)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return p, err
-	}
-	if old.ProfileVersion != req.ExpectedVersion {
-		return p, ErrConflict
-	}
-	now := time.Now().UTC()
-	p.MaterialID = material
-	p.FolderID = folder
-	p.OwnerID = user
-	p.ProfileVersion = old.ProfileVersion + 1
-	p.CreatedAt = old.CreatedAt
-	p.UpdatedAt = now
-	if p.CreatedAt.IsZero() {
-		p.CreatedAt = now
-	}
-	if old.SeedKey != nil {
-		p.SeedKey = old.SeedKey
-	}
-	if err = db.Table("interview_question_profiles").Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "material_id"}}, UpdateAll: true}).Create(&p).Error; err != nil {
-		return p, err
-	}
-	if err = db.Table("interview_question_concepts").Where("material_id=?", material).Delete(&struct{}{}).Error; err != nil {
-		return p, err
+	if err := db.Table("interview_question_concepts").Where("material_id=?", material).Delete(&struct{}{}).Error; err != nil {
+		return err
 	}
 	for _, c := range p.Concepts {
 		id, err := ensureConcept(db, user, c.Slug, p.Domain, "")
 		if err != nil {
-			return p, err
+			return err
 		}
-		if err = db.Table("interview_question_concepts").Create(map[string]any{"material_id": material, "concept_id": id, "role": c.Role, "weight": c.Weight, "ordinal": c.Ordinal}).Error; err != nil {
-			return p, err
+		if err := db.Table("interview_question_concepts").Create(map[string]any{"material_id": material, "concept_id": id, "role": c.Role, "weight": c.Weight, "ordinal": c.Ordinal}).Error; err != nil {
+			return err
 		}
 	}
-	if err = syncProfileDictionary(db); err != nil {
-		return p, err
+	if err := syncProfileDictionary(db); err != nil {
+		return err
 	}
-	if err = db.Table("interview_question_memberships").Where("material_id=?", material).Delete(&struct{}{}).Error; err != nil {
-		return p, err
+	if err := db.Table("interview_question_memberships").Where("material_id=?", material).Delete(&struct{}{}).Error; err != nil {
+		return err
 	}
 	for _, slug := range p.InterviewProfiles {
 		if slug == "all" {
 			continue
 		}
-		if !validInterviewProfile(slug) {
-			return p, ErrInvalid
-		}
-		if err = db.Table("interview_question_memberships").Create(map[string]any{"material_id": material, "profile_slug": slug}).Error; err != nil {
-			return p, err
+		if err := db.Table("interview_question_memberships").Create(map[string]any{"material_id": material, "profile_slug": slug}).Error; err != nil {
+			return err
 		}
 	}
-	return p, nil
-}
-func (s *Store) SaveProfile(ctx context.Context, user, folder, material uuid.UUID, req ProfileRequest) (Profile, error) {
-	var out Profile
-	err := s.transact(ctx, user, func(db *gorm.DB) error {
-		var err error
-		out, err = saveProfile(db, user, folder, material, req)
-		return err
-	})
-	return out, err
-}
-
-// SaveProfileTx persists a profile on the store's existing transaction. It is
-// used by operations that must atomically create a folder, its materials and
-// their interview profiles. The caller must hold the user row lock.
-func (s *Store) SaveProfileTx(ctx context.Context, user, folder, material uuid.UUID, req ProfileRequest) (Profile, error) {
-	return saveProfile(s.db.WithContext(ctx), user, folder, material, req)
+	return nil
 }
 
 func normalizeAlias(s string) string {
@@ -221,9 +144,6 @@ func (s *Store) Catalog(ctx context.Context, user uuid.UUID) (Catalog, error) {
 	return LoadCatalog(s.db.WithContext(ctx), user)
 }
 func saveConcept(db *gorm.DB, user uuid.UUID, c Concept, overwrite bool) error {
-	if !slugPattern.MatchString(c.Slug) || len(c.DisplayName) > 200 || len(c.Aliases) > 100 || len(c.Domain) > 96 || len(c.Topic) > 200 {
-		return ErrInvalid
-	}
 	id, err := ensureConcept(db, user, c.Slug, c.Domain, c.Topic)
 	if err != nil {
 		return err
@@ -246,18 +166,6 @@ func saveConcept(db *gorm.DB, user uuid.UUID, c Concept, overwrite bool) error {
 	seen := map[string]bool{}
 	for _, a := range c.Aliases {
 		key := normalizeAlias(a.Alias)
-		if key == "" || len(key) > 240 || len(a.Language) > 24 || len(a.Constraints.RequiresAny) > 20 || len(a.Constraints.RequiresDomain) > 96 {
-			return ErrInvalid
-		}
-		if a.Language == "" {
-			a.Language = "any"
-		}
-		if a.Weight == 0 {
-			a.Weight = 1
-		}
-		if a.Weight < 0 || a.Weight > 2 {
-			return ErrInvalid
-		}
 		if seen[key+":"+a.Language] {
 			continue
 		}
@@ -268,24 +176,4 @@ func saveConcept(db *gorm.DB, user uuid.UUID, c Concept, overwrite bool) error {
 		}
 	}
 	return nil
-}
-func (s *Store) SaveConcept(ctx context.Context, user uuid.UUID, c Concept) (Concept, error) {
-	var out Concept
-	err := s.transact(ctx, user, func(db *gorm.DB) error {
-		if err := saveConcept(db, user, c, true); err != nil {
-			return err
-		}
-		catalog, err := LoadCatalog(db, user)
-		if err != nil {
-			return err
-		}
-		for _, v := range catalog.Concepts {
-			if v.Slug == c.Slug {
-				out = v
-				return nil
-			}
-		}
-		return gorm.ErrRecordNotFound
-	})
-	return out, err
 }

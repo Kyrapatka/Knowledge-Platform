@@ -18,6 +18,8 @@ import (
 var ErrInvalid = errors.New("invalid training request")
 
 type Service struct {
+	*ExerciseService
+	*ProgressService
 	analytics.Emitter
 	store    repository.RuntimeStore
 	registry *algorithm.Registry
@@ -30,7 +32,7 @@ func NewServiceWithClock(store repository.RuntimeStore, clock func() time.Time) 
 	if err != nil {
 		panic(err)
 	}
-	return &Service{store: store, registry: r, now: clock}
+	return &Service{ExerciseService: NewExerciseService(repository.ExercisesIn(store), clock), ProgressService: NewProgressService(repository.ProgressViewsIn(store), r), store: store, registry: r, now: clock}
 }
 
 type CreatePlanRequest struct {

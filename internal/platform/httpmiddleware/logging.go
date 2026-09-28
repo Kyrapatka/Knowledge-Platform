@@ -3,9 +3,11 @@ package httpmiddleware
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -50,8 +52,12 @@ func RequestID(logger *slog.Logger) gin.HandlerFunc {
 }
 
 // AccessLog must follow RequestID and precede Recovery. Only allowlisted fields
-// are logged; notably raw URLs, request data and c.Errors are never serialized.
-func AccessLog(logger *slog.Logger) gin.HandlerFunc {
+// are logged. Unmatched paths exclude the query; request data and error text are never serialized.
+func AccessLog(logger *slog.Logger, thresholds ...time.Duration) gin.HandlerFunc {
+	slow := time.Second
+	if len(thresholds) > 0 && thresholds[0] > 0 {
+		slow = thresholds[0]
+	}
 	return func(c *gin.Context) {
 		start := time.Now()
 		c.Next()
@@ -65,20 +71,42 @@ func AccessLog(logger *slog.Logger) gin.HandlerFunc {
 		default:
 			method = "OTHER"
 		}
+		duration := time.Since(start)
 		attrs := []slog.Attr{
 			slog.String("method", method), slog.String("route", route),
 			slog.Int("status", c.Writer.Status()),
-			slog.Float64("duration_ms", float64(time.Since(start))/float64(time.Millisecond)),
+			slog.Float64("duration_ms", float64(duration)/float64(time.Millisecond)),
 			slog.Int("response_bytes", max(0, c.Writer.Size())),
 		}
-		level := slog.LevelInfo
-		if c.Writer.Status() >= 500 {
-			level = slog.LevelError
+		canceled := errors.Is(c.Request.Context().Err(), context.Canceled)
+		deadline := errors.Is(c.Request.Context().Err(), context.DeadlineExceeded)
+		for _, entry := range c.Errors {
+			canceled = canceled || errors.Is(entry.Err, context.Canceled)
+			deadline = deadline || errors.Is(entry.Err, context.DeadlineExceeded)
+		}
+		level, reason := slog.LevelInfo, "normal"
+		switch {
+		case c.Writer.Status() >= 500 && !canceled && !deadline:
+			level, reason = slog.LevelError, "server_error"
+		case deadline:
+			level, reason = slog.LevelWarn, "deadline_exceeded"
+		case canceled:
+			reason = "context_canceled"
+		case route == "unmatched":
+			level, reason = slog.LevelWarn, "unmatched"
+		case c.Writer.Status() == 404 && strings.HasPrefix(c.Request.URL.Path, "/api/"):
+			level, reason = slog.LevelWarn, "api_not_found"
+		case duration >= slow:
+			level, reason = slog.LevelWarn, "slow"
+		}
+		if route == "unmatched" || reason == "api_not_found" {
+			attrs = append(attrs, slog.String("path", c.Request.URL.Path))
 		}
 		if state, ok := c.Request.Context().Value(contextKey{}).(*requestState); ok && state.recovered {
-			level = slog.LevelError
-			attrs = append(attrs, slog.Bool("panic_recovered", true), slog.String("stack", state.stack))
+			level, reason = slog.LevelError, "panic"
+			attrs = append(attrs, slog.Bool("panic_recovered", true), slog.String("panic", "recovered"), slog.String("stack", state.stack))
 		}
+		attrs = append(attrs, slog.String("reason", reason))
 		Logger(c.Request.Context(), logger).LogAttrs(c.Request.Context(), level, "http request completed", attrs...)
 	}
 }

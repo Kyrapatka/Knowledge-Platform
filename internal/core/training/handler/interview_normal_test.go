@@ -19,7 +19,7 @@ import (
 func importedInterview(t *testing.T) (*fixture, uuid.UUID) {
 	t.Helper()
 	f := newFixture(t)
-	result, err := interview.NewStore(f.db).ImportSeed(context.Background(), f.user, []string{"go"})
+	result, err := interview.NewService(interview.NewStore(f.db)).ImportSeed(context.Background(), f.user, []string{"go"})
 	if err != nil || result.Created == 0 || len(result.FolderIDs) != 1 {
 		t.Fatalf("bank import: %+v, %v", result, err)
 	}

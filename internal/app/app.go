@@ -57,6 +57,10 @@ func New(
 	if logger == nil {
 		return nil, errors.New("application logger is required")
 	}
+	proxyPolicy, err := httpmiddleware.ProxyPolicy(cfg.HTTPTrustedProxies)
+	if err != nil {
+		return nil, err
+	}
 	postgresDB, err := database.OpenPostgres(
 		cfg.DatabaseURL,
 	)
@@ -67,10 +71,6 @@ func New(
 		)
 	}
 	logger.Info("database connected")
-
-	// --------------------
-	// Auth
-	// --------------------
 
 	userRepository := authpostgres.NewUserRepository(
 		postgresDB.GORM,
@@ -115,10 +115,6 @@ func New(
 		authService,
 	)
 
-	// --------------------
-	// Folder
-	// --------------------
-
 	folderRepository := folderpostgres.NewRepository(
 		postgresDB.GORM,
 	)
@@ -141,10 +137,6 @@ func New(
 	importService.SetPublisher(publisher)
 	folderImportHandler := folderimporter.NewHandler(importService)
 
-	// --------------------
-	// Workshop
-	// --------------------
-
 	workshopService := workshopservice.NewService(
 		folderRepository,
 	)
@@ -152,10 +144,6 @@ func New(
 	workshopHandler := workshophandler.NewHandler(
 		workshopService,
 	)
-
-	// --------------------
-	// Material
-	// --------------------
 
 	materialRepository := materialpostgres.NewRepository(
 		postgresDB.GORM,
@@ -171,17 +159,18 @@ func New(
 		materialService,
 	)
 
-	// --------------------
-	// HTTP
-	// --------------------
-
 	router := gin.New()
+	if err := router.SetTrustedProxies(cfg.HTTPTrustedProxies); err != nil {
+		return nil, errors.Join(err, closeAnalytics(), postgresDB.Close())
+	}
 
 	router.Use(
 		httpmiddleware.RequestID(logger),
-		httpmiddleware.AccessLog(logger),
+		httpmiddleware.AccessLog(logger, cfg.HTTPSlowRequestThreshold),
 		observability.Middleware(),
 		httpmiddleware.Recovery(),
+		proxyPolicy,
+		httpmiddleware.AuthRateLimit(cfg.AuthLimits),
 	)
 	router.GET("/metrics", gin.WrapH(observability.Handler()))
 
@@ -207,7 +196,7 @@ func New(
 	trainingService.SetPublisher(publisher)
 	traininghandler.NewHandler(trainingService).RegisterRoutes(trainingAPI)
 	dashboard.NewHandler(postgresDB.GORM).RegisterRoutes(trainingAPI)
-	interviewHandler := interview.NewHandler(postgresDB.GORM)
+	interviewHandler := interview.NewHandler(interview.NewService(interview.NewStore(postgresDB.GORM)))
 	interviewHandler.SetPublisher(publisher)
 	interviewHandler.RegisterRoutes(trainingAPI)
 	webui.Register(router, "web/dist")
@@ -227,19 +216,11 @@ func (a *App) registerRoutes(
 	materialHandler *materialhandler.Handler,
 	tokenManager *token.JWTManager,
 ) {
-	// --------------------
-	// Health
-	// --------------------
-
 	a.registerProbes(router)
 
 	api := router.Group(
 		"/api/v1",
 	)
-
-	// --------------------
-	// Auth
-	// --------------------
 
 	authGroup := api.Group(
 		"/auth",
@@ -262,10 +243,6 @@ func (a *App) registerRoutes(
 	authHandler.RegisterProtectedRoutes(
 		protectedAuthGroup,
 	)
-
-	// --------------------
-	// Folders
-	// --------------------
 
 	foldersGroup := api.Group(
 		"/folders",
@@ -312,18 +289,10 @@ func (a *App) registerRoutes(
 		folderHandler.Delete,
 	)
 
-	// --------------------
-	// Workshop
-	// --------------------
-
 	foldersGroup.PATCH(
 		"/:folderID/workshop",
 		workshopHandler.UpdateConfig,
 	)
-
-	// --------------------
-	// Materials
-	// --------------------
 
 	foldersGroup.POST(
 		"/:folderID/materials",

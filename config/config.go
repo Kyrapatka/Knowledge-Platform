@@ -2,8 +2,10 @@ package config
 
 import (
 	"errors"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/httpmiddleware"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -23,8 +25,11 @@ type Config struct {
 	LogFormat   string
 	DatabaseURL string
 
-	HTTPAddress         string
-	HTTPShutdownTimeout time.Duration
+	HTTPTrustedProxies       []string
+	HTTPSlowRequestThreshold time.Duration
+	AuthLimits               httpmiddleware.AuthLimits
+	HTTPAddress              string
+	HTTPShutdownTimeout      time.Duration
 
 	JWTSecret       string
 	JWTIssuer       string
@@ -87,7 +92,34 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	slowThreshold, err := durationFromEnv("HTTP_SLOW_REQUEST_THRESHOLD", time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	var proxies []string
+	if raw := strings.TrimSpace(os.Getenv("HTTP_TRUSTED_PROXIES")); raw != "" {
+		for _, p := range strings.Split(raw, ",") {
+			proxies = append(proxies, strings.TrimSpace(p))
+		}
+	}
+	if _, err := httpmiddleware.ProxyPolicy(proxies); err != nil {
+		return Config{}, err
+	}
+	limits := httpmiddleware.DefaultAuthLimits()
+	for _, entry := range []struct {
+		key   string
+		value *int
+		max   int
+	}{{"AUTH_LOGIN_LIMIT", &limits.Login, 10000}, {"AUTH_REGISTER_LIMIT", &limits.Register, 10000}, {"AUTH_REFRESH_LIMIT", &limits.Refresh, 10000}, {"AUTH_RATE_MAX_KEYS", &limits.MaxKeys, 100000}} {
+		if *entry.value, err = boundedInt(entry.key, *entry.value, entry.max); err != nil {
+			return Config{}, err
+		}
+	}
+	if limits.Window, err = durationFromEnv("AUTH_RATE_WINDOW", limits.Window); err != nil {
+		return Config{}, err
+	}
 	return Config{
+		HTTPTrustedProxies: proxies, HTTPSlowRequestThreshold: slowThreshold, AuthLimits: limits,
 		Analytics:   analyticsConfig,
 		LogLevel:    logLevel,
 		LogFormat:   logFormat,

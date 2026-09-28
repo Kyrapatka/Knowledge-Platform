@@ -176,28 +176,38 @@ test("mobile editor keeps a focused field and Save visible above a shrinking vis
   await mockLibrary(page);
   await openDetails(page);
   const edit = page.getByRole("button", { name: "Edit word" });
-  await expect.poll(async () => (await edit.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await expect
+    .poll(async () => (await edit.boundingBox())!.height)
+    .toBeGreaterThanOrEqual(44);
   await edit.click();
-  const field = page.getByRole("textbox", { name: "Example optional", exact: true });
+  const field = page.getByRole("textbox", {
+    name: "Example optional",
+    exact: true,
+  });
   await field.fill("The word stays visible while I type.");
   for (const height of [430, 330]) {
-  await page.evaluate((height) =>
-    (
-      window as unknown as {
-        resizeKeyboardViewport: (height: number, offset: number) => void;
-      }
-    ).resizeKeyboardViewport(height, 32), height,
-  );
-  await expect(page.locator("dialog")).toHaveClass(/keyboard-open/);
-  await expect
-    .poll(async () => {
-      const input = (await field.boundingBox())!;
-      const save = (await page
-        .getByRole("button", { name: "Save material", exact: true })
-        .boundingBox())!;
-      return input.y >= save.y + save.height && input.y + input.height <= height + 32;
-    })
-    .toBe(true);
+    await page.evaluate(
+      (height) =>
+        (
+          window as unknown as {
+            resizeKeyboardViewport: (height: number, offset: number) => void;
+          }
+        ).resizeKeyboardViewport(height, 32),
+      height,
+    );
+    await expect(page.locator("dialog")).toHaveClass(/keyboard-open/);
+    await expect
+      .poll(async () => {
+        const input = (await field.boundingBox())!;
+        const save = (await page
+          .getByRole("button", { name: "Save material", exact: true })
+          .boundingBox())!;
+        return (
+          input.y >= save.y + save.height &&
+          input.y + input.height <= height + 32
+        );
+      })
+      .toBe(true);
   }
   expect(await field.evaluate((el) => getComputedStyle(el).fontSize)).toBe(
     "16px",
@@ -222,41 +232,84 @@ test("mobile editor keeps a focused field and Save visible above a shrinking vis
   await expect(field).toHaveValue("The word stays visible while I type. More.");
 });
 
-test("training pronunciation does not reveal a native-side answer or flip with Space", async ({ page }) => {
+test("training pronunciation does not reveal a native-side answer or flip with Space", async ({
+  page,
+}) => {
   await page.addInitScript(() => {
-    localStorage.setItem("knowledge:training:preview", JSON.stringify({
-      sources: [{ folder_id: "folder" }], session_ids: ["session"],
-    }));
+    localStorage.setItem(
+      "knowledge:training:preview",
+      JSON.stringify({
+        sources: [{ folder_id: "folder" }],
+        session_ids: ["session"],
+      }),
+    );
     const calls: string[] = [];
-    Object.defineProperty(window, "speechSynthesis", { value: {
-      getVoices: () => [], cancel: () => {},
-      speak: (utterance: SpeechSynthesisUtterance) => calls.push(utterance.text),
-    }, configurable: true });
+    Object.defineProperty(window, "speechSynthesis", {
+      value: {
+        getVoices: () => [],
+        cancel: () => {},
+        speak: (utterance: SpeechSynthesisUtterance) =>
+          calls.push(utterance.text),
+      },
+      configurable: true,
+    });
     Object.assign(window, { pronunciationCalls: calls });
   });
   await mockLibrary(page);
-  await page.route("**/api/v1/training/combined/current", async (route) => route.fulfill({ json: {
-    sessions: [{ session: { id: "session" } }],
-    summary: { correct: 0, wrong: 0, materials_reviewed: 0 },
-    current: { session_id: "session", algorithm_key: "english_basic", presentation: {
-      id: "card", material_id: "material", folder_id: "folder", kind: "stage", stage: 1,
-      direction: "native", question: [{ key: "native", value: "случайная удача" }],
-      answer: [{ key: "foreign", value: "serendipity" }], foreign_word: "serendipity",
-      required_correct: 3, consecutive_correct: 0, progress_version: 1,
-    } },
-  } }));
+  await page.route("**/api/v1/training/combined/current", async (route) =>
+    route.fulfill({
+      json: {
+        sessions: [{ session: { id: "session" } }],
+        summary: { correct: 0, wrong: 0, materials_reviewed: 0 },
+        current: {
+          session_id: "session",
+          algorithm_key: "english_basic",
+          presentation: {
+            id: "card",
+            material_id: "material",
+            folder_id: "folder",
+            kind: "stage",
+            stage: 1,
+            direction: "native",
+            question: [{ key: "native", value: "случайная удача" }],
+            answer: [{ key: "foreign", value: "serendipity" }],
+            foreign_word: "serendipity",
+            required_correct: 3,
+            consecutive_correct: 0,
+            progress_version: 1,
+          },
+        },
+      },
+    }),
+  );
   await page.goto("/train");
-  await expect(page.getByRole("button", { name: "Flip to answer" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Listen to pronunciation" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Flip to answer" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Listen to pronunciation" }),
+  ).toHaveCount(0);
   await expect(page.locator(".answer-fields")).not.toContainText("serendipity");
   await page.getByRole("button", { name: "Flip to answer" }).click();
   const listen = page.getByRole("button", { name: "Listen to pronunciation" });
   await listen.focus();
   await page.keyboard.press("Space");
-  await expect(page.getByRole("button", { name: "Stop pronunciation" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Stop pronunciation" }),
+  ).toBeVisible();
   await expect(page.locator(".flip-scene")).toHaveClass(/is-flipped/);
-  expect(await page.evaluate(() => (window as unknown as { pronunciationCalls: string[] }).pronunciationCalls)).toEqual(["serendipity"]);
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { pronunciationCalls: string[] })
+          .pronunciationCalls,
+    ),
+  ).toEqual(["serendipity"]);
   await page.getByRole("button", { name: "Flip to question" }).click();
-  await expect(page.getByRole("button", { name: "Listen to pronunciation" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Stop pronunciation" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Listen to pronunciation" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Stop pronunciation" }),
+  ).toHaveCount(0);
 });

@@ -1,3 +1,4 @@
+import { useQuestionScroll } from "./question-scroll";
 import {
   useCallback,
   useEffect,
@@ -71,7 +72,9 @@ export function TrainingSetup({
           ...(initial.ids.includes(f.id) && initial.topics
             ? { topics: initial.topics }
             : {}),
-          ...(initial.ids.length === 1 && initial.ids[0] === f.id && initial.planId
+          ...(initial.ids.length === 1 &&
+          initial.ids[0] === f.id &&
+          initial.planId
             ? { plan_id: initial.planId }
             : f.selected_plan
               ? { plan_id: f.selected_plan.id }
@@ -442,6 +445,9 @@ export function TrainingPage() {
   }, []);
   const current = view?.current;
   const card = current?.presentation;
+  const questionContainer = useQuestionScroll(
+    current?.algorithm_key.startsWith("interview_") ? card?.id : undefined,
+  );
   // A new presentation starts on its question in the very first render.
   const shown = !!card && shownCardId === card.id;
   function flip() {
@@ -626,7 +632,7 @@ export function TrainingPage() {
           </span>
         </div>
       </header>
-      <main className="training-main">
+      <main className="training-main" ref={questionContainer}>
         {view && (
           <div className="training-history">
             <button

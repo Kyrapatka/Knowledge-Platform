@@ -43,11 +43,12 @@ export function initialConfig(kind: string): FolderConfig {
         ? "Short Answer"
         : key === "answer"
           ? "Detailed Answer"
-          : key === "sources" && kind === "interview_questions" ? "Source"
-          : key
-              .split("_")
-              .map((s) => s[0].toUpperCase() + s.slice(1))
-              .join(" "),
+          : key === "sources" && kind === "interview_questions"
+            ? "Source"
+            : key
+                .split("_")
+                .map((s) => s[0].toUpperCase() + s.slice(1))
+                .join(" "),
     active: true,
     required: kind === "interview_questions" ? i === 0 : i < 2,
   });

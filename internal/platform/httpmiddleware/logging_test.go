@@ -23,7 +23,7 @@ func TestRequestLogging(t *testing.T) {
 	}{
 		{"/items/" + secret, "/items/:id", "INFO", 200},
 		{"/unauthorized", "/unauthorized", "INFO", 401},
-		{"/" + secret, "unmatched", "INFO", 404},
+		{"/missing-route", "unmatched", "WARN", 404},
 		{"/failure", "/failure", "ERROR", 503},
 		{"/panic", "/panic", "ERROR", 500},
 		{"/partial-panic", "/partial-panic", "ERROR", 200},

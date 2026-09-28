@@ -27,16 +27,17 @@ type Options struct {
 	AppVersion                  string
 }
 type Worker struct {
-	queue   chan Event
-	mu      sync.RWMutex
-	closed  bool
-	done    chan struct{}
-	cancel  context.CancelFunc
-	sink    Sink
-	options Options
-	metrics *metrics.Metrics
-	logger  *slog.Logger
-	drops   atomic.Uint64
+	queue          chan Event
+	mu             sync.RWMutex
+	closed         bool
+	done           chan struct{}
+	cancel         context.CancelFunc
+	sink           Sink
+	options        Options
+	metrics        *metrics.Metrics
+	logger         *slog.Logger
+	drops          [5]atomic.Uint64
+	shutdownBudget atomic.Int64
 }
 
 func NewWorker(sink Sink, options Options, m *metrics.Metrics, logger *slog.Logger) (*Worker, error) {
@@ -48,9 +49,17 @@ func NewWorker(sink Sink, options Options, m *metrics.Metrics, logger *slog.Logg
 	go w.run(ctx)
 	return w, nil
 }
+
+var dropReasons = [...]string{"buffer_full", "invalid", "closed", "shutdown_timeout", "flush_error"}
+
 func (w *Worker) drop(reason string, n int) {
 	w.metrics.Dropped.WithLabelValues(reason).Add(float64(n))
-	w.drops.Add(uint64(n))
+	for i, key := range dropReasons {
+		if reason == key {
+			w.drops[i].Add(uint64(n))
+			return
+		}
+	}
 }
 func (w *Worker) Publish(_ context.Context, e Event) {
 	// No serialization, network call, or log I/O on the request path.
@@ -73,6 +82,9 @@ func (w *Worker) Publish(_ context.Context, e Event) {
 	}
 }
 func (w *Worker) Shutdown(ctx context.Context) error {
+	if deadline, ok := ctx.Deadline(); ok {
+		w.shutdownBudget.Store(int64(max(0, time.Until(deadline))))
+	}
 	w.mu.Lock()
 	if !w.closed {
 		w.closed = true
@@ -103,8 +115,26 @@ func (w *Worker) run(ctx context.Context) {
 	warnings := time.NewTicker(time.Minute)
 	defer warnings.Stop()
 	report := func() {
-		if n := w.drops.Swap(0); n > 0 {
-			w.logger.Warn("analytics events lost", slog.Uint64("count", n))
+		for i, reason := range dropReasons {
+			n := w.drops[i].Swap(0)
+			if n == 0 {
+				continue
+			}
+			level := slog.LevelWarn
+			if reason == "closed" {
+				level = slog.LevelDebug
+			}
+			if reason == "shutdown_timeout" || reason == "flush_error" {
+				level = slog.LevelError
+			}
+			attrs := []slog.Attr{slog.String("reason", reason), slog.Uint64("count", n), slog.Int("queue_len", len(w.queue)), slog.Int("queue_capacity", cap(w.queue))}
+			if reason == "shutdown_timeout" {
+				attrs = append(attrs, slog.Uint64("pending_events", n), slog.Duration("timeout", time.Duration(w.shutdownBudget.Load())))
+			}
+			// Flush failures already have a throttled record with batch size and a safe error class.
+			if reason != "flush_error" {
+				w.logger.LogAttrs(context.Background(), level, "analytics events dropped", attrs...)
+			}
 		}
 	}
 	defer report()
@@ -120,9 +150,13 @@ func (w *Worker) run(ctx context.Context) {
 		cancel()
 		if err != nil {
 			w.metrics.FlushErrors.Inc()
-			w.drop("flush_error", len(batch))
-			if time.Since(lastError) >= time.Minute {
-				w.logger.Warn("analytics batch insert failed", slog.Int("events", len(batch)))
+			if ctx.Err() != nil {
+				w.drop("shutdown_timeout", len(batch))
+			} else {
+				w.drop("flush_error", len(batch))
+			}
+			if ctx.Err() == nil && time.Since(lastError) >= time.Minute {
+				w.logger.Error("analytics batch insert failed", slog.String("reason", "flush_error"), slog.Int("batch_size", len(batch)), slog.String("error", safeSinkError(err)))
 				lastError = time.Now()
 			}
 		}
@@ -154,4 +188,15 @@ func (w *Worker) run(ctx context.Context) {
 		case <-ctx.Done():
 		}
 	}
+}
+
+// Sink errors may include remote responses or credentials; log only bounded classes.
+func safeSinkError(err error) string {
+	if errors.Is(err, context.Canceled) {
+		return "context_canceled"
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "deadline_exceeded"
+	}
+	return "sink_write_failed"
 }

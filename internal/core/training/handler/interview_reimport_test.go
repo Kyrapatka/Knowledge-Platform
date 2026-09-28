@@ -54,7 +54,7 @@ func TestSeedConcurrentRestoreDoesNotDuplicate(t *testing.T) {
 	if err := folderpg.NewRepository(f.db).Delete(context.Background(), first.FolderIDs[0]); err != nil {
 		t.Fatal(err)
 	}
-	store := interview.NewStore(f.db)
+	store := interview.NewService(interview.NewStore(f.db))
 	var results [2]interview.ImportResult
 	var failures [2]error
 	var wg sync.WaitGroup
@@ -81,7 +81,7 @@ func bankHTTPFixture(t *testing.T) *fixture {
 	f := newFixture(t)
 	api := f.router.Group("/api/v1")
 	api.Use(auth.AuthMiddleware(testParser{}))
-	interview.NewHandler(f.db).RegisterRoutes(api)
+	interview.NewHandler(interview.NewService(interview.NewStore(f.db))).RegisterRoutes(api)
 	dashboard.NewHandler(f.db).RegisterRoutes(api)
 	folders := folderservice.NewService(folderpg.NewRepository(f.db), foldertemplate.NewRegistry(foldertemplate.DefaultTemplates()))
 	api.DELETE("/folders/:folderID", folderhandler.NewHandler(folders).Delete)

@@ -209,12 +209,7 @@ func (r *Repository) UpdateConfig(
 		return newVersion, nil
 	}
 
-	// UPDATE ничего не изменил.
-	//
-	// Возможны два основных случая:
-	//
-	// 1. Folder уже не существует.
-	// 2. Folder существует, но config_version уже другая.
+	// Distinguish a missing folder from an optimistic-lock conflict.
 	var count int64
 
 	if err := r.db.

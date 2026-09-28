@@ -490,11 +490,7 @@ func validateCreateFields(
 		allowed[field.Key] = field
 	}
 
-	// Любой существующий key разрешён,
-	// даже если Active=false.
-	//
-	// Active управляет отображением,
-	// а не правом доступа к данным.
+	// Hidden fields remain editable; Active controls presentation, not access.
 	for key := range values {
 		if _, exists := allowed[key]; !exists {
 			if metadata {
@@ -513,10 +509,7 @@ func validateCreateFields(
 		}
 	}
 
-	// Required применяется только к активным полям.
-	//
-	// Иначе hidden required field сделал бы
-	// создание Material невозможным через обычный UI.
+	// Requiring hidden fields would make creation through the UI impossible.
 	for _, field := range fields {
 		if !field.Active {
 			continue
@@ -585,10 +578,7 @@ func validatePatchFields(
 			)
 		}
 
-		// Inactive поле можно менять и удалять.
-		//
-		// Required начинает ограничивать PATCH
-		// только когда поле активно.
+		// Required constrains patches only while the field is visible.
 		if field.Active &&
 			field.Required &&
 			(value == nil || *value == "") {
