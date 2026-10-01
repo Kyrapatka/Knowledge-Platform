@@ -47,3 +47,12 @@ The inspected queries already have relevant indexes: active materials by folder,
 Set `TRAINING_TEST_DATABASE_URL` to a dedicated test database and run `make migrate-test`. It creates a UUID-named schema, applies all 23 up migrations, tests 23 down/up only on that empty schema, then removes only that schema. Cleanup failure fails the command. It does not reset the application database. The allowlist requires review when a new migration is added.
 
 PostgreSQL tests also verify that rolling back migration 23 with planless history fails atomically and retains version 23, and that migration 21 refuses bank metadata without erasing it. `make test-integration` requires both test database variables and rejects any skipped test in its selected suites.
+
+## Local application rollback
+
+`make rollback-local` restores only the recorded previous application image, with
+API-only startup. It never runs the older migrator or a down migration. Automatic
+rollback currently requires the same clean migration version recorded with that
+image; any schema version change is refused pending manual compatibility review,
+even if additive. See [local deployment](local-deployment.md). Prefer expand/contract
+changes and keep old application readers/writers compatible during transitions.

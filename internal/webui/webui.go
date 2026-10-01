@@ -28,6 +28,13 @@ func Register(router *gin.Engine, distDirectory string) {
 		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'")
 
 		name := strings.TrimPrefix(requestPath, "/")
+		if name == "swagger" {
+			c.Redirect(http.StatusTemporaryRedirect, "/swagger/")
+			return
+		}
+		if name == "swagger/" {
+			name = "swagger/index.html"
+		}
 		if name == "" {
 			name = "index.html"
 		}
@@ -49,7 +56,7 @@ func Register(router *gin.Engine, distDirectory string) {
 		}
 		defer root.Close()
 		file, err := root.Open(name)
-		if err != nil && path.Ext(name) == "" && !strings.HasPrefix(name, "assets/") {
+		if err != nil && path.Ext(name) == "" && !strings.HasPrefix(name, "assets/") && !strings.HasPrefix(name, "swagger/") {
 			name = "index.html"
 			file, err = root.Open(name)
 		}
@@ -71,6 +78,9 @@ func Register(router *gin.Engine, distDirectory string) {
 			c.Header("Cache-Control", "no-cache")
 		}
 		// Gin enters NoRoute with status 404; ServeContent must start with 200.
+		if name == "openapi.yaml" {
+			c.Header("Content-Type", "application/yaml; charset=utf-8")
+		}
 		c.Status(http.StatusOK)
 		http.ServeContent(c.Writer, c.Request, name, info.ModTime(), file)
 	})

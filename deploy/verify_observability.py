@@ -21,7 +21,7 @@ def request(base, path, body=None, auth=None):
         raise RuntimeError(f'{path}: HTTP {e.code}: {message[:1800]}') from None
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--require-events',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--require-events',action='store_true');parser.add_argument('--quick',action='store_true');args=parser.parse_args()
     grafana='http://127.0.0.1:'+os.getenv('KP_GRAFANA_PORT','3000')
     prom='http://127.0.0.1:'+os.getenv('KP_PROMETHEUS_PORT','9090')
     auth=(os.getenv('KP_GRAFANA_USER','admin'),os.getenv('KP_GRAFANA_PASSWORD','local-grafana-only'))
@@ -38,6 +38,8 @@ def main():
         with urlopen(base+'/metrics',timeout=10) as r: return r.read().decode()
     def total(raw,name):
         return sum(float(x) for x in re.findall('^'+name+r'(?:\{[^\n]*\})? ([0-9.e+\-]+)$',raw,re.M))
+    for url in [base+'/live',base+'/ready',grafana+'/api/health',prom+'/-/ready','http://127.0.0.1:'+os.getenv('KP_CLICKHOUSE_PORT','8123')+'/ping']:
+        with urlopen(url,timeout=10) as r: assert r.status==200,url
     before=metrics()
     with urlopen(base+'/live',timeout=10) as r: assert r.status==200
     after=metrics()
@@ -54,7 +56,7 @@ def main():
         d=json.loads((ROOT/'grafana'/'dashboards'/filename).read_text())
         live=request(grafana,'/api/dashboards/uid/'+d['uid'],auth=auth)['dashboard']
         assert live['title']==d['title']
-        for panel in d['panels']:
+        for panel in ([] if args.quick else d['panels']):
             for target in panel.get('targets',[]):
                 try:
                     if 'expr' in target:
@@ -77,6 +79,7 @@ def main():
         for metric in ['analytics_events_published_total','analytics_batch_flush_total']:
             data=request(prom,'/api/v1/query?'+urlencode({'query':metric+'{job="knowledge-backend"}'}))['data']['result']
             assert data and float(data[0]['value'][1])>0,metric+' must be positive after real activity'
+    print('Quick health/provisioning checks PASS' if args.quick else 'Full dashboard query checks complete')
     print(f'Queries checked: {checked}; failures: {len(failures)}')
     for title,error in failures: print(title+': '+error)
     if failures: sys.exit(1)

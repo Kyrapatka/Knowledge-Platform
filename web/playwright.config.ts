@@ -7,7 +7,8 @@ export default defineConfig({
   workers: 1,
   use: {
     baseURL: process.env.E2E_BASE_URL || "http://127.0.0.1:8080",
-    channel: process.env.PLAYWRIGHT_CHANNEL || "msedge",
+    channel:
+      process.env.PLAYWRIGHT_CHANNEL || (process.env.CI ? undefined : "msedge"),
     headless: true,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",

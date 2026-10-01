@@ -15,6 +15,7 @@ services:
       retries: 20
     restart: unless-stopped
   backend:
+    image: ${KP_BACKEND_IMAGE:-knowledge-platform-backend:current}
     build: .
     environment:
       DATABASE_URL: postgres://knowledge:${KP_POSTGRES_PASSWORD:-local-postgres-only}@postgres:5432/knowledge_platform?sslmode=disable

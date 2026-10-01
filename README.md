@@ -1,13 +1,13 @@
 # Knowledge Platform
 
-First frontend MVP: an English-language, dark learning workspace built with React and TypeScript, backed by the Go API and PostgreSQL.
+A learning workspace with Go/Gin, PostgreSQL, React/TypeScript, normal training and Mock/Deep Interview. Local operations use Docker Compose, Prometheus, Grafana and ClickHouse.
 
 ## Full local stack (Docker)
 
 With Docker Desktop/Engine and Compose available, run from this directory:
 
 ```powershell
-docker compose up -d
+make grafana
 ```
 
 The first run builds the frontend/API, applies PostgreSQL and ClickHouse migrations,
@@ -19,11 +19,13 @@ dashboards are in the Knowledge Platform folder. ClickHouse HTTP is on port 8123
 backend metrics are at [localhost:8080/metrics](http://localhost:8080/metrics).
 
 All published ports bind to loopback; bundled passwords are local development
-values. Set `KP_*` overrides from `.env.example` before deploying elsewhere.
+values. Set local `KP_*` overrides from `.env.example` when needed.
 Compose enables analytics by default (`KP_ANALYTICS_ENABLED=true`) independently
 of host `ANALYTICS_ENABLED`. Named volumes retain data across restarts.
-Use `docker compose up -d --build` after changing application code.
+Use `make deploy-local` after changing application code; `make grafana` reuses the current image. Neither command runs tests. Docker Desktop/Engine must already be running.
 See [observability setup, definitions and checks](docs/observability.md).
+
+The [local deployment guide](docs/local-deployment.md) explains image versions, failure diagnostics, safe rollback and an isolated clean start. [CI](docs/ci.md) runs backend, frontend, strict PostgreSQL integration and application E2E on push/PR. [Swagger](http://localhost:8080/swagger/) is bundled with the app.
 
 ## Run locally (without Docker)
 
@@ -82,7 +84,7 @@ Folder copying from other users, global discovery/search and Russian localizatio
 - Explicit early review is available when the nearest review is less than three hours away. It counts as an ordinary review and moves only that event, preserving other timers.
 - Future review intervals are shortened by 30 minutes, including recovery and final reviews. Individual target dates stay intact. Immediate reviews stay immediate. Migration 17 adjusts existing future review dates once; it never repeatedly shifts dates on refresh.
 
-Apply migrations 15–17 and restart the API before testing these server features. Frontend-only checks with mocked API responses: `npm.cmd --prefix web run test:e2e -- refinement.spec.ts`.
+Apply all current migrations and restart the API before testing these server features. Frontend-only checks with mocked API responses: `npm.cmd --prefix web run test:e2e -- refinement.spec.ts`.
 
 ## Verification
 
@@ -103,7 +105,7 @@ go test ./internal/auth/handler ./internal/auth/service
 
 Full integration checks use `TEST_DATABASE_URL` and `TRAINING_TEST_DATABASE_URL`. Both authentication repository and training suites create/drop their own randomly named schemas; use a dedicated test database/account with schema permissions. See the Compose verification commands in [observability documentation](docs/observability.md#verification).
 
-API references: [Training API](internal/core/training/TRAINING_API.md) and [Frontend API additions](docs/frontend-api.md).
+API contract: [OpenAPI](docs/openapi.yaml), [Swagger UI](http://localhost:8080/swagger/) and [usage/validation](docs/api.md). Additional references: [Training API](internal/core/training/TRAINING_API.md) and [Frontend API additions](docs/frontend-api.md).
 
 ## Developer checks and deployment origin
 
@@ -112,11 +114,21 @@ The Makefile uses the existing Go migration runner and npm lockfile. It never em
 | Command | Purpose |
 | --- | --- |
 | `make run` | Run the Go API; build `web/dist` first |
+| `make fmt` / `make fmt-check` | Fix formatting / nonmutating tracked Go format check |
+| `make test` / `make vet` / `make test-race` | Backend checks individually |
 | `make check` | Go formatting, vet, tests and race checks |
 | `make test-cover` | Go coverage in `coverage.out` |
 | `make test-integration` | Real PostgreSQL tests; fails on missing database variables or skipped tests |
 | `make migrate-test` | All migrations in a fresh random schema, then empty-schema 23 down/up |
-| `make frontend-check` | TypeScript, Prettier check and production build |
+| `make frontend-check` | TypeScript, Prettier, OpenAPI validation and production build |
+| `make openapi-check` | Validate separate OpenAPI spec and references |
+| `make observability` / `make grafana` | Start backend + full observability stack, no tests |
+| `make observability-check` | Quick live probes, provisioning and metrics check |
+| `make observability-full-check` | All panel SQL, fixtures and resilience checks; requires real activity |
+| `make observability-down` | Stop stack, retain all named volumes |
+| `make deploy-local` | Preserve previous image, build, migrate once, start and await readiness |
+| `make rollback-local` | Restore previous compatible app image, no DB downgrade |
+| `make deployment-status` | Compose state, deployed image/version and HTTP probes |
 | `make test-e2e` | Playwright against an already running API |
 | `make test-all` | All of the above checks, including integration and E2E |
 | `make dev` | Compose stack including backend; no second Go process |
@@ -127,7 +139,7 @@ Ordinary `go test ./...` may skip PostgreSQL tests without their environment. Fo
 
 Frontend formatting: `npm --prefix web run format`; checks: `typecheck`, `format:check`, `build`. There is no separate frontend unit framework or ESLint installation. Playwright is intentionally outside the fast check. Observability E2E cases additionally need the stack described in [observability.md](docs/observability.md).
 
-For a TLS tunnel that rewrites Host, set `HTTP_PUBLIC_ORIGIN=https://your-public-host` and restart the API. For this local setup it is `https://platform.loca.lt`. This explicitly allows that browser origin while preserving direct local development. Do not use a wildcard origin. HTTPS browser responses use Secure, HttpOnly, SameSite refresh cookies.
+For a TLS tunnel that rewrites Host, set `HTTP_PUBLIC_ORIGIN=https://your-public-host` and restart the API. This explicitly allows that browser origin while preserving direct local development. Do not use a wildcard origin. HTTPS browser responses use Secure, HttpOnly, SameSite refresh cookies.
 
 `HTTP_TRUSTED_PROXIES` is a comma-separated list of the actual immediate proxy IPs/CIDRs; empty means no trusted proxies. Configure it only for your deployment. Forwarded origin and client-IP headers from arbitrary clients are ignored. Without trusted proxy configuration, rate limits apply to the socket peer (tunnel clients may share one limit). `AUTH_LOGIN_LIMIT`, `AUTH_REGISTER_LIMIT`, `AUTH_REFRESH_LIMIT`, `AUTH_RATE_WINDOW`, and `AUTH_RATE_MAX_KEYS` configure bounded process-local limits; they are not shared between replicas.
 

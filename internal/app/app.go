@@ -171,6 +171,7 @@ func New(
 		httpmiddleware.Recovery(),
 		proxyPolicy,
 		httpmiddleware.AuthRateLimit(cfg.AuthLimits),
+		httpmiddleware.OrdinaryBodyLimit(),
 	)
 	router.GET("/metrics", gin.WrapH(observability.Handler()))
 

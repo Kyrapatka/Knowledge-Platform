@@ -1,0 +1,134 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: make fmt-check
+      - run: make vet
+      - run: make test
+      - run: make test-race
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm --prefix web ci
+      - run: make frontend-check
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: knowledge_test
+          POSTGRES_USER: knowledge
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U knowledge -d knowledge_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://knowledge:ci-test-only@localhost:5432/knowledge_test?sslmode=disable
+      TRAINING_TEST_DATABASE_URL: postgres://knowledge:ci-test-only@localhost:5432/knowledge_test?sslmode=disable
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: make test-integration
+      - run: make migrate-test
+  e2e:
+    name: e2e
+    needs: [backend, frontend, integration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: knowledge_e2e
+          POSTGRES_USER: knowledge
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U knowledge -d knowledge_e2e"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgres://knowledge:ci-test-only@localhost:5432/knowledge_e2e?sslmode=disable
+      JWT_SECRET: ci-only-secret-at-least-32-characters-long
+      HTTP_ADDRESS: :8080
+      LOG_FORMAT: json
+      ANALYTICS_ENABLED: 'false'
+      OBSERVABILITY_E2E: 'false'
+      # Dedicated disposable CI instance: avoid account-creation limits across QA tests.
+      AUTH_REGISTER_LIMIT: '1000'
+      AUTH_LOGIN_LIMIT: '1000'
+      AUTH_REFRESH_LIMIT: '1000'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm --prefix web ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm --prefix web run build
+      - run: make migrate-up
+      - name: Start API and wait for readiness
+        shell: bash
+        run: |
+          mkdir -p .cache
+          go build -o .cache/api ./cmd/api
+          .cache/api > .cache/api.log 2>&1 &
+          echo $! > .cache/api.pid
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:8080/ready; then exit 0; fi
+            kill -0 "$(cat .cache/api.pid)" || { cat .cache/api.log; exit 1; }
+            sleep 1
+          done
+          cat .cache/api.log
+          exit 1
+      - run: make test-e2e
+      - name: Failure artifacts (test credentials only)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure
+          path: |
+            web/playwright-report/
+            web/test-results/
+            .cache/api.log
+          retention-days: 7
+      - name: Stop API
+        if: always()
+        run: if [ -f .cache/api.pid ]; then kill "$(cat .cache/api.pid)" || true; fi

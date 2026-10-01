@@ -1,0 +1,4837 @@
+components:
+  responses:
+    BadRequest:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Malformed JSON, invalid UUID/query, validation failure or bounded request body exceeded while decoding. See error and optional message/validation.
+    Conflict:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Nickname exists, optimistic version changed, incompatible session state or an active mock interview already exists.
+    Forbidden:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Blocked account or invalid browser Origin.
+    InternalError:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Unexpected server error; internal details are logged server-side only.
+    NotFound:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Requested owned resource or active mock session was not found.
+    RateLimited:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Process-local authentication rate limit exceeded. Retry after the indicated number of seconds.
+      headers:
+        Retry-After:
+          description: Seconds until retry
+          schema:
+            type: integer
+    TooLarge:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Request or import file exceeds its size limit.
+    Unauthorized:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Missing/expired bearer or refresh credential. Ownership is checked server-side.
+  schemas:
+    AuthAuthResponse:
+      properties:
+        access_token:
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        refresh_token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthUserResponse"
+      required:
+      - user
+      - access_token
+      - refresh_token
+      - expires_at
+      type: object
+    AuthBrowserAuthResponse:
+      properties:
+        access_token:
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthUserResponse"
+      required:
+      - user
+      - access_token
+      - expires_at
+      type: object
+    AuthLoginRequest:
+      properties:
+        nickname:
+          maxLength: 16.0
+          minLength: 3.0
+          type: string
+        password:
+          format: password
+          maxLength: 128.0
+          minLength: 8.0
+          type: string
+      required:
+      - nickname
+      - password
+      type: object
+    AuthLogoutRequest:
+      properties:
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
+      type: object
+    AuthRefreshRequest:
+      properties:
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
+      type: object
+    AuthRegisterRequest:
+      properties:
+        nickname:
+          maxLength: 16.0
+          minLength: 3.0
+          type: string
+        password:
+          format: password
+          maxLength: 128.0
+          minLength: 8.0
+          type: string
+      required:
+      - nickname
+      - password
+      type: object
+    AuthUserResponse:
+      properties:
+        id:
+          format: uuid
+          type: string
+        nickname:
+          type: string
+        status:
+          type: string
+      required:
+      - id
+      - nickname
+      - status
+      type: object
+    BulkQuestionsRequest:
+      properties:
+        questions:
+          items:
+            $ref: "#/components/schemas/InterviewBulkQuestion"
+          nullable: true
+          type: array
+      required:
+      - questions
+      type: object
+    ConceptRequest:
+      properties:
+        aliases:
+          items:
+            $ref: "#/components/schemas/InterviewAlias"
+          nullable: true
+          type: array
+        display_name:
+          type: string
+        domain:
+          type: string
+        topic:
+          type: string
+        version:
+          type: integer
+      required:
+      - display_name
+      - domain
+      - topic
+      - version
+      type: object
+    DashboardActivity:
+      properties:
+        answers:
+          type: integer
+        correct:
+          type: integer
+        materials_reviewed:
+          type: integer
+        sessions:
+          type: integer
+        stage_promotions:
+          type: integer
+        wrong:
+          type: integer
+      required:
+      - answers
+      - correct
+      - wrong
+      - materials_reviewed
+      - sessions
+      - stage_promotions
+      type: object
+    DashboardDailyActivity:
+      allOf:
+      - $ref: "#/components/schemas/DashboardActivity"
+      - properties:
+          date:
+            type: string
+        required:
+        - date
+        type: object
+    DashboardFolderSummary:
+      allOf:
+      - $ref: "#/components/schemas/FolderFolderResponse"
+      - properties:
+          completed_count:
+            type: integer
+          due_count:
+            type: integer
+          learning_count:
+            type: integer
+          material_count:
+            type: integer
+          selected_plan:
+            allOf:
+            - $ref: "#/components/schemas/DashboardPlanOption"
+            nullable: true
+          topics:
+            items:
+              $ref: "#/components/schemas/DashboardTopic"
+            nullable: true
+            type: array
+        required:
+        - material_count
+        - due_count
+        - learning_count
+        - completed_count
+        - topics
+        - selected_plan
+        type: object
+    DashboardLibraryTotals:
+      properties:
+        completed_count:
+          type: integer
+        due_count:
+          type: integer
+        folder_count:
+          type: integer
+        learning_count:
+          type: integer
+        material_count:
+          type: integer
+      required:
+      - folder_count
+      - material_count
+      - due_count
+      - learning_count
+      - completed_count
+      type: object
+    DashboardLibraryView:
+      properties:
+        folders:
+          items:
+            $ref: "#/components/schemas/DashboardFolderSummary"
+          nullable: true
+          type: array
+        totals:
+          $ref: "#/components/schemas/DashboardLibraryTotals"
+      required:
+      - folders
+      - totals
+      type: object
+    DashboardMaterialView:
+      allOf:
+      - $ref: "#/components/schemas/MaterialMaterialResponse"
+      - properties:
+          progress:
+            allOf:
+            - $ref: "#/components/schemas/DashboardProgress"
+            nullable: true
+          topic:
+            type: string
+        required:
+        - topic
+        - progress
+        type: object
+    DashboardMaterialsView:
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/DashboardMaterialView"
+          nullable: true
+          type: array
+        limit:
+          type: integer
+        offset:
+          type: integer
+        plans:
+          items:
+            $ref: "#/components/schemas/DashboardPlanOption"
+          nullable: true
+          type: array
+        selected_plan:
+          allOf:
+          - $ref: "#/components/schemas/DashboardPlanOption"
+          nullable: true
+        topics:
+          items:
+            $ref: "#/components/schemas/DashboardTopic"
+          nullable: true
+          type: array
+        total:
+          type: integer
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      - topics
+      - selected_plan
+      - plans
+      type: object
+    DashboardPlanOption:
+      properties:
+        algorithm_key:
+          type: string
+        algorithm_version:
+          type: integer
+        created_at:
+          format: date-time
+          type: string
+        horizon_days:
+          type: integer
+        id:
+          format: uuid
+          type: string
+        pool_size:
+          type: integer
+        status:
+          type: string
+        track:
+          type: string
+      required:
+      - id
+      - algorithm_key
+      - algorithm_version
+      - track
+      - status
+      - horizon_days
+      - pool_size
+      - created_at
+      type: object
+    DashboardProgress:
+      properties:
+        algorithm_key:
+          type: string
+        algorithm_version:
+          type: integer
+        can_start_final:
+          type: boolean
+        completed_at:
+          format: date-time
+          nullable: true
+          type: string
+        consecutive_correct:
+          type: integer
+        correct_count:
+          type: integer
+        extra_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        learning_started_at:
+          format: date-time
+          type: string
+        next_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        plan_id:
+          format: uuid
+          nullable: true
+          type: string
+        rehab_active:
+          type: boolean
+        rehab_consecutive_correct:
+          type: integer
+        rehab_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        rehab_step:
+          type: integer
+        stage:
+          type: integer
+        stage_last_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        stage_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        target_at:
+          format: date-time
+          nullable: true
+          type: string
+        track:
+          type: string
+        version:
+          type: integer
+        wrong_count:
+          type: integer
+      required:
+      - version
+      - stage
+      - track
+      - plan_id
+      - algorithm_key
+      - algorithm_version
+      - learning_started_at
+      - target_at
+      - completed_at
+      - stage_last_review_at
+      - stage_review_at
+      - rehab_active
+      - rehab_review_at
+      - rehab_step
+      - rehab_consecutive_correct
+      - extra_review_at
+      - next_review_at
+      - consecutive_correct
+      - correct_count
+      - wrong_count
+      - can_start_final
+      type: object
+    DashboardStatisticsTotals:
+      allOf:
+      - $ref: "#/components/schemas/DashboardActivity"
+      - properties:
+          active_days:
+            type: integer
+        required:
+        - active_days
+        type: object
+    DashboardStatisticsView:
+      properties:
+        daily:
+          items:
+            $ref: "#/components/schemas/DashboardDailyActivity"
+          nullable: true
+          type: array
+        days:
+          type: integer
+        from:
+          format: date-time
+          type: string
+        timezone:
+          type: string
+        to:
+          format: date-time
+          type: string
+        totals:
+          $ref: "#/components/schemas/DashboardStatisticsTotals"
+      required:
+      - days
+      - timezone
+      - from
+      - to
+      - totals
+      - daily
+      type: object
+    DashboardTopic:
+      properties:
+        count:
+          type: integer
+        name:
+          type: string
+      required:
+      - name
+      - count
+      type: object
+    Error:
+      properties:
+        error:
+          type: string
+        errors:
+          items:
+            $ref: "#/components/schemas/ImportFieldError"
+          nullable: true
+          type: array
+        message:
+          type: string
+        validation:
+          $ref: "#/components/schemas/ImportPreview"
+      required:
+      - error
+      type: object
+    FolderConfigCardConfig:
+      properties:
+        answer_fields:
+          items:
+            type: string
+          nullable: true
+          type: array
+        question_fields:
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - question_fields
+      - answer_fields
+      type: object
+    FolderConfigFieldDefinition:
+      properties:
+        active:
+          type: boolean
+        key:
+          type: string
+        label:
+          type: string
+        required:
+          type: boolean
+      required:
+      - key
+      - label
+      - required
+      - active
+      type: object
+    FolderConfigFolderConfig:
+      properties:
+        card:
+          $ref: "#/components/schemas/FolderConfigCardConfig"
+        metadata_schema:
+          $ref: "#/components/schemas/FolderConfigMetadataSchema"
+        schema:
+          $ref: "#/components/schemas/FolderConfigMaterialSchema"
+      required:
+      - schema
+      - metadata_schema
+      - card
+      type: object
+    FolderConfigMaterialSchema:
+      properties:
+        fields:
+          items:
+            $ref: "#/components/schemas/FolderConfigFieldDefinition"
+          nullable: true
+          type: array
+      required:
+      - fields
+      type: object
+    FolderConfigMetadataSchema:
+      properties:
+        fields:
+          items:
+            $ref: "#/components/schemas/FolderConfigFieldDefinition"
+          nullable: true
+          type: array
+      required:
+      - fields
+      type: object
+    FolderConfigTrainingConfig:
+      properties:
+        default_algorithm_key:
+          type: string
+        pool_size:
+          type: integer
+      required:
+      - default_algorithm_key
+      - pool_size
+      type: object
+    FolderCreateFolderRequest:
+      example:
+        template_key: english_words
+        title: Vocabulary
+      properties:
+        description:
+          type: string
+        template_key:
+          enum:
+          - english_words
+          - interview_questions
+          - formulas
+          type: string
+        title:
+          type: string
+      required:
+      - title
+      - template_key
+      type: object
+    FolderFolderResponse:
+      properties:
+        config:
+          $ref: "#/components/schemas/FolderConfigFolderConfig"
+        config_version:
+          type: integer
+        created_at:
+          format: date-time
+          type: string
+        description:
+          type: string
+        id:
+          format: uuid
+          type: string
+        owner_id:
+          format: uuid
+          type: string
+        template_key:
+          type: string
+        title:
+          type: string
+        training_config:
+          $ref: "#/components/schemas/FolderConfigTrainingConfig"
+        training_config_version:
+          type: integer
+        updated_at:
+          format: date-time
+          type: string
+      required:
+      - training_config
+      - training_config_version
+      - id
+      - owner_id
+      - title
+      - description
+      - template_key
+      - config
+      - config_version
+      - created_at
+      - updated_at
+      type: object
+    FolderUpdateFolderRequest:
+      properties:
+        description:
+          type: string
+        title:
+          type: string
+      required:
+      - title
+      type: object
+    GraphCandidate:
+      properties:
+        concepts:
+          items:
+            $ref: "#/components/schemas/GraphLink"
+          nullable: true
+          type: array
+        domain:
+          type: string
+        due:
+          type: boolean
+        folder_id:
+          format: uuid
+          type: string
+        folder_title:
+          type: string
+        followup_weight:
+          type: integer
+        frequency:
+          type: integer
+        frequency_confidence:
+          type: number
+        has_answer:
+          type: boolean
+        interview_difficulty:
+          type: integer
+        interview_profiles:
+          items:
+            type: string
+          nullable: true
+          type: array
+        keywords:
+          type: string
+        learning_need:
+          type: number
+        level_max:
+          type: integer
+        level_min:
+          type: integer
+        material_id:
+          format: uuid
+          type: string
+        new:
+          type: boolean
+        profile_version:
+          type: integer
+        question:
+          type: string
+        root_weight:
+          type: integer
+        seed_key:
+          type: string
+        specificity:
+          type: integer
+        status:
+          type: string
+        subtopic:
+          type: string
+        topic:
+          type: string
+      required:
+      - material_id
+      - folder_id
+      - question
+      - domain
+      - topic
+      - status
+      - frequency
+      - frequency_confidence
+      - interview_difficulty
+      - specificity
+      - root_weight
+      - followup_weight
+      - level_min
+      - level_max
+      - subtopic
+      - interview_profiles
+      - profile_version
+      - has_answer
+      - due
+      - new
+      - learning_need
+      - concepts
+      type: object
+    GraphConfig:
+      properties:
+        cross_topic_penalty:
+          type: number
+        custom_weights:
+          additionalProperties:
+            type: number
+          type: object
+        depth_level:
+          type: integer
+        early_review_policy:
+          type: string
+        include_draft:
+          type: boolean
+        interview_mode:
+          type: string
+        level:
+          type: integer
+        max_depth_per_branch:
+          type: integer
+        max_detected_concepts:
+          type: integer
+        max_forks_per_root:
+          type: integer
+        max_frontier_size:
+          type: integer
+        max_roots:
+          type: integer
+        profile:
+          type: string
+        question_limit:
+          type: integer
+        store_raw_answer:
+          type: boolean
+        temperature:
+          type: number
+      required:
+      - interview_mode
+      - depth_level
+      - max_roots
+      - max_depth_per_branch
+      - max_forks_per_root
+      - question_limit
+      - temperature
+      - max_detected_concepts
+      - cross_topic_penalty
+      - early_review_policy
+      - store_raw_answer
+      - include_draft
+      - profile
+      - level
+      - max_frontier_size
+      type: object
+    GraphFrontierEntry:
+      properties:
+        added_at:
+          type: integer
+        branch:
+          type: string
+        material_id:
+          format: uuid
+          type: string
+        origin_material_id:
+          format: uuid
+          type: string
+        reason:
+          type: string
+        root_index:
+          type: integer
+        score:
+          type: number
+        source_depth:
+          type: integer
+        status:
+          type: string
+      required:
+      - origin_material_id
+      - material_id
+      - root_index
+      - branch
+      - source_depth
+      - reason
+      - status
+      - score
+      - added_at
+      type: object
+    GraphInterviewPlan:
+      properties:
+        depth_level:
+          type: integer
+        mode:
+          type: string
+        slots:
+          items:
+            type: string
+          nullable: true
+          type: array
+        strategy:
+          $ref: "#/components/schemas/GraphStrategy"
+        topics:
+          items:
+            $ref: "#/components/schemas/GraphTopicAllocation"
+          nullable: true
+          type: array
+      required:
+      - mode
+      - depth_level
+      - strategy
+      - topics
+      - slots
+      type: object
+    GraphLink:
+      properties:
+        ordinal:
+          type: integer
+        role:
+          type: string
+        slug:
+          type: string
+        weight:
+          type: number
+      required:
+      - slug
+      - role
+      - weight
+      - ordinal
+      type: object
+    GraphMatch:
+      properties:
+        alias:
+          type: string
+        concept_id:
+          format: uuid
+          type: string
+        end:
+          type: integer
+        slug:
+          type: string
+        source:
+          type: string
+        start:
+          type: integer
+        strength:
+          type: number
+      required:
+      - concept_id
+      - slug
+      - alias
+      - start
+      - end
+      - strength
+      - source
+      type: object
+    GraphScore:
+      properties:
+        components:
+          additionalProperties:
+            type: number
+          type: object
+        material_id:
+          format: uuid
+          type: string
+        question:
+          type: string
+        reason:
+          type: string
+        score:
+          type: number
+        seed_key:
+          type: string
+        tier:
+          type: string
+      required:
+      - material_id
+      - question
+      - score
+      - reason
+      - tier
+      - components
+      type: object
+    GraphSource:
+      properties:
+        folder_id:
+          format: uuid
+          type: string
+        topics:
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - folder_id
+      type: object
+    GraphState:
+      properties:
+        answered_questions:
+          type: integer
+        asked_material_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+        branch_answered:
+          type: integer
+        completed_root_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+        config:
+          $ref: "#/components/schemas/GraphConfig"
+        current_branch:
+          type: string
+        current_depth:
+          type: integer
+        current_root:
+          type: integer
+        current_root_id:
+          format: uuid
+          type: string
+        forks_used:
+          additionalProperties:
+            type: integer
+          type: object
+        frontier:
+          items:
+            $ref: "#/components/schemas/GraphFrontierEntry"
+          nullable: true
+          type: array
+        interview_plan:
+          allOf:
+          - $ref: "#/components/schemas/GraphInterviewPlan"
+          nullable: true
+        last_material_id:
+          format: uuid
+          nullable: true
+          type: string
+        practice_only:
+          type: boolean
+        questions_asked:
+          type: integer
+        random_index:
+          type: integer
+        random_seed:
+          type: integer
+        recent_concepts:
+          items:
+            type: string
+          nullable: true
+          type: array
+        root_areas:
+          items:
+            type: string
+          nullable: true
+          type: array
+        root_concepts:
+          items:
+            type: string
+          nullable: true
+          type: array
+        roots_used:
+          type: integer
+        shown_root_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+        skipped_root_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+        sources:
+          items:
+            $ref: "#/components/schemas/GraphSource"
+          nullable: true
+          type: array
+        stop_reason:
+          type: string
+        strategy_version:
+          type: integer
+        version:
+          type: integer
+      required:
+      - practice_only
+      - answered_questions
+      - branch_answered
+      - current_root_id
+      - shown_root_ids
+      - skipped_root_ids
+      - completed_root_ids
+      - root_areas
+      - root_concepts
+      - strategy_version
+      - version
+      - random_seed
+      - random_index
+      - current_root
+      - current_branch
+      - current_depth
+      - roots_used
+      - questions_asked
+      - config
+      - sources
+      - asked_material_ids
+      - recent_concepts
+      - frontier
+      - forks_used
+      - stop_reason
+      type: object
+    GraphStrategy:
+      properties:
+        concept_hops:
+          type: integer
+        difficulty_boost:
+          type: number
+        follow_probability:
+          type: number
+        rarity_boost:
+          type: number
+        root_switch_penalty:
+          type: number
+        target_branch:
+          type: integer
+        target_roots:
+          type: integer
+      required:
+      - target_roots
+      - target_branch
+      - difficulty_boost
+      - rarity_boost
+      - follow_probability
+      - concept_hops
+      - root_switch_penalty
+      type: object
+    GraphTopicAllocation:
+      properties:
+        available:
+          type: integer
+        key:
+          type: string
+        label:
+          type: string
+        roots:
+          type: integer
+        weight:
+          type: number
+      required:
+      - key
+      - label
+      - available
+      - weight
+      - roots
+      type: object
+    Health:
+      properties:
+        status:
+          enum:
+          - ok
+          - not_ready
+          type: string
+      required:
+      - status
+      type: object
+    ImportFieldError:
+      properties:
+        field:
+          type: string
+        item:
+          type: integer
+        message:
+          type: string
+      required:
+      - field
+      - message
+      type: object
+    ImportPreview:
+      properties:
+        errors:
+          items:
+            $ref: "#/components/schemas/ImportFieldError"
+          nullable: true
+          type: array
+        folder_name:
+          type: string
+        format_version:
+          type: integer
+        items_count:
+          type: integer
+        template:
+          type: string
+        valid:
+          type: boolean
+        warnings:
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - valid
+      - format_version
+      - template
+      - folder_name
+      - items_count
+      - warnings
+      type: object
+    ImportResult:
+      properties:
+        folder_id:
+          format: uuid
+          type: string
+        folder_name:
+          type: string
+        items_created:
+          type: integer
+        template:
+          type: string
+        warnings:
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - folder_id
+      - folder_name
+      - template
+      - items_created
+      - warnings
+      type: object
+    InterviewAlias:
+      properties:
+        alias:
+          type: string
+        constraints:
+          $ref: "#/components/schemas/InterviewAliasConstraints"
+        language:
+          type: string
+        weight:
+          type: number
+        whole_word:
+          type: boolean
+      required:
+      - alias
+      - language
+      - weight
+      - whole_word
+      - constraints
+      type: object
+    InterviewAliasConstraints:
+      properties:
+        requires_any:
+          items:
+            type: string
+          nullable: true
+          type: array
+        requires_domain:
+          type: string
+      type: object
+    InterviewBulkQuestion:
+      properties:
+        answer:
+          nullable: true
+          type: string
+        category:
+          type: string
+        concepts:
+          items:
+            $ref: "#/components/schemas/InterviewQuestionConcept"
+          nullable: true
+          type: array
+        domain:
+          type: string
+        followup_weight:
+          type: integer
+        frequency:
+          type: integer
+        frequency_confidence:
+          type: number
+        interview_difficulty:
+          type: integer
+        interview_profiles:
+          items:
+            type: string
+          nullable: true
+          type: array
+        level_max:
+          type: integer
+        level_min:
+          type: integer
+        question:
+          type: string
+        root_weight:
+          type: integer
+        seed_key:
+          type: string
+        seed_revision:
+          type: string
+        short_answer:
+          nullable: true
+          type: string
+        source:
+          nullable: true
+          type: string
+        specificity:
+          type: integer
+        status:
+          type: string
+        subtopic:
+          type: string
+        topic:
+          type: string
+      required:
+      - question
+      - domain
+      - topic
+      - status
+      type: object
+    InterviewCatalog:
+      properties:
+        concepts:
+          items:
+            $ref: "#/components/schemas/InterviewConcept"
+          nullable: true
+          type: array
+        edges:
+          items:
+            $ref: "#/components/schemas/InterviewEdge"
+          nullable: true
+          type: array
+      required:
+      - concepts
+      - edges
+      type: object
+    InterviewConcept:
+      properties:
+        aliases:
+          items:
+            $ref: "#/components/schemas/InterviewAlias"
+          nullable: true
+          type: array
+        display_name:
+          type: string
+        domain:
+          type: string
+        id:
+          format: uuid
+          type: string
+        slug:
+          type: string
+        topic:
+          type: string
+        version:
+          type: integer
+      required:
+      - id
+      - slug
+      - display_name
+      - domain
+      - topic
+      - version
+      - aliases
+      type: object
+    InterviewEdge:
+      properties:
+        from:
+          type: string
+        relation:
+          type: string
+        to:
+          type: string
+        weight:
+          type: number
+      required:
+      - from
+      - to
+      - relation
+      - weight
+      type: object
+    InterviewImportResult:
+      properties:
+        created:
+          type: integer
+        folder_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+        import_run_id:
+          format: uuid
+          type: string
+        revision:
+          type: string
+        skipped:
+          type: integer
+        updated:
+          type: integer
+      required:
+      - folder_ids
+      - created
+      - updated
+      - skipped
+      - revision
+      - import_run_id
+      type: object
+    InterviewProfile:
+      properties:
+        concepts:
+          items:
+            $ref: "#/components/schemas/InterviewQuestionConcept"
+          nullable: true
+          type: array
+        created_at:
+          format: date-time
+          type: string
+        domain:
+          type: string
+        folder_id:
+          format: uuid
+          type: string
+        followup_weight:
+          type: integer
+        frequency:
+          type: integer
+        frequency_confidence:
+          type: number
+        interview_difficulty:
+          type: integer
+        interview_profiles:
+          items:
+            type: string
+          nullable: true
+          type: array
+        level_max:
+          type: integer
+        level_min:
+          type: integer
+        material_id:
+          format: uuid
+          type: string
+        profile_version:
+          type: integer
+        root_weight:
+          type: integer
+        seed_key:
+          nullable: true
+          type: string
+        seed_revision:
+          type: string
+        specificity:
+          type: integer
+        status:
+          type: string
+        subtopic:
+          type: string
+        topic:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+      - material_id
+      - folder_id
+      - seed_key
+      - domain
+      - frequency
+      - frequency_confidence
+      - interview_difficulty
+      - specificity
+      - root_weight
+      - followup_weight
+      - level_min
+      - level_max
+      - topic
+      - subtopic
+      - seed_revision
+      - interview_profiles
+      - status
+      - profile_version
+      - concepts
+      - created_at
+      - updated_at
+      type: object
+    InterviewQuestionConcept:
+      properties:
+        ordinal:
+          type: integer
+        role:
+          type: string
+        slug:
+          type: string
+        weight:
+          type: number
+      required:
+      - slug
+      - role
+      - weight
+      - ordinal
+      type: object
+    InterviewSeedDomain:
+      properties:
+        name:
+          type: string
+        question_count:
+          type: integer
+        slug:
+          type: string
+      required:
+      - slug
+      - name
+      - question_count
+      type: object
+    MaterialCreateMaterialRequest:
+      example:
+        difficulty: medium
+        metadata:
+          topic: Greetings
+        values:
+          foreign: hello
+          native: привет
+      properties:
+        difficulty:
+          allOf:
+          - $ref: "#/components/schemas/MaterialModelDifficulty"
+          nullable: true
+        metadata:
+          additionalProperties:
+            nullable: true
+            type: string
+          type: object
+        values:
+          additionalProperties:
+            nullable: true
+            type: string
+          type: object
+      required:
+      - values
+      type: object
+    MaterialMaterialResponse:
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        difficulty:
+          $ref: "#/components/schemas/MaterialModelDifficulty"
+        folder_id:
+          format: uuid
+          type: string
+        id:
+          format: uuid
+          type: string
+        metadata:
+          additionalProperties:
+            nullable: true
+            type: string
+          type: object
+        updated_at:
+          format: date-time
+          type: string
+        values:
+          additionalProperties:
+            nullable: true
+            type: string
+          type: object
+      required:
+      - difficulty
+      - id
+      - folder_id
+      - values
+      - metadata
+      - created_at
+      - updated_at
+      type: object
+    MaterialModelDifficulty:
+      enum:
+      - easy
+      - medium
+      - hard
+      type: string
+    MaterialUpdateMaterialRequest:
+      properties:
+        difficulty:
+          allOf:
+          - $ref: "#/components/schemas/MaterialModelDifficulty"
+          nullable: true
+        metadata:
+          additionalProperties:
+            nullable: true
+            type: string
+          type: object
+        values:
+          additionalProperties:
+            nullable: true
+            type: string
+          type: object
+      required:
+      - values
+      type: object
+    ProfileRequest:
+      description: Optimistic version check. Ready profiles require frequency 1–10, interview_difficulty and specificity 1–5, frequency_confidence 0–1, root_weight 0–10, exactly one primary concept and at least one tested concept. Draft/ungraded cards allow incomplete grading.
+      properties:
+        concepts:
+          items:
+            $ref: "#/components/schemas/InterviewQuestionConcept"
+          nullable: true
+          type: array
+        domain:
+          type: string
+        expected_version:
+          type: integer
+        followup_weight:
+          type: integer
+        frequency:
+          type: integer
+        frequency_confidence:
+          type: number
+        interview_difficulty:
+          type: integer
+        interview_profiles:
+          items:
+            type: string
+          nullable: true
+          type: array
+        level_max:
+          type: integer
+        level_min:
+          type: integer
+        root_weight:
+          type: integer
+        seed_key:
+          nullable: true
+          type: string
+        seed_revision:
+          type: string
+        specificity:
+          type: integer
+        status:
+          type: string
+        subtopic:
+          type: string
+        topic:
+          type: string
+        ungraded:
+          type: boolean
+      required:
+      - expected_version
+      - domain
+      - topic
+      - status
+      type: object
+    SeedImportRequest:
+      properties:
+        domains:
+          items:
+            type: string
+          nullable: true
+          type: array
+      type: object
+    SeedInfo:
+      properties:
+        domains:
+          items:
+            $ref: "#/components/schemas/InterviewSeedDomain"
+          nullable: true
+          type: array
+        profiles:
+          items:
+            type: string
+          nullable: true
+          type: array
+        question_count:
+          type: integer
+        revision:
+          type: string
+        validation:
+          properties:
+            aliases:
+              type: integer
+            ambiguous_aliases:
+              type: integer
+            concepts:
+              type: integer
+            concepts_sha256:
+              type: string
+            concepts_without_alias:
+              type: integer
+            counts_by_prefix:
+              additionalProperties:
+                type: integer
+              type: object
+            primary_relations:
+              type: integer
+            profile_memberships:
+              type: integer
+            questions:
+              type: integer
+            questions_sha256:
+              type: string
+            relations:
+              type: integer
+            revision:
+              type: string
+            scoped_aliases:
+              type: integer
+          type: object
+        version:
+          type: string
+      type: object
+    TrainingActionRequest:
+      description: Use IDs and expected_version from the current presentation. Reuse the same command_id only when retrying the same uncertain command. A stale version returns 409.
+      properties:
+        action:
+          $ref: "#/components/schemas/core_training_algorithmAction"
+        answer_language:
+          type: string
+        answer_text:
+          type: string
+        command_id:
+          format: uuid
+          type: string
+        expected_version:
+          type: integer
+        presentation_id:
+          format: uuid
+          type: string
+      required:
+      - command_id
+      - presentation_id
+      - expected_version
+      - action
+      type: object
+    TrainingChangeRequest:
+      properties:
+        algorithm_key:
+          type: string
+        algorithm_version:
+          type: integer
+        command_id:
+          format: uuid
+          type: string
+        end_active_session:
+          type: boolean
+        expected_version:
+          type: integer
+        horizon_days:
+          nullable: true
+          type: integer
+        mode:
+          $ref: "#/components/schemas/core_training_algorithmChangeMode"
+        pool_size:
+          nullable: true
+          type: integer
+        stage:
+          type: integer
+      required:
+      - command_id
+      - expected_version
+      - algorithm_key
+      - algorithm_version
+      - mode
+      - stage
+      type: object
+    TrainingChangeResult:
+      properties:
+        changes:
+          items:
+            $ref: "#/components/schemas/TrainingProgressChange"
+          nullable: true
+          type: array
+        plan:
+          $ref: "#/components/schemas/TrainingModelTrainingPlan"
+      required:
+      - plan
+      - changes
+      type: object
+    TrainingCombinedCurrentRequest:
+      properties:
+        command_id:
+          format: uuid
+          type: string
+        review_early:
+          type: boolean
+        session_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+      required:
+      - session_ids
+      type: object
+    TrainingCombinedRequest:
+      properties:
+        selection_strategy:
+          $ref: "#/components/schemas/TrainingModelSelectionStrategy"
+        sources:
+          items:
+            $ref: "#/components/schemas/TrainingCombinedSource"
+          nullable: true
+          type: array
+      required:
+      - sources
+      type: object
+    TrainingCombinedSource:
+      properties:
+        algorithm_key:
+          nullable: true
+          type: string
+        folder_id:
+          format: uuid
+          type: string
+        horizon_days:
+          nullable: true
+          type: integer
+        plan_id:
+          format: uuid
+          nullable: true
+          type: string
+        pool_size:
+          nullable: true
+          type: integer
+        topics:
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - folder_id
+      type: object
+    TrainingCreatePlanRequest:
+      properties:
+        algorithm_key:
+          nullable: true
+          type: string
+        horizon_days:
+          type: integer
+        pool_size:
+          nullable: true
+          type: integer
+        source_folder_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+      required:
+      - source_folder_ids
+      type: object
+    TrainingExerciseRequest:
+      description: expected_version is required for updates; creation ignores it.
+      properties:
+        answer:
+          type: string
+        expected_version:
+          type: integer
+        hint:
+          type: string
+        problem:
+          type: string
+        solution:
+          type: string
+      required:
+      - problem
+      - answer
+      type: object
+    TrainingFolderDefaults:
+      properties:
+        training_config:
+          $ref: "#/components/schemas/FolderConfigTrainingConfig"
+        version:
+          type: integer
+      required:
+      - training_config
+      - version
+      type: object
+    TrainingGraphUndoRequest:
+      properties:
+        command_id:
+          format: uuid
+          type: string
+        event_id:
+          format: uuid
+          type: string
+      required:
+      - command_id
+      - event_id
+      type: object
+    TrainingMaterialProgressView:
+      properties:
+        can_start_final:
+          type: boolean
+        completed_at:
+          format: date-time
+          nullable: true
+          type: string
+        material_id:
+          format: uuid
+          type: string
+        next_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        stage:
+          type: integer
+        stage_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        target_at:
+          format: date-time
+          nullable: true
+          type: string
+        version:
+          type: integer
+      required:
+      - material_id
+      - version
+      - stage
+      - target_at
+      - stage_review_at
+      - next_review_at
+      - completed_at
+      - can_start_final
+      type: object
+    TrainingModelActionResult:
+      properties:
+        event:
+          $ref: "#/components/schemas/TrainingModelTrainingEvent"
+        next_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        session:
+          $ref: "#/components/schemas/TrainingModelSessionView"
+      required:
+      - event
+      - next_review_at
+      - session
+      type: object
+    TrainingModelCardField:
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+      required:
+      - key
+      - label
+      - value
+      type: object
+    TrainingModelCombinedComponent:
+      properties:
+        plan:
+          $ref: "#/components/schemas/TrainingModelTrainingPlan"
+        pool_size:
+          type: integer
+        session:
+          $ref: "#/components/schemas/TrainingModelTrainingSession"
+        summary:
+          $ref: "#/components/schemas/TrainingModelSessionSummary"
+      required:
+      - session
+      - plan
+      - summary
+      - pool_size
+      type: object
+    TrainingModelCombinedCurrent:
+      properties:
+        algorithm_key:
+          type: string
+        plan_id:
+          format: uuid
+          type: string
+        presentation:
+          allOf:
+          - $ref: "#/components/schemas/TrainingModelPresentation"
+          nullable: true
+        session_id:
+          format: uuid
+          type: string
+      required:
+      - session_id
+      - plan_id
+      - algorithm_key
+      - presentation
+      type: object
+    TrainingModelCombinedView:
+      properties:
+        current:
+          allOf:
+          - $ref: "#/components/schemas/TrainingModelCombinedCurrent"
+          nullable: true
+        empty_reason:
+          type: string
+        next_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        sessions:
+          items:
+            $ref: "#/components/schemas/TrainingModelCombinedComponent"
+          nullable: true
+          type: array
+        summary:
+          $ref: "#/components/schemas/TrainingModelSessionSummary"
+        undo_actions:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+      required:
+      - undo_actions
+      - sessions
+      - current
+      - summary
+      - next_review_at
+      type: object
+    TrainingModelConceptCoverage:
+      properties:
+        asked:
+          type: integer
+        correct:
+          type: integer
+        slug:
+          type: string
+        wrong:
+          type: integer
+      required:
+      - slug
+      - asked
+      - correct
+      - wrong
+      type: object
+    TrainingModelFormulaExercise:
+      properties:
+        answer:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        hint:
+          type: string
+        id:
+          format: uuid
+          type: string
+        material_id:
+          format: uuid
+          type: string
+        problem:
+          type: string
+        solution:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+        version:
+          type: integer
+      required:
+      - id
+      - material_id
+      - problem
+      - answer
+      - solution
+      - hint
+      - version
+      - created_at
+      - updated_at
+      type: object
+    TrainingModelGraphSelectionEvent:
+      properties:
+        candidates:
+          items:
+            $ref: "#/components/schemas/GraphScore"
+          nullable: true
+          type: array
+        created_at:
+          format: date-time
+          type: string
+        depth_after:
+          type: integer
+        depth_before:
+          type: integer
+        detected_concepts:
+          items:
+            $ref: "#/components/schemas/GraphMatch"
+          nullable: true
+          type: array
+        from_material_id:
+          format: uuid
+          nullable: true
+          type: string
+        id:
+          format: uuid
+          type: string
+        random_seed:
+          type: integer
+        review_credit:
+          type: boolean
+        root_index:
+          type: integer
+        selected_question:
+          $ref: "#/components/schemas/GraphCandidate"
+        selection_order:
+          type: integer
+        selection_reason:
+          type: string
+        session_id:
+          format: uuid
+          type: string
+        to_material_id:
+          format: uuid
+          type: string
+      required:
+      - id
+      - session_id
+      - to_material_id
+      - root_index
+      - selection_order
+      - depth_before
+      - depth_after
+      - detected_concepts
+      - candidates
+      - selection_reason
+      - review_credit
+      - random_seed
+      - selected_question
+      - created_at
+      type: object
+    TrainingModelGraphStatistics:
+      properties:
+        average_depth:
+          type: number
+        concept_coverage:
+          items:
+            $ref: "#/components/schemas/TrainingModelConceptCoverage"
+          nullable: true
+          type: array
+        correct:
+          type: integer
+        cross_domain_transitions:
+          type: integer
+        interview_probes:
+          type: integer
+        max_depth:
+          type: integer
+        scheduled_reviews:
+          type: integer
+        wrong:
+          type: integer
+      required:
+      - scheduled_reviews
+      - interview_probes
+      - correct
+      - wrong
+      - max_depth
+      - average_depth
+      - cross_domain_transitions
+      - concept_coverage
+      type: object
+    TrainingModelInterviewGraphPresentation:
+      properties:
+        answer_incomplete:
+          type: boolean
+        bank_verification:
+          type: boolean
+        depth:
+          type: integer
+        probe:
+          type: boolean
+        review_credit:
+          type: boolean
+        root_index:
+          type: integer
+        selection_event_id:
+          format: uuid
+          type: string
+      required:
+      - selection_event_id
+      - root_index
+      - depth
+      - probe
+      - review_credit
+      - bank_verification
+      - answer_incomplete
+      type: object
+    TrainingModelInterviewGraphView:
+      properties:
+        selection:
+          allOf:
+          - $ref: "#/components/schemas/TrainingModelGraphSelectionEvent"
+          nullable: true
+        state:
+          $ref: "#/components/schemas/GraphState"
+        statistics:
+          $ref: "#/components/schemas/TrainingModelGraphStatistics"
+      required:
+      - state
+      - statistics
+      type: object
+    TrainingModelPlanChange:
+      properties:
+        command_id:
+          format: uuid
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        details: {}
+        id:
+          format: uuid
+          type: string
+        plan_id:
+          format: uuid
+          type: string
+        user_id:
+          format: uuid
+          type: string
+      required:
+      - id
+      - user_id
+      - plan_id
+      - command_id
+      - details
+      - created_at
+      type: object
+    TrainingModelPlanConfig:
+      properties:
+        cards:
+          additionalProperties:
+            $ref: "#/components/schemas/FolderConfigFolderConfig"
+          type: object
+        horizon_days:
+          type: integer
+        pool_size:
+          type: integer
+      required:
+      - cards
+      - pool_size
+      - horizon_days
+      type: object
+    TrainingModelPracticeMode:
+      type: string
+    TrainingModelPresentation:
+      properties:
+        answer:
+          items:
+            $ref: "#/components/schemas/TrainingModelCardField"
+          nullable: true
+          type: array
+        consecutive_correct:
+          type: integer
+        created_at:
+          format: date-time
+          type: string
+        difficulty:
+          $ref: "#/components/schemas/MaterialModelDifficulty"
+        direction:
+          type: string
+        example:
+          type: string
+        exercise_id:
+          format: uuid
+          nullable: true
+          type: string
+        exercise_version:
+          type: integer
+        final_review:
+          type: boolean
+        folder_id:
+          format: uuid
+          type: string
+        foreign_word:
+          type: string
+        id:
+          format: uuid
+          type: string
+        interview_graph:
+          allOf:
+          - $ref: "#/components/schemas/TrainingModelInterviewGraphPresentation"
+          nullable: true
+        kind:
+          $ref: "#/components/schemas/TrainingModelReviewKind"
+        material_id:
+          format: uuid
+          type: string
+        practice_mode:
+          $ref: "#/components/schemas/TrainingModelPracticeMode"
+        progress_version:
+          type: integer
+        question:
+          items:
+            $ref: "#/components/schemas/TrainingModelCardField"
+          nullable: true
+          type: array
+        rehab_consecutive_correct:
+          type: integer
+        required_correct:
+          type: integer
+        stage:
+          type: integer
+      required:
+      - final_review
+      - id
+      - material_id
+      - folder_id
+      - kind
+      - progress_version
+      - stage
+      - consecutive_correct
+      - rehab_consecutive_correct
+      - required_correct
+      - difficulty
+      - question
+      - answer
+      - created_at
+      type: object
+    TrainingModelProgressTrack:
+      type: string
+    TrainingModelReviewKind:
+      type: string
+    TrainingModelSelectionStrategy:
+      type: string
+    TrainingModelSessionSource:
+      properties:
+        folder_id:
+          format: uuid
+          type: string
+        topics:
+          items:
+            type: string
+          nullable: true
+          type: array
+      required:
+      - folder_id
+      type: object
+    TrainingModelSessionSummary:
+      properties:
+        advance:
+          type: integer
+        correct:
+          type: integer
+        interview_probes:
+          type: integer
+        materials_reviewed:
+          type: integer
+        rollback:
+          type: integer
+        scheduled_reviews:
+          type: integer
+        skip_rehab:
+          type: integer
+        stage_promotions:
+          type: integer
+        wrong:
+          type: integer
+      required:
+      - scheduled_reviews
+      - interview_probes
+      - correct
+      - wrong
+      - advance
+      - rollback
+      - skip_rehab
+      - materials_reviewed
+      - stage_promotions
+      type: object
+    TrainingModelSessionView:
+      properties:
+        current:
+          allOf:
+          - $ref: "#/components/schemas/TrainingModelPresentation"
+          nullable: true
+        graph:
+          allOf:
+          - $ref: "#/components/schemas/TrainingModelInterviewGraphView"
+          nullable: true
+        pool_size:
+          type: integer
+        session:
+          $ref: "#/components/schemas/TrainingModelTrainingSession"
+        summary:
+          $ref: "#/components/schemas/TrainingModelSessionSummary"
+        undo_actions:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+      required:
+      - session
+      - current
+      - pool_size
+      - summary
+      type: object
+    TrainingModelStatus:
+      type: string
+    TrainingModelTrainingEvent:
+      properties:
+        action:
+          type: string
+        algorithm_key:
+          type: string
+        algorithm_version:
+          type: integer
+        command_id:
+          format: uuid
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        direction:
+          type: string
+        event_mode:
+          type: string
+        exercise_id:
+          format: uuid
+          nullable: true
+          type: string
+        graph_selection_event_id:
+          format: uuid
+          nullable: true
+          type: string
+        id:
+          format: uuid
+          type: string
+        kind:
+          $ref: "#/components/schemas/TrainingModelReviewKind"
+        material_id:
+          format: uuid
+          type: string
+        plan_id:
+          format: uuid
+          type: string
+        practice_mode:
+          allOf:
+          - $ref: "#/components/schemas/TrainingModelPracticeMode"
+          nullable: true
+        presentation_id:
+          format: uuid
+          nullable: true
+          type: string
+        progress_version_after:
+          type: integer
+        progress_version_before:
+          type: integer
+        review_credit:
+          type: boolean
+        session_id:
+          format: uuid
+          type: string
+        stage_after:
+          type: integer
+        stage_before:
+          type: integer
+        user_id:
+          format: uuid
+          type: string
+      required:
+      - review_credit
+      - event_mode
+      - id
+      - command_id
+      - user_id
+      - plan_id
+      - session_id
+      - material_id
+      - action
+      - kind
+      - algorithm_key
+      - algorithm_version
+      - stage_before
+      - stage_after
+      - progress_version_before
+      - progress_version_after
+      - created_at
+      type: object
+    TrainingModelTrainingPlan:
+      properties:
+        algorithm_key:
+          type: string
+        algorithm_version:
+          type: integer
+        config:
+          $ref: "#/components/schemas/TrainingModelPlanConfig"
+        created_at:
+          format: date-time
+          type: string
+        id:
+          format: uuid
+          type: string
+        source_folder_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+        started_at:
+          format: date-time
+          type: string
+        status:
+          $ref: "#/components/schemas/TrainingModelStatus"
+        track:
+          $ref: "#/components/schemas/TrainingModelProgressTrack"
+        updated_at:
+          format: date-time
+          type: string
+        user_id:
+          format: uuid
+          type: string
+        version:
+          type: integer
+      required:
+      - version
+      - id
+      - user_id
+      - track
+      - algorithm_key
+      - algorithm_version
+      - status
+      - config
+      - source_folder_ids
+      - started_at
+      - created_at
+      - updated_at
+      type: object
+    TrainingModelTrainingSession:
+      properties:
+        combined:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+        finished_at:
+          format: date-time
+          nullable: true
+          type: string
+        id:
+          format: uuid
+          type: string
+        plan_id:
+          format: uuid
+          type: string
+        selection:
+          items:
+            $ref: "#/components/schemas/TrainingModelSessionSource"
+          nullable: true
+          type: array
+        selection_strategy:
+          $ref: "#/components/schemas/TrainingModelSelectionStrategy"
+        started_at:
+          format: date-time
+          type: string
+        status:
+          $ref: "#/components/schemas/TrainingModelStatus"
+        user_id:
+          format: uuid
+          type: string
+      required:
+      - selection_strategy
+      - combined
+      - selection
+      - id
+      - plan_id
+      - user_id
+      - status
+      - started_at
+      - finished_at
+      - created_at
+      type: object
+    TrainingProgressChange:
+      properties:
+        material_id:
+          format: uuid
+          type: string
+        next_review_at:
+          format: date-time
+          nullable: true
+          type: string
+        stage_after:
+          type: integer
+        stage_before:
+          type: integer
+        version_after:
+          type: integer
+        version_before:
+          type: integer
+      required:
+      - material_id
+      - stage_before
+      - stage_after
+      - version_before
+      - version_after
+      - next_review_at
+      type: object
+    TrainingSkipRequest:
+      properties:
+        command_id:
+          format: uuid
+          type: string
+        expected_version:
+          type: integer
+      required:
+      - command_id
+      - expected_version
+      type: object
+    TrainingStartGraphRequest:
+      description: Mock/Deep Interview starts a graph session with an idempotent command_id. Obtain the current defaults from GET /training/interview-graph/config before customizing config.
+      properties:
+        command_id:
+          format: uuid
+          type: string
+        config:
+          allOf:
+          - $ref: "#/components/schemas/GraphConfig"
+          nullable: true
+        sources:
+          items:
+            $ref: "#/components/schemas/TrainingModelSessionSource"
+          nullable: true
+          type: array
+      required:
+      - command_id
+      - sources
+      type: object
+    TrainingUndoRequest:
+      properties:
+        command_id:
+          format: uuid
+          type: string
+        event_id:
+          format: uuid
+          type: string
+        session_ids:
+          items:
+            format: uuid
+            type: string
+          nullable: true
+          type: array
+      required:
+      - command_id
+      - event_id
+      - session_ids
+      type: object
+    WorkshopUpdateConfigRequest:
+      properties:
+        config:
+          $ref: "#/components/schemas/FolderConfigFolderConfig"
+        expected_version:
+          type: integer
+      required:
+      - expected_version
+      - config
+      type: object
+    WorkshopUpdateConfigResponse:
+      properties:
+        config:
+          $ref: "#/components/schemas/FolderConfigFolderConfig"
+        config_version:
+          type: integer
+      required:
+      - config
+      - config_version
+      type: object
+    core_training_algorithmAction:
+      enum:
+      - correct
+      - wrong
+      - advance
+      - rollback
+      - skip_rehab
+      type: string
+    core_training_algorithmChangeMode:
+      type: string
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+    refreshCookie:
+      description: HttpOnly browser refresh cookie; browser endpoints also require matching Origin.
+      in: cookie
+      name: kp_refresh
+      type: apiKey
+info:
+  description: HTTP contract for the current application. All application routes are under /api/v1. Use token login and Authorize with the returned access_token for Swagger requests; browser authentication additionally uses exact Origin checks and HttpOnly refresh cookies. Owned resources are never selected by an owner ID supplied by the client. Ordinary JSON is capped at 1 MiB, authentication at 64 KiB, training at 1 MiB and interview JSON at 2 MiB; folder imports have a separate 10 MiB file limit. Handler-bound oversized bodies may return 400, while declared ordinary oversized requests return 413. Examples are illustrative; IDs and versions must come from real responses.
+  title: Knowledge Platform API
+  version: 1.0.0
+openapi: 3.0.3
+paths:
+  /api/v1/auth/browser/login:
+    post:
+      description: Browser requests require an exact matching Origin (scheme + host). Refresh credentials are stored in the HttpOnly SameSite kp_refresh cookie scoped to /api/v1/auth/browser; Secure on HTTPS. Access tokens are returned in JSON. Swagger sends same-origin requests; JavaScript cannot manually set HttpOnly cookies.
+      operationId: browserLogin
+      parameters:
+      - description: Must match the request origin or configured public origin. Set automatically by the browser on same-origin POST.
+        in: header
+        name: Origin
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthBrowserAuthResponse"
+          description: Success
+          headers:
+            Set-Cookie:
+              description: Sets/rotates or expires kp_refresh. Managed by the browser.
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security: []
+      summary: Browser login
+      tags:
+      - Authentication
+  /api/v1/auth/browser/logout:
+    post:
+      description: Browser requests require an exact matching Origin (scheme + host). Refresh credentials are stored in the HttpOnly SameSite kp_refresh cookie scoped to /api/v1/auth/browser; Secure on HTTPS. Access tokens are returned in JSON. Swagger sends same-origin requests; JavaScript cannot manually set HttpOnly cookies.
+      operationId: browserLogout
+      parameters:
+      - description: Must match the request origin or configured public origin. Set automatically by the browser on same-origin POST.
+        in: header
+        name: Origin
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No content
+          headers:
+            Set-Cookie:
+              description: Sets/rotates or expires kp_refresh. Managed by the browser.
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+      - refreshCookie: []
+      summary: Browser logout
+      tags:
+      - Authentication
+  /api/v1/auth/browser/refresh:
+    post:
+      description: Browser requests require an exact matching Origin (scheme + host). Refresh credentials are stored in the HttpOnly SameSite kp_refresh cookie scoped to /api/v1/auth/browser; Secure on HTTPS. Access tokens are returned in JSON. Swagger sends same-origin requests; JavaScript cannot manually set HttpOnly cookies.
+      operationId: browserRefresh
+      parameters:
+      - description: Must match the request origin or configured public origin. Set automatically by the browser on same-origin POST.
+        in: header
+        name: Origin
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthBrowserAuthResponse"
+          description: Success
+          headers:
+            Set-Cookie:
+              description: Sets/rotates or expires kp_refresh. Managed by the browser.
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+      - refreshCookie: []
+      summary: Browser refresh
+      tags:
+      - Authentication
+  /api/v1/auth/browser/register:
+    post:
+      description: Browser requests require an exact matching Origin (scheme + host). Refresh credentials are stored in the HttpOnly SameSite kp_refresh cookie scoped to /api/v1/auth/browser; Secure on HTTPS. Access tokens are returned in JSON. Swagger sends same-origin requests; JavaScript cannot manually set HttpOnly cookies.
+      operationId: browserRegister
+      parameters:
+      - description: Must match the request origin or configured public origin. Set automatically by the browser on same-origin POST.
+        in: header
+        name: Origin
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRegisterRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthBrowserAuthResponse"
+          description: Created
+          headers:
+            Set-Cookie:
+              description: Sets/rotates or expires kp_refresh. Managed by the browser.
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security: []
+      summary: Browser register
+      tags:
+      - Authentication
+  /api/v1/auth/login:
+    post:
+      description: Non-browser token API. Keep refresh_token private. Authentication bodies are limited to 64 KiB.
+      operationId: tokenLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthAuthResponse"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security: []
+      summary: Token login
+      tags:
+      - Authentication
+  /api/v1/auth/logout:
+    post:
+      description: Non-browser token API. Keep refresh_token private. Authentication bodies are limited to 64 KiB.
+      operationId: tokenLogout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLogoutRequest"
+        required: true
+      responses:
+        "204":
+          description: No content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security: []
+      summary: Token logout
+      tags:
+      - Authentication
+  /api/v1/auth/logout-all:
+    post:
+      operationId: logoutAll
+      responses:
+        "204":
+          description: No content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Revoke all refresh sessions
+      tags:
+      - Authentication
+  /api/v1/auth/refresh:
+    post:
+      description: Non-browser token API. Keep refresh_token private. Authentication bodies are limited to 64 KiB.
+      operationId: tokenRefresh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRefreshRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthAuthResponse"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security: []
+      summary: Token refresh
+      tags:
+      - Authentication
+  /api/v1/auth/register:
+    post:
+      description: Non-browser token API. Keep refresh_token private. Authentication bodies are limited to 64 KiB.
+      operationId: tokenRegister
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRegisterRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthAuthResponse"
+          description: Created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security: []
+      summary: Token register
+      tags:
+      - Authentication
+  /api/v1/folders:
+    get:
+      operationId: listFolders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/FolderFolderResponse"
+                nullable: true
+                type: array
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: List owned folders
+      tags:
+      - Folders
+    post:
+      operationId: createFolder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FolderCreateFolderRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FolderFolderResponse"
+          description: Created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Create a folder
+      tags:
+      - Folders
+  /api/v1/folders/import:
+    post:
+      description: Multipart file field; .json filename required; file limit 10 MiB and at most 5000 items. Validation does not save data. See docs/folder-import.md for the import envelope.
+      operationId: importFolder
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                file:
+                  format: binary
+                  type: string
+              required:
+              - file
+              type: object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+          description: Created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Import folder atomically
+      tags:
+      - Imports
+  /api/v1/folders/import/validate:
+    post:
+      description: Multipart file field; .json filename required; file limit 10 MiB and at most 5000 items. Validation does not save data. See docs/folder-import.md for the import envelope.
+      operationId: validateImport
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                file:
+                  format: binary
+                  type: string
+              required:
+              - file
+              type: object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportPreview"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Validate folder JSON
+      tags:
+      - Imports
+  /api/v1/folders/{folderID}:
+    delete:
+      operationId: deleteFolder
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "204":
+          description: No content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Delete owned folder
+      tags:
+      - Folders
+    get:
+      operationId: getFolder
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FolderFolderResponse"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get owned folder
+      tags:
+      - Folders
+    patch:
+      operationId: updateFolder
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FolderUpdateFolderRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FolderFolderResponse"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Update folder title and description
+      tags:
+      - Folders
+  /api/v1/folders/{folderID}/interview/questions/{materialID}/profile:
+    get:
+      operationId: getInterviewProfile
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewProfile"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get interview question profile
+      tags:
+      - Interview
+    put:
+      operationId: saveInterviewProfile
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewProfile"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Save interview question profile
+      tags:
+      - Interview
+  /api/v1/folders/{folderID}/interview/questions:bulk:
+    post:
+      operationId: bulkQuestions
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkQuestionsRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewImportResult"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Bulk import interview questions
+      tags:
+      - Interview
+  /api/v1/folders/{folderID}/materials:
+    get:
+      description: For filtering and pagination use GET /library/folders/{folderID}/materials.
+      operationId: listMaterials
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/MaterialMaterialResponse"
+                nullable: true
+                type: array
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: List all folder materials
+      tags:
+      - Materials
+    post:
+      operationId: createMaterial
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialCreateMaterialRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialMaterialResponse"
+          description: Created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Create material
+      tags:
+      - Materials
+  /api/v1/folders/{folderID}/materials/{materialID}:
+    delete:
+      operationId: deleteMaterial
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "204":
+          description: No content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Delete material
+      tags:
+      - Materials
+    get:
+      operationId: getMaterial
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialMaterialResponse"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get material
+      tags:
+      - Materials
+    patch:
+      operationId: updateMaterial
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialUpdateMaterialRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialMaterialResponse"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Update material
+      tags:
+      - Materials
+  /api/v1/folders/{folderID}/training-config:
+    get:
+      operationId: getTrainingDefaults
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingFolderDefaults"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get folder training defaults
+      tags:
+      - Training
+    patch:
+      operationId: updateTrainingDefaults
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingFolderDefaults"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingFolderDefaults"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Update folder training defaults
+      tags:
+      - Training
+  /api/v1/folders/{folderID}/workshop:
+    patch:
+      operationId: updateWorkshop
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkshopUpdateConfigRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkshopUpdateConfigResponse"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Update card and material configuration
+      tags:
+      - Folders
+  /api/v1/interview/concepts:
+    get:
+      operationId: getConcepts
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewCatalog"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get concept catalog
+      tags:
+      - Interview
+  /api/v1/interview/concepts/{slug}:
+    put:
+      operationId: saveConcept
+      parameters:
+      - in: path
+        name: slug
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConceptRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewConcept"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Save concept by slug
+      tags:
+      - Interview
+  /api/v1/interview/seed:
+    get:
+      operationId: getSeedInfo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedInfo"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Inspect bundled interview question bank
+      tags:
+      - Interview
+  /api/v1/interview/seed/import:
+    post:
+      operationId: importSeed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SeedImportRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewImportResult"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Import or reconcile bundled interview questions
+      tags:
+      - Interview
+  /api/v1/library:
+    get:
+      operationId: getLibrary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardLibraryView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Library folders, plans and totals
+      tags:
+      - Library and statistics
+  /api/v1/library/folders/{folderID}/materials:
+    get:
+      operationId: queryMaterials
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: query
+        name: limit
+        required: false
+        schema:
+          default: 50.0
+          maximum: 200.0
+          minimum: 1.0
+          type: integer
+      - in: query
+        name: offset
+        required: false
+        schema:
+          default: 0.0
+          maximum: 1e+06
+          minimum: 0.0
+          type: integer
+      - in: query
+        name: topic
+        required: false
+        schema:
+          maxLength: 500.0
+          type: string
+      - in: query
+        name: q
+        required: false
+        schema:
+          maxLength: 500.0
+          type: string
+      - in: query
+        name: sort
+        required: false
+        schema:
+          default: created_at
+          enum:
+          - created_at
+          - question
+          - topic
+          - stage
+          - next_review_at
+          type: string
+      - in: query
+        name: direction
+        required: false
+        schema:
+          default: desc
+          enum:
+          - asc
+          - desc
+          type: string
+      - description: UUID of the plan whose progress should be shown.
+        in: query
+        name: plan_id
+        required: false
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardMaterialsView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Search and paginate folder materials
+      tags:
+      - Library and statistics
+  /api/v1/materials/{materialID}/exercises:
+    get:
+      operationId: listExercises
+      parameters:
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: query
+        name: limit
+        required: false
+        schema:
+          default: 50.0
+          type: integer
+      - in: query
+        name: offset
+        required: false
+        schema:
+          default: 0.0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TrainingModelFormulaExercise"
+                nullable: true
+                type: array
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: List formula exercises
+      tags:
+      - Training
+    post:
+      operationId: createExercise
+      parameters:
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingExerciseRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelFormulaExercise"
+          description: Created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Create formula exercise
+      tags:
+      - Training
+  /api/v1/materials/{materialID}/exercises/{exerciseID}:
+    delete:
+      operationId: deleteExercise
+      parameters:
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: exerciseID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: query
+        name: expected_version
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: No content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Delete formula exercise
+      tags:
+      - Training
+    put:
+      operationId: updateExercise
+      parameters:
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: exerciseID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingExerciseRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelFormulaExercise"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Update formula exercise
+      tags:
+      - Training
+  /api/v1/statistics:
+    get:
+      operationId: getStatistics
+      parameters:
+      - in: query
+        name: days
+        required: false
+        schema:
+          default: 30.0
+          maximum: 366.0
+          minimum: 1.0
+          type: integer
+      - description: IANA timezone, for example Europe/Moscow.
+        in: query
+        name: timezone
+        required: false
+        schema:
+          default: UTC
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStatisticsView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get answer and activity statistics
+      tags:
+      - Library and statistics
+  /api/v1/training/combined:
+    post:
+      operationId: startCombined
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingCombinedRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelCombinedView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: startCombined
+      tags:
+      - Training
+  /api/v1/training/combined/current:
+    post:
+      operationId: currentCombined
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingCombinedCurrentRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelCombinedView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: currentCombined
+      tags:
+      - Training
+  /api/v1/training/combined/undo:
+    post:
+      operationId: undoCombined
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingUndoRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelCombinedView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: undoCombined
+      tags:
+      - Training
+  /api/v1/training/interview-graph/config:
+    get:
+      operationId: getGraphConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphConfig"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get default interview graph configuration
+      tags:
+      - Training
+  /api/v1/training/mock-interviews:
+    post:
+      operationId: startMockInterview
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingStartGraphRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Start Mock or Deep Interview
+      tags:
+      - Training
+  /api/v1/training/mock-interviews/active:
+    get:
+      description: 404 when the user has no active mock interview.
+      operationId: getActiveMock
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get active mock interview
+      tags:
+      - Training
+  /api/v1/training/mock-interviews/preview:
+    post:
+      operationId: previewMock
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingStartGraphRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphInterviewPlan"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Preview mock interview plan
+      tags:
+      - Training
+  /api/v1/training/plans:
+    get:
+      operationId: listPlans
+      parameters:
+      - in: query
+        name: limit
+        required: false
+        schema:
+          default: 50.0
+          type: integer
+      - in: query
+        name: offset
+        required: false
+        schema:
+          default: 0.0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TrainingModelTrainingPlan"
+                nullable: true
+                type: array
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: List plans
+      tags:
+      - Training
+    post:
+      operationId: createPlan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingCreatePlanRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelTrainingPlan"
+          description: Created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Create plan
+      tags:
+      - Training
+  /api/v1/training/plans/{planID}:
+    get:
+      operationId: getPlan
+      parameters:
+      - in: path
+        name: planID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelTrainingPlan"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get plan
+      tags:
+      - Training
+  /api/v1/training/plans/{planID}/algorithm:
+    post:
+      operationId: changeAlgorithm
+      parameters:
+      - in: path
+        name: planID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingChangeRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingChangeResult"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Change plan algorithm
+      tags:
+      - Training
+  /api/v1/training/plans/{planID}/cancel:
+    post:
+      operationId: cancelPlan
+      parameters:
+      - in: path
+        name: planID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelTrainingPlan"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Cancel plan
+      tags:
+      - Training
+  /api/v1/training/plans/{planID}/changes:
+    get:
+      operationId: listPlanChanges
+      parameters:
+      - in: path
+        name: planID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: query
+        name: limit
+        required: false
+        schema:
+          default: 50.0
+          type: integer
+      - in: query
+        name: offset
+        required: false
+        schema:
+          default: 0.0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TrainingModelPlanChange"
+                nullable: true
+                type: array
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: List algorithm changes
+      tags:
+      - Training
+  /api/v1/training/plans/{planID}/interview-graph:
+    post:
+      operationId: startDeepInterview
+      parameters:
+      - in: path
+        name: planID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingStartGraphRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Start graph interview for a plan
+      tags:
+      - Training
+  /api/v1/training/plans/{planID}/sessions:
+    post:
+      operationId: startSession
+      parameters:
+      - in: path
+        name: planID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Start normal training session
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}:
+    get:
+      operationId: getSession
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: getSession
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/actions:
+    post:
+      operationId: answerPresentation
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingActionRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelActionResult"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Submit Correct/Wrong answer
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/cancel:
+    post:
+      operationId: cancelSession
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Cancel session
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/current:
+    get:
+      operationId: getCurrentPresentation
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: getCurrentPresentation
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/finish:
+    post:
+      operationId: finishSession
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Finish session
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/materials/{materialID}/progress:
+    get:
+      operationId: getMaterialProgress
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingMaterialProgressView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Get material progress
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/materials/{materialID}/skip-rehab:
+    post:
+      operationId: skipRehab
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingSkipRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelActionResult"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: skipRehab
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/materials/{materialID}/start-final:
+    post:
+      operationId: startFinal
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      - in: path
+        name: materialID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingSkipRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelActionResult"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: startFinal
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/result:
+    get:
+      operationId: getSessionResult
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: getSessionResult
+      tags:
+      - Training
+  /api/v1/training/sessions/{sessionID}/undo:
+    post:
+      operationId: undoGraph
+      parameters:
+      - in: path
+        name: sessionID
+        required: true
+        schema:
+          format: uuid
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingGraphUndoRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingModelSessionView"
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      summary: Undo graph answer
+      tags:
+      - Training
+  /health:
+    get:
+      description: Process liveness.
+      operationId: health
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+          description: Success
+      security: []
+      summary: Liveness
+      tags:
+      - Operations
+  /live:
+    get:
+      description: Process liveness.
+      operationId: live
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+          description: Success
+      security: []
+      summary: Liveness
+      tags:
+      - Operations
+  /metrics:
+    get:
+      operationId: metrics
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Success
+      security: []
+      summary: Prometheus metrics
+      tags:
+      - Operations
+  /ready:
+    get:
+      description: Readiness becomes false before shutdown; this probe does not perform a database query.
+      operationId: ready
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+          description: Success
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+          description: Starting or draining
+      security: []
+      summary: Readiness
+      tags:
+      - Operations
+security:
+- bearerAuth: []
+servers:
+- description: Same origin as the application
+  url: /
+tags:
+- name: Operations
+- name: Authentication
+- name: Folders
+- name: Imports
+- name: Materials
+- name: Training
+- name: Interview
+- name: Library and statistics

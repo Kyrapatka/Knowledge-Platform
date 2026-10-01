@@ -404,3 +404,19 @@ stage-before attribution, normal/mock separation, rehab recovery, undo and time 
 `deploy/verify_observability.py` executes all panel queries through live datasources.
 `web/tests/observability.spec.ts` exercises real normal training and a deep mock,
 then opens Grafana and scrolls through sections so lazy-loaded queries run.
+
+## Fast local commands
+
+`make observability` (alias `make grafana`) starts the entire existing stack and
+waits for backend, ClickHouse initialization, Grafana and Prometheus health. It
+runs no tests and reuses the current image; use `make deploy-local` to rebuild.
+`make observability-down` stops it while preserving all volumes. Docker must
+already be running.
+
+`make observability-check` uses this document's existing verifier in quick mode:
+health, provisioned dashboards/data sources and live metrics.
+`make observability-full-check` runs require-events queries across both dashboards,
+isolated SQL fixtures and real outage/Noop resilience checks. The resilience check
+temporarily stops ClickHouse and restores it afterward. Generate learning activity
+first, for example with the opt-in observability Playwright scenarios. See
+[deployment and rollback](local-deployment.md).

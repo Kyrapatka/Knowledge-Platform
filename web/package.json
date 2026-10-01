@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/copy-api-docs.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test": "playwright test",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run typecheck && npm run format:check && npm run build"
+    "check": "npm run typecheck && npm run format:check && npm run openapi:check && npm run build",
+    "openapi:check": "node scripts/check-openapi.mjs"
   },
   "dependencies": {
     "katex": "^0.16.22",
@@ -26,12 +27,14 @@
     "remark-math": "^6.0.0"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "13.0.0",
     "@playwright/test": "^1.52.0",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.0",
     "prettier": "^3.9.6",
+    "swagger-ui-dist": "5.33.1",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"
   }

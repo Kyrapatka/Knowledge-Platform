@@ -227,3 +227,21 @@ Ignored runtime artifacts (.cache, web/dist, screenshots/reports) и локал�
 - После явного согласия пользователя восстановить public localtunnel на platform.loca.lt: сейчас внешний адрес возвращает 503 Tunnel Unavailable. Локальный origin path и regression tests пройдены.
 - Выполнить два observability E2E с доступным Docker/ClickHouse/Grafana и OBSERVABILITY_E2E=true. Docker daemon в окружении проверки недоступен; инфраструктурный прогон не заявляется как PASS.
 - Перед production rollback использовать migration classification; исторические destructive downs не гарантируют сохранность данных. Возможный alias-index overlap проверять через EXPLAIN на representative dataset.
+
+## Release-candidate follow-up (2026-10-01)
+
+Audit preserved existing proxy trust, exact browser Origin validation, HttpOnly/
+SameSite/Secure cookies, bounded per-process authentication limits, safe SQL query
+parameters and sorting allowlists, generic internal errors, readiness-before-drain
+and worker/database shutdown ordering. HTTP settings remain read-header 5s, read
+60s, write 5m, idle 60s and max headers 1 MiB; the longer write timeout supports
+large imports. Training/Interview handlers already bound JSON to 1/2 MiB and file
+imports to 10 MiB plus multipart overhead.
+
+Added missing ordinary JSON limits: auth 64 KiB; folder/material/workshop 1 MiB.
+Known oversized bodies return JSON 413; chunked overflows are bounded by
+MaxBytesReader and existing bind errors return 400. Existing import/training
+limits remain intact. Tests cover known/chunked input and import exemption.
+Bundled Swagger uses local assets and external initializer JavaScript under the
+existing CSP, without CDN or inline-script exceptions. Detailed current regression
+results are recorded separately in the release-candidate report.

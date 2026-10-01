@@ -14,10 +14,12 @@ import (
 func TestStaticRoutesKeepAPISeparate(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dist := t.TempDir()
-	if err := os.Mkdir(filepath.Join(dist, "assets"), 0700); err != nil {
-		t.Fatal(err)
+	for _, dir := range []string{"assets", "swagger"} {
+		if err := os.Mkdir(filepath.Join(dist, dir), 0700); err != nil {
+			t.Fatal(err)
+		}
 	}
-	for name, value := range map[string]string{"index.html": "<!doctype html><title>Knowledge</title>", "assets/app.js": "export const ready=true", ".env": "SECRET"} {
+	for name, value := range map[string]string{"index.html": "<!doctype html><title>Knowledge</title>", "assets/app.js": "export const ready=true", ".env": "SECRET", "swagger/index.html": "API documentation", "openapi.yaml": "openapi: 3.0.3"} {
 		if err := os.WriteFile(filepath.Join(dist, name), []byte(value), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -40,6 +42,10 @@ func TestStaticRoutesKeepAPISeparate(t *testing.T) {
 		{"GET", "/../go.mod", 404, ""},
 		{"POST", "/library", 404, "not_found"},
 		{"HEAD", "/library", 200, ""},
+		{"GET", "/swagger", 307, "/swagger/"},
+		{"GET", "/swagger/", 200, "API documentation"},
+		{"GET", "/swagger/missing", 404, ""},
+		{"GET", "/openapi.yaml", 200, "openapi: 3.0.3"},
 	} {
 		t.Run(tc.method+tc.path, func(t *testing.T) {
 			recorder := httptest.NewRecorder()

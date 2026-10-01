@@ -8,13 +8,16 @@ NPM ?= npm
 endif
 COMPOSE ?= docker compose
 
-.PHONY: run fmt vet test test-race test-cover check docker-up docker-down docker-ps docker-logs migrate-up migrate-down migrate-status migrate-version migrate-test dev test-integration frontend-check test-e2e frontend-e2e test-all
+.PHONY: run fmt fmt-check vet test test-race test-cover check docker-up docker-down docker-ps docker-logs migrate-up migrate-down migrate-status migrate-version migrate-test dev test-integration frontend-check test-e2e frontend-e2e test-all
 
 run:
 	$(GO) run ./cmd/api
 
 fmt:
 	$(GO) fmt ./...
+
+fmt-check:
+	$(GO) run ./cmd/fmt-check
 
 vet:
 	$(GO) vet ./...
@@ -70,6 +73,10 @@ test-integration:
 frontend-check:
 	$(NPM) --prefix web run check
 
+.PHONY: openapi-check
+openapi-check:
+	$(NPM) --prefix web run openapi:check
+
 test-e2e:
 	$(NPM) --prefix web run test:e2e
 
@@ -82,3 +89,28 @@ test-all:
 	$(MAKE) frontend-check
 	$(MAKE) test-e2e
 
+
+.PHONY: deploy-local rollback-local deployment-status observability grafana observability-down observability-check observability-full-check
+
+deploy-local:
+	$(GO) run ./cmd/local deploy
+
+rollback-local:
+	$(GO) run ./cmd/local rollback
+
+deployment-status:
+	$(GO) run ./cmd/local status
+
+observability:
+	$(GO) run ./cmd/local observability
+
+grafana: observability
+
+observability-down:
+	$(GO) run ./cmd/local down
+
+observability-check:
+	$(GO) run ./cmd/local check
+
+observability-full-check:
+	$(GO) run ./cmd/local full-check

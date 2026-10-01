@@ -215,20 +215,42 @@ test("observability: provisioned Grafana dashboards render real data", async ({
       page.getByRole("button", { name: "Cancel", exact: true }),
     ).not.toBeVisible({ timeout: 45000 });
     const overview = page.getByRole("region", {
-      name: uid === "knowledge-system" ? "In-flight requests" : "Training Sessions Started",
+      name:
+        uid === "knowledge-system"
+          ? "In-flight requests"
+          : "Training Sessions Started",
       exact: true,
     });
     await expect(overview).toContainText(/\d+/, { timeout: 45000 });
     if (uid === "knowledge-learning") {
-      for (const name of ["Training starts and completions over time", "Correct / wrong rate by stage, difficulty, topic and template", "Topics with highest rehab entry rate", "Cram / long-term: answers, rehab, sessions and learning", "Mock answers and actual follow-up depth", "Materials most often entering rehab", "Version / group effectiveness", "User return retention D1 / D7 / D30"]) {
-        await page.getByRole("region", { name, exact: true }).scrollIntoViewIfNeeded();
+      for (const name of [
+        "Training starts and completions over time",
+        "Correct / wrong rate by stage, difficulty, topic and template",
+        "Topics with highest rehab entry rate",
+        "Cram / long-term: answers, rehab, sessions and learning",
+        "Mock answers and actual follow-up depth",
+        "Materials most often entering rehab",
+        "Version / group effectiveness",
+        "User return retention D1 / D7 / D30",
+      ]) {
+        await page
+          .getByRole("region", { name, exact: true })
+          .scrollIntoViewIfNeeded();
         await page.waitForLoadState("networkidle");
         expect(queryErrors).toEqual([]);
       }
       // Exercise real selected-value interpolation, not only the All sentinel.
       await page.goto(`${grafana}/d/${uid}?from=now-1h&to=now&var-mode=mock`);
-      await expect(page.getByRole("region", { name: "Training Sessions Started", exact: true })).toContainText("0", { timeout: 45000 });
-      const mock = page.getByRole("region", { name: "Mock answers and actual follow-up depth", exact: true });
+      await expect(
+        page.getByRole("region", {
+          name: "Training Sessions Started",
+          exact: true,
+        }),
+      ).toContainText("0", { timeout: 45000 });
+      const mock = page.getByRole("region", {
+        name: "Mock answers and actual follow-up depth",
+        exact: true,
+      });
       await mock.scrollIntoViewIfNeeded();
       await page.waitForLoadState("networkidle");
       await expect(mock).toContainText("correct_rate");
