@@ -1,12 +1,16 @@
 package interview
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	auth "github.com/Kyrapatka/knowledge-platform/internal/auth/handler"
 	"github.com/Kyrapatka/knowledge-platform/internal/platform/analytics"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"io"
 	"net/http"
+	"unicode/utf8"
 )
 
 type Handler struct {
@@ -58,10 +62,23 @@ func write(c *gin.Context, v any, err error) {
 }
 func read(c *gin.Context, v any) bool {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 2*1024*1024)
-	if err := c.ShouldBindJSON(v); err != nil {
+	data, err := io.ReadAll(c.Request.Body)
+	if err != nil || !utf8.Valid(data) {
 		c.JSON(400, gin.H{"error": "invalid_request"})
 		return false
 	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err = decoder.Decode(v); err != nil {
+		c.JSON(400, gin.H{"error": "invalid_request"})
+		return false
+	}
+	var extra any
+	if err = decoder.Decode(&extra); err != io.EOF {
+		c.JSON(400, gin.H{"error": "invalid_request"})
+		return false
+	}
+
 	return true
 }
 func (h *Handler) seedInfo(c *gin.Context) {

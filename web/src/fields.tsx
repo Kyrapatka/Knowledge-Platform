@@ -56,9 +56,12 @@ export function initialConfig(kind: string): FolderConfig {
     schema: { fields: keys.map(field) },
     metadata_schema: {
       fields: (kind === "interview_questions"
-        ? ["topic", "company", "level", "category"]
+        ? ["topic", "company", "level", "category", "keywords", "concepts"]
         : ["topic"]
-      ).map((key) => ({ ...field(key, 2), active: key !== "category" })),
+      ).map((key) => ({
+        ...field(key, 2),
+        active: !["category", "keywords", "concepts"].includes(key),
+      })),
     },
     card: {
       question_fields: [keys[0]],

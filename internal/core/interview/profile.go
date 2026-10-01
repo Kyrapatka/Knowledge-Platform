@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"golang.org/x/text/unicode/norm"
 	"math"
 	"regexp"
 	"strings"
@@ -139,3 +140,9 @@ func UsableContent(value string) bool {
 	return v != "" && v != "."
 }
 func jsonBytes(v any) []byte { b, _ := json.Marshal(v); return b }
+
+func normalizeAlias(s string) string {
+	s = strings.ToLower(norm.NFKC.String(s))
+	s = strings.NewReplacer("ё", "е", "–", "-", "—", "-", "‑", "-").Replace(s)
+	return strings.Join(strings.Fields(s), " ")
+}

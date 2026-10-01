@@ -48,7 +48,7 @@ Requirements: Go 1.25+, Node.js 22.12+ (the project was checked with 22.16), and
 
 On macOS/Linux, use `npm` instead of `npm.cmd`. Run the server from the repository root so it can find `.env` and `web/dist`. The Go server serves both the frontend and API; no second server is needed for manual testing.
 
-The migration command applies upward migrations only and does not reset your data. Each migration and its version record are committed together. It also understands the existing `schema_migrations` table used by golang-migrate. Do not run different migration tools concurrently. If a database was previously marked dirty, investigate it before continuing.
+The default migration command applies upward migrations and does not reset your data. `make migrate-down` explicitly attempts one rollback; consult [rollback classifications](docs/migrations.md) first. Each migration and its version record are committed together. It also understands the existing `schema_migrations` table used by golang-migrate. Do not run different migration tools concurrently. If a database was previously marked dirty, investigate it before continuing.
 
 ## Development
 
@@ -104,3 +104,31 @@ go test ./internal/auth/handler ./internal/auth/service
 Full integration checks use `TEST_DATABASE_URL` and `TRAINING_TEST_DATABASE_URL`. Both authentication repository and training suites create/drop their own randomly named schemas; use a dedicated test database/account with schema permissions. See the Compose verification commands in [observability documentation](docs/observability.md#verification).
 
 API references: [Training API](internal/core/training/TRAINING_API.md) and [Frontend API additions](docs/frontend-api.md).
+
+## Developer checks and deployment origin
+
+The Makefile uses the existing Go migration runner and npm lockfile. It never embeds database credentials.
+
+| Command | Purpose |
+| --- | --- |
+| `make run` | Run the Go API; build `web/dist` first |
+| `make check` | Go formatting, vet, tests and race checks |
+| `make test-cover` | Go coverage in `coverage.out` |
+| `make test-integration` | Real PostgreSQL tests; fails on missing database variables or skipped tests |
+| `make migrate-test` | All migrations in a fresh random schema, then empty-schema 23 down/up |
+| `make frontend-check` | TypeScript, Prettier check and production build |
+| `make test-e2e` | Playwright against an already running API |
+| `make test-all` | All of the above checks, including integration and E2E |
+| `make dev` | Compose stack including backend; no second Go process |
+| `make docker-ps`, `make docker-logs`, `make docker-down` | Inspect or stop the stack; volumes are retained |
+| `make migrate-up`, `make migrate-status`, `make migrate-down` | Apply, inspect or explicitly roll back one migration using DATABASE_URL |
+
+Ordinary `go test ./...` may skip PostgreSQL tests without their environment. For strict integration, set both `TEST_DATABASE_URL` and `TRAINING_TEST_DATABASE_URL` to dedicated test PostgreSQL databases with schema creation permissions. The suites isolate data in random schemas. Migration smoke uses only the latter variable. These checks load the existing `.env` convention.
+
+Frontend formatting: `npm --prefix web run format`; checks: `typecheck`, `format:check`, `build`. There is no separate frontend unit framework or ESLint installation. Playwright is intentionally outside the fast check. Observability E2E cases additionally need the stack described in [observability.md](docs/observability.md).
+
+For a TLS tunnel that rewrites Host, set `HTTP_PUBLIC_ORIGIN=https://your-public-host` and restart the API. For this local setup it is `https://platform.loca.lt`. This explicitly allows that browser origin while preserving direct local development. Do not use a wildcard origin. HTTPS browser responses use Secure, HttpOnly, SameSite refresh cookies.
+
+`HTTP_TRUSTED_PROXIES` is a comma-separated list of the actual immediate proxy IPs/CIDRs; empty means no trusted proxies. Configure it only for your deployment. Forwarded origin and client-IP headers from arbitrary clients are ignored. Without trusted proxy configuration, rate limits apply to the socket peer (tunnel clients may share one limit). `AUTH_LOGIN_LIMIT`, `AUTH_REGISTER_LIMIT`, `AUTH_REFRESH_LIMIT`, `AUTH_RATE_WINDOW`, and `AUTH_RATE_MAX_KEYS` configure bounded process-local limits; they are not shared between replicas.
+
+See [diagnostic logging](docs/logging.md) for `HTTP_SLOW_REQUEST_THRESHOLD` and log priorities.

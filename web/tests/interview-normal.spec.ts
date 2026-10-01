@@ -23,9 +23,16 @@ test("Bank interview folder supports normal recall and independent mock", async 
     .getByRole("button", { name: "Import question bank", exact: true })
     .click();
   const dialog = page.getByRole("dialog");
+  const imported = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/interview/seed/import") &&
+      r.request().method() === "POST",
+    { timeout: 90000 },
+  );
   await dialog
     .getByRole("button", { name: "Import selected subjects" })
     .click();
+  expect((await imported).ok()).toBeTruthy();
   await expect(dialog).not.toBeVisible();
 
   await page.goto("/training");

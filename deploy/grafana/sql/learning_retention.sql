@@ -1,1 +1,14 @@
-SELECT horizon AS days,mode,algorithm_version,experiment_group,count() AS eligible_materials,countIf(observed) AS reviewed_materials,countIf(observed AND first_result='correct')/nullIf(reviewed_materials,0) AS correct_rate,reviewed_materials/nullIf(eligible_materials,0) AS observation_coverage FROM knowledge_analytics.learning_retention WHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY horizon,mode,algorithm_version,experiment_group
+SELECT horizon AS days,
+       mode,
+       algorithm_version,
+       experiment_group,
+       count() AS eligible_materials,
+       countIf(observed) AS reviewed_materials,
+       countIf(observed AND first_result='correct')/nullIf(reviewed_materials,0) AS correct_rate,
+       reviewed_materials/nullIf(eligible_materials,0) AS observation_coverage
+FROM knowledge_analytics.learning_retention
+WHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})
+GROUP BY horizon,
+       mode,
+       algorithm_version,
+       experiment_group

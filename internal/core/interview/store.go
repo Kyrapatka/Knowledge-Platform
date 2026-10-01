@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/text/unicode/norm"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -100,12 +99,6 @@ func (t *storeTx) PutProfile(p Profile) error {
 		}
 	}
 	return nil
-}
-
-func normalizeAlias(s string) string {
-	s = strings.ToLower(norm.NFKC.String(s))
-	s = strings.NewReplacer("ё", "е", "–", "-", "—", "-", "‑", "-").Replace(s)
-	return strings.Join(strings.Fields(s), " ")
 }
 
 // Catalog is account scoped, including edges and aliases shared across folders.

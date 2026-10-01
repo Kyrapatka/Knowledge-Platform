@@ -4,7 +4,9 @@ DO $$ BEGIN
  OR EXISTS (SELECT 1 FROM interview_question_memberships)
  OR EXISTS (SELECT 1 FROM interview_bank_import_runs)
  OR EXISTS (SELECT 1 FROM interview_bank_alias_policies)
- OR EXISTS (SELECT 1 FROM interview_question_profiles WHERE followup_weight <> 5 OR level_min <> 1 OR level_max <> 5 OR seed_revision <> '') THEN
+ OR EXISTS (SELECT 1 FROM interview_profiles)
+ OR EXISTS (SELECT 1 FROM interview_concept_aliases WHERE seed_managed)
+ OR EXISTS (SELECT 1 FROM interview_question_profiles WHERE followup_weight <> 5 OR level_min <> 1 OR level_max <> 5 OR seed_revision <> '' OR topic <> '' OR subtopic <> '') THEN
   RAISE EXCEPTION 'Cannot roll back question bank while bank metadata or import history exists';
  END IF;
 END $$;

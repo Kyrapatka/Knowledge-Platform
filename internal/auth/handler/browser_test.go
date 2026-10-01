@@ -11,6 +11,7 @@ import (
 
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/model"
 	"github.com/Kyrapatka/knowledge-platform/internal/auth/service"
+	"github.com/Kyrapatka/knowledge-platform/internal/platform/httpmiddleware"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -141,5 +142,38 @@ func TestBrowserSecureCookieUsesTLSOnly(t *testing.T) {
 	router.ServeHTTP(recorder, request)
 	if recorder.Code != 200 || !recorder.Result().Cookies()[0].Secure {
 		t.Fatal("TLS requires Secure cookie")
+	}
+}
+
+func TestBrowserAuthConfiguredTunnelOrigin(t *testing.T) {
+	const public = "https://platform.loca.lt"
+	policy, err := httpmiddleware.ProxyPolicy(nil, public)
+	if err != nil {
+		t.Fatal(err)
+	}
+	router := gin.New()
+	router.Use(policy)
+	New(&authServiceFake{loginFunc: func(context.Context, service.LoginInput) (service.AuthResult, error) {
+		return service.AuthResult{RefreshToken: "cookie"}, nil
+	}}).RegisterPublicRoutes(router.Group("/api/v1/auth"))
+	for _, tt := range []struct {
+		origin string
+		status int
+		secure bool
+	}{{public, 200, true}, {"http://localhost:8080", 200, false}, {"https://evil.example", 403, false}, {"", 403, false}} {
+		req := browserTestRequest("POST", "login", tt.origin, "{\"nickname\":\"learner\",\"password\":\"password123\"}")
+		req.Header.Set("X-Forwarded-Host", "evil.example")
+		req.Header.Set("X-Forwarded-Proto", "https")
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, req)
+		if recorder.Code != tt.status {
+			t.Fatalf("origin %q: %d %s", tt.origin, recorder.Code, recorder.Body.String())
+		}
+		if tt.status == 200 {
+			cookies := recorder.Result().Cookies()
+			if len(cookies) != 1 || cookies[0].Secure != tt.secure {
+				t.Fatalf("cookie security for %q", tt.origin)
+			}
+		}
 	}
 }

@@ -57,7 +57,7 @@ func New(
 	if logger == nil {
 		return nil, errors.New("application logger is required")
 	}
-	proxyPolicy, err := httpmiddleware.ProxyPolicy(cfg.HTTPTrustedProxies)
+	proxyPolicy, err := httpmiddleware.ProxyPolicy(cfg.HTTPTrustedProxies, cfg.HTTPPublicOrigin)
 	if err != nil {
 		return nil, err
 	}

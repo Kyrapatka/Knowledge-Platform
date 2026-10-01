@@ -138,3 +138,9 @@ Creating a plan never silently migrates existing incompatible progress.
 Cross-track changes use a new plan. Public-folder copying, content deduplication,
 search, configurable Formula practice-style weights and automated grading are
 outside this MVP implementation.
+
+## Service boundaries
+
+`Service` remains the HTTP-facing facade. Exercise CRUD lives in `ExerciseService` and depends on `ExerciseStore` (five transactional persistence operations). Material-progress reads live in `ProgressService` and depend on `ProgressViewStore` (four read operations). Runtime adapters preserve the existing account lock and transaction.
+
+Session commands, plan transitions, combined sessions and interview routing remain coordinated together: one command may atomically update session, progress, exercise state, undo and its command receipt. Splitting those writes into independent service transactions would weaken retry and concurrency guarantees. The algorithm package remains pure domain logic without HTTP, SQL or GORM dependencies. See `doc.go` for invariants.

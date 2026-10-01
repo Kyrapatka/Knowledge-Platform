@@ -218,7 +218,7 @@ Two automatically provisioned dashboards in folder **Knowledge Platform**:
   sessions, completion, answers and elapsed time; correctness by stage, difficulty,
   topic and template; learning milestones, observed retention, rehab, cram versus
   long-term, mock interviews, content usage, product cohorts/funnel and algorithm
-  comparisons. Rows group related panels; training views support mode/version/group
+  comparisons. Rows group related panels; training views support mode/version
   filters. Product user cohorts and funnel remain global.
 
 Stable datasource UIDs: `knowledge-prometheus` (default, Prometheus) and
@@ -241,7 +241,7 @@ fabricated zero successes. Panel SQL is in `deploy/grafana/sql`, reusable views 
 | Learned | First observed credited false-to-true learned transition per user/material/plan/mode/version/group. Attempts/time begin with first recorded effective credited answer. Unknown historical plan IDs are excluded. |
 | Learning retention 7/30 | First credited review of that same user/material/plan/mode/version/group in [N,N+1) days after learned. Include only fully mature windows. Correct / observed reviews, alongside eligible count and review coverage. No review is unobserved, not wrong. |
 | Rehab entry rate | Answers entering rehab / credited answers. Stage panel also shows wrong rate. |
-| Rehab recovery | Recovered episodes / observed entries. Only a correct rehab exit qualifies; manual skip does not. Attempts count rehab reviews, not the triggering normal wrong answer. |
+| Rehab recovery | Recovered episodes / observed entries. Only a correct rehab exit qualifies; manual skip does not. Attempts before recovery average only recovered episodes and count rehab reviews, not the triggering normal wrong answer. |
 | Cram vs long-term | Real mode dimension: sessions/completion, correctness, rehab entry, answer time. Learning retention is grouped by mode in its own panel. Observational, not a causal comparison. |
 | DAU/WAU/MAU | Distinct users with recorded events in rolling 1/7/30 days ending at selected range end. No read-only page visits. |
 | D1/D7/D30 product retention | Return activity on exactly day N after registration (UTC), restricted to cohorts whose entire return day has elapsed. Shows eligible and returning counts. |
@@ -325,3 +325,82 @@ algorithm or mock interview behavior is changed by observability instrumentation
 References: [Grafana ClickHouse datasource configuration](https://grafana.com/docs/plugins/grafana-clickhouse-datasource/latest/configure/),
 [query editor](https://grafana.com/docs/plugins/grafana-clickhouse-datasource/latest/query-editor/),
 [Grafana Docker configuration](https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/).
+
+## Learning dashboard: panels and query contract
+
+Open [Knowledge Platform - Learning Analytics](http://localhost:3000/d/knowledge-learning).
+The existing file provider loads it automatically from `deploy/grafana/dashboards/learning.json`.
+It uses only datasource `knowledge-clickhouse`; the System dashboard remains separate.
+Edit `deploy/grafana/generate_dashboards.py`, then regenerate the checked-in JSON/SQL:
+
+```powershell
+python deploy/grafana/generate_dashboards.py
+```
+
+The eight overview stats are **Training Sessions Started**, **Training Sessions
+Completed**, **Completion Rate**, **Answers Total**, **Correct Rate**, **Wrong Rate**,
+**Average Session Duration**, and **Average Answers per Session**. Session measures
+select the start cohort and use latest observed outcomes; answer measures select
+answer timestamps. Duration includes completed/cancelled sessions only. Completion
+rate includes still-open starts in the denominator. Combined runs can contain several
+component sessions. Empty counts are 0; undefined rates/averages remain NULL.
+
+The rest of the dashboard has eight sections:
+
+1. Training Usage: adaptive time buckets for starts/completions and total/correct/wrong
+   answers, plus session and answer statistics by the real mode.
+2. Learning Effectiveness: correctness by **stage_before**, difficulty, topic and
+   template, with answer time in each dimension; learned milestones and observed
+   7/30-day learning retention with observation coverage.
+3. Rehab: entries/wrong rate by stage, successful recovery rate, attempts before
+   recovery, event-time entries/exits and topics with highest entry rate.
+4. Cram vs Long-term: sessions, completion, answers, correct/wrong rates, answer time,
+   credited rehab rate, observed attempts/time to learned. Normal track is actually
+   emitted as `default`; `cram` and `mock` are separate real modes. No invented
+   `long-term` event value is used. Normal training tables exclude mock.
+5. Mock Interview: start/completion/rate by configured interview mode, questions,
+   correctness, answer time, actual follow-up depth and topic/difficulty breakdown.
+6. Content Analytics: top 15 per folder/template/topic dimension, wrong-rate ranking,
+   low-correctness topics, and a separate material ranking by rehab entry count.
+7. Algorithm Analytics: actual version and emitted experiment_group, including
+   answers/correct/wrong/rehab/completion/answer time and observed learning milestones.
+   Keys include versions with answers even when their sessions began before the range.
+8. Product retention/funnel: rolling DAU/WAU/MAU, exact UTC D1/D7/D30 and ordered
+   registration-to-content-to-training-to-return stages.
+
+Only two low-cardinality dropdowns are needed: **Mode** and **Algorithm** (the latter
+queries `algorithm_version`). They refresh using the selected time range; All also
+includes historical unknown values. There is no user/material dropdown and no empty
+A/B selector. The raw group column displays `(unassigned)` until assignments exist.
+Product cohorts/funnel/active-user counts intentionally remain global.
+
+Every panel has an explicit temporal contract. Event charts use `$__timeFilter` and
+`$__timeInterval`; session, learned and rehab panels select start/learned/entry cohorts.
+DAU/WAU/MAU are fixed 1/7/30-day windows ending at `$__toTime` rather than truncated by
+the range start. Cohort outcomes are observed through the latest available history;
+the dashboard is not an as-of historical replay. Product return-day eligibility is
+bounded by the selected range end. All dashboard projections are explicit; no
+`SELECT *` or sensitive content is used in panel queries.
+
+The MergeTree sort key starts with event_name/date/template and monthly partitions.
+Time/event predicates help event queries; deduplication, undo, first-ever learning
+and cross-day cohorts still require historical reads through existing views. No
+schema/key change or premature materialized aggregation is added. With large volumes,
+measure query_log/read_rows and EXPLAIN indexes before introducing aggregate tables;
+this dashboard does not promise bounded scans for full-history cohort calculations.
+
+Missing evidence stays missing: no backfill, no pure attention-time measurement,
+no memory-retention estimate for materials without a later answer, and no causal
+A/B conclusion. Future experiments require a persistently assigned experiment ID/
+group and assignment event, carried into actual training events. Future attention-time
+analytics would require an explicit validated client duration measurement; current
+answer_time_ms includes idle/network time. Existing fields already support observed
+learning retention once enough mature repeat history accumulates; no new events
+are necessary for the current dashboard.
+
+Validation: `deploy/test_analytics_sql.py` executes every Learning panel against an
+empty and a populated isolated ClickHouse database, checking exact counts/rates,
+stage-before attribution, normal/mock separation, rehab recovery, undo and time buckets.
+`deploy/verify_observability.py` executes all panel queries through live datasources.
+`web/tests/observability.spec.ts` exercises real normal training and a deep mock,
+then opens Grafana and scrolls through sections so lazy-loaded queries run.

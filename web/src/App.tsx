@@ -183,6 +183,7 @@ function Shell({ children }: { children: ReactNode }) {
         <span className="nav-label">WORKSPACE</span>
         <nav aria-label="Main navigation">
           <NavLink
+            aria-label="My library"
             to="/"
             end
             className={({ isActive }) =>
@@ -197,15 +198,15 @@ function Shell({ children }: { children: ReactNode }) {
               <span className="nav-count">{data.totals.folder_count}</span>
             )}
           </NavLink>
-          <NavLink to="/training">
+          <NavLink to="/training" aria-label="Training">
             <Zap size={18} />
             <span>Training</span>
           </NavLink>
-          <NavLink to="/statistics">
+          <NavLink to="/statistics" aria-label="Statistics">
             <TrendingUp size={18} />
             <span>Statistics</span>
           </NavLink>
-          <NavLink to="/interview">
+          <NavLink to="/interview" aria-label="Mock interview">
             <GitBranch size={18} />
             <span>Mock interview</span>
           </NavLink>

@@ -50,19 +50,19 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "**Best-effort analytics, no historical backfill.** Counts use deduplicated events and exclude undone answers. Normal training and mock answers stay separate. Sessions are component sessions (combined training can create several). Abandonment means explicit cancellation, not closing a tab. Answer time includes idle/network time. User return retention != learned-material review success. Blank rates mean no observations, not 0%. Filters apply to training/mock/algorithm panels; user cohorts and funnel remain global. A/B groups stay unassigned until a real assignment mechanism exists."
+        "content": "**Best-effort analytics, no historical backfill.** Counts use deduplicated events and exclude undone answers. Normal training and mock answers stay separate. Sessions are component sessions (combined training can create several). Abandonment means explicit cancellation, not closing a tab. Answer time includes idle/network time. User return retention != learned-material review success. Blank rates mean no observations, not 0%. Mode/version filters apply to training/mock/algorithm panels; user cohorts and funnel remain global. Default is the normal learning track; cram is a separate track. A/B groups stay unassigned until a real assignment mechanism exists."
       }
     },
     {
       "id": 3,
       "type": "stat",
-      "title": "Active users (rolling to range end)",
-      "description": "",
+      "title": "Training Sessions Started",
+      "description": "Normal training only. Session measures use starts in range and latest observed outcomes; answer measures use answers in range. Closed sessions only for duration.",
       "gridPos": {
         "x": 0,
         "y": 7,
-        "w": 8,
-        "h": 5
+        "w": 6,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
@@ -96,7 +96,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT uniqExactIf(user_id,occurred_at>=toDateTime($__toTime)-INTERVAL 1 DAY) AS DAU, uniqExactIf(user_id,occurred_at>=toDateTime($__toTime)-INTERVAL 7 DAY) AS WAU, uniqExact(user_id) AS MAU FROM knowledge_analytics.events_unique WHERE user_id!='' AND event_name!='login_failed' AND occurred_at BETWEEN toDateTime($__toTime)-INTERVAL 30 DAY AND $__toTime",
+          "rawSql": "SELECT count() AS value\nFROM knowledge_analytics.sessions\nWHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -106,13 +106,13 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "Normal training sessions",
-      "description": "",
+      "title": "Training Sessions Completed",
+      "description": "Normal training only. Session measures use starts in range and latest observed outcomes; answer measures use answers in range. Closed sessions only for duration.",
       "gridPos": {
-        "x": 8,
+        "x": 6,
         "y": 7,
-        "w": 8,
-        "h": 5
+        "w": 6,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
@@ -146,7 +146,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT count() AS Started,countIf(last_status='training_completed') AS Completed,countIf(last_status='training_abandoned') AS Abandoned FROM knowledge_analytics.sessions WHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring})",
+          "rawSql": "SELECT countIf(last_status='training_completed') AS value\nFROM knowledge_analytics.sessions\nWHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -156,13 +156,13 @@
     {
       "id": 5,
       "type": "stat",
-      "title": "Normal answer correctness",
-      "description": "",
+      "title": "Completion Rate",
+      "description": "Normal training only. Session measures use starts in range and latest observed outcomes; answer measures use answers in range. Closed sessions only for duration.",
       "gridPos": {
-        "x": 16,
+        "x": 12,
         "y": 7,
-        "w": 8,
-        "h": 5
+        "w": 6,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
@@ -196,7 +196,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT countIf(result='correct')/nullIf(count(),0) AS CorrectRate FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring})",
+          "rawSql": "SELECT countIf(last_status='training_completed') / nullIf(count(),0) AS value\nFROM knowledge_analytics.sessions\nWHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -205,27 +205,14 @@
     },
     {
       "id": 6,
-      "type": "row",
-      "title": "Training usage and learning effectiveness",
-      "collapsed": false,
+      "type": "stat",
+      "title": "Answers Total",
+      "description": "Normal training only. Session measures use starts in range and latest observed outcomes; answer measures use answers in range. Closed sessions only for duration.",
       "gridPos": {
-        "x": 0,
-        "y": 12,
-        "w": 24,
-        "h": 1
-      },
-      "panels": []
-    },
-    {
-      "id": 7,
-      "type": "table",
-      "title": "Sessions and completion by mode",
-      "description": "Start cohort in selected range; outcomes observed through now. Open sessions have no duration.",
-      "gridPos": {
-        "x": 0,
-        "y": 13,
-        "w": 24,
-        "h": 8
+        "x": 18,
+        "y": 7,
+        "w": 6,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
@@ -235,40 +222,18 @@
             "mode": "palette-classic"
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(rate|retention|coverage)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(seconds|time_to_learned)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
       },
       "datasource": {
         "type": "grafana-clickhouse-datasource",
@@ -281,7 +246,57 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT mode,count() AS started,countIf(last_status='training_completed') AS completed,\ncountIf(last_status='training_abandoned') AS abandoned,completed/nullIf(started,0) AS completion_rate,\navgOrNull(answers) AS answers_per_session,\navgOrNullIf(dateDiff('second',started_at,ended_at),last_status IN ('training_completed','training_abandoned')) AS closed_session_seconds\nFROM knowledge_analytics.sessions WHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode",
+          "rawSql": "SELECT count() AS value\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Correct Rate",
+      "description": "Normal training only. Session measures use starts in range and latest observed outcomes; answer measures use answers in range. Closed sessions only for duration.",
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT countIf(result='correct') / nullIf(count(),0) AS value\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -290,12 +305,271 @@
     },
     {
       "id": 8,
-      "type": "table",
-      "title": "Answers, correctness and elapsed time",
-      "description": "",
+      "type": "stat",
+      "title": "Wrong Rate",
+      "description": "Normal training only. Session measures use starts in range and latest observed outcomes; answer measures use answers in range. Closed sessions only for duration.",
+      "gridPos": {
+        "x": 6,
+        "y": 11,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT countIf(result='wrong') / nullIf(count(),0) AS value\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Average Session Duration",
+      "description": "Normal training only. Session measures use starts in range and latest observed outcomes; answer measures use answers in range. Closed sessions only for duration.",
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT avgOrNullIf(dateDiff('second',started_at,ended_at),last_status IN ('training_completed','training_abandoned')) AS value\nFROM knowledge_analytics.sessions\nWHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Average Answers per Session",
+      "description": "Normal training only. Session measures use starts in range and latest observed outcomes; answer measures use answers in range. Closed sessions only for duration.",
+      "gridPos": {
+        "x": 18,
+        "y": 11,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT avgOrNull(answers) AS value\nFROM knowledge_analytics.sessions\nWHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "Training Usage",
+      "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 21,
+        "y": 15,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Training starts and completions over time",
+      "description": "Event-time counts; completion time may fall in another bucket than start. Undo/recompletion uses latest effective lifecycle event.",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT $__timeInterval(occurred_at) AS time,\n       countIf(event_name='training_started') AS started,\n       countIf(event_name='training_completed') AS completed\nFROM knowledge_analytics.events_effective\nWHERE $__timeFilter(occurred_at)\n  AND event_name IN ('training_started','training_completed')\n  AND mode!='mock' AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY time\nORDER BY time",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 0
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Answers over time: total, correct and wrong",
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT $__timeInterval(occurred_at) AS time,\n       count() AS answers,\n       countIf(result='correct') AS correct,\n       countIf(result='wrong') AS wrong\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY time\nORDER BY time",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 0
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "Sessions and completion by mode",
+      "description": "Start cohort in selected range; outcomes observed through now. Open sessions have no duration.",
+      "gridPos": {
+        "x": 0,
+        "y": 24,
         "w": 24,
         "h": 8
       },
@@ -353,7 +627,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT mode,count() AS answers,countIf(result='correct') AS correct,countIf(result='wrong') AS wrong,correct/nullIf(answers,0) AS correct_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode",
+          "rawSql": "SELECT mode,\n       count() AS started,\n       countIf(last_status='training_completed') AS completed,\ncountIf(last_status='training_abandoned') AS abandoned,\n       completed/nullIf(started,0) AS completion_rate,\navgOrNull(answers) AS answers_per_session,\navgOrNullIf(dateDiff('second',started_at,ended_at),last_status IN ('training_completed','training_abandoned')) AS closed_session_seconds\nFROM knowledge_analytics.sessions\nWHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -361,13 +635,98 @@
       ]
     },
     {
-      "id": 9,
+      "id": 15,
+      "type": "table",
+      "title": "Answers, correctness and elapsed time",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT mode,\n       count() AS answers,\n       countIf(result='correct') AS correct,\n       countIf(result='wrong') AS wrong,\n       correct/nullIf(answers,0) AS correct_rate,\n       avgOrNull(answer_time_ms)/1000 AS answer_seconds\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "row",
+      "title": "Learning Effectiveness",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 17,
       "type": "table",
       "title": "Correct / wrong rate by stage, difficulty, topic and template",
       "description": "",
       "gridPos": {
         "x": 0,
-        "y": 29,
+        "y": 41,
         "w": 24,
         "h": 11
       },
@@ -425,7 +784,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT 'stage' AS dimension,ifNull(toString(stage_before),'(unknown)') AS value,count() AS answers,countIf(result='correct')/count() AS correct_rate,countIf(result='wrong')/count() AS wrong_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY value\nUNION ALL\nSELECT 'difficulty' AS dimension,ifNull(difficulty,'(unknown)') AS value,count() AS answers,countIf(result='correct')/count() AS correct_rate,countIf(result='wrong')/count() AS wrong_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY value\nUNION ALL\nSELECT 'topic' AS dimension,ifNull(topic,'(unknown)') AS value,count() AS answers,countIf(result='correct')/count() AS correct_rate,countIf(result='wrong')/count() AS wrong_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY value\nUNION ALL\nSELECT 'template' AS dimension,ifNull(template,'(unknown)') AS value,count() AS answers,countIf(result='correct')/count() AS correct_rate,countIf(result='wrong')/count() AS wrong_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY value\nORDER BY dimension,answers DESC",
+          "rawSql": "SELECT 'stage' AS dimension,\n       ifNull(toString(stage_before),'(unknown)') AS value,\n       count() AS answers,\n       countIf(result='correct')/count() AS correct_rate,\n       countIf(result='wrong')/count() AS wrong_rate,\n       avgOrNull(answer_time_ms)/1000 AS answer_seconds\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY value\nUNION ALL\nSELECT 'difficulty' AS dimension,\n       ifNull(difficulty,'(unknown)') AS value,\n       count() AS answers,\n       countIf(result='correct')/count() AS correct_rate,\n       countIf(result='wrong')/count() AS wrong_rate,\n       avgOrNull(answer_time_ms)/1000 AS answer_seconds\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY value\nUNION ALL\nSELECT 'topic' AS dimension,\n       ifNull(topic,'(unknown)') AS value,\n       count() AS answers,\n       countIf(result='correct')/count() AS correct_rate,\n       countIf(result='wrong')/count() AS wrong_rate,\n       avgOrNull(answer_time_ms)/1000 AS answer_seconds\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY value\nUNION ALL\nSELECT 'template' AS dimension,\n       ifNull(template,'(unknown)') AS value,\n       count() AS answers,\n       countIf(result='correct')/count() AS correct_rate,\n       countIf(result='wrong')/count() AS wrong_rate,\n       avgOrNull(answer_time_ms)/1000 AS answer_seconds\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY value\nORDER BY dimension,\n       answers DESC",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -433,13 +792,13 @@
       ]
     },
     {
-      "id": 10,
+      "id": 18,
       "type": "table",
       "title": "Observed attempts and time until learned",
       "description": "First observed false -> true learned transition in a plan. Attempts/time begin at first recorded effective answer, not necessarily first-ever study.",
       "gridPos": {
         "x": 0,
-        "y": 40,
+        "y": 52,
         "w": 24,
         "h": 8
       },
@@ -497,7 +856,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT mode,algorithm_version,experiment_group,count() AS learned_materials,avgOrNull(attempts_to_learned) AS attempts,avgOrNull(seconds_to_learned) AS observed_seconds FROM knowledge_analytics.learned_materials WHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode,algorithm_version,experiment_group",
+          "rawSql": "SELECT mode,\n       algorithm_version,\n       experiment_group,\n       count() AS learned_materials,\n       avgOrNull(attempts_to_learned) AS attempts,\n       avgOrNull(seconds_to_learned) AS observed_seconds\nFROM knowledge_analytics.learned_materials\nWHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode,\n       algorithm_version,\n       experiment_group",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -505,13 +864,13 @@
       ]
     },
     {
-      "id": 11,
+      "id": 19,
       "type": "table",
       "title": "Learning retention: first observed review in day 7 / day 30 window",
       "description": "Same user/material/plan/version; first review in [N,N+1) days, only fully mature windows. Unobserved materials are not wrong. No synthetic/backdated production data.",
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 60,
         "w": 24,
         "h": 9
       },
@@ -569,465 +928,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT horizon AS days,mode,algorithm_version,experiment_group,count() AS eligible_materials,countIf(observed) AS reviewed_materials,countIf(observed AND first_result='correct')/nullIf(reviewed_materials,0) AS correct_rate,reviewed_materials/nullIf(eligible_materials,0) AS observation_coverage FROM knowledge_analytics.learning_retention WHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY horizon,mode,algorithm_version,experiment_group",
-          "queryType": "sql",
-          "editorType": "sql",
-          "format": 1
-        }
-      ]
-    },
-    {
-      "id": 12,
-      "type": "row",
-      "title": "Rehab and cram vs long-term",
-      "collapsed": false,
-      "gridPos": {
-        "x": 0,
-        "y": 57,
-        "w": 24,
-        "h": 1
-      },
-      "panels": []
-    },
-    {
-      "id": 13,
-      "type": "table",
-      "title": "Rehab entry and wrong rate by stage",
-      "description": "",
-      "gridPos": {
-        "x": 0,
-        "y": 58,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "noValue": "No observations",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(rate|retention|coverage)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(seconds|time_to_learned)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "knowledge-clickhouse"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "knowledge-clickhouse"
-          },
-          "rawSql": "SELECT stage_before AS stage,mode,count() AS answers,countIf(rehab_active_before=false AND rehab_active_after=true) AS entries,entries/count() AS entry_rate,countIf(result='wrong')/count() AS wrong_rate FROM knowledge_analytics.training_answers WHERE review_credit=true AND $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY stage,mode ORDER BY entries DESC",
-          "queryType": "sql",
-          "editorType": "sql",
-          "format": 1
-        }
-      ]
-    },
-    {
-      "id": 14,
-      "type": "table",
-      "title": "Recovery of observed rehab episodes",
-      "description": "Cohort of observed entries in range; recovery requires a correct rehab exit. Manual skip is not recovery. Open episodes remain in the denominator.",
-      "gridPos": {
-        "x": 12,
-        "y": 58,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "noValue": "No observations",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(rate|retention|coverage)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(seconds|time_to_learned)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "knowledge-clickhouse"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "knowledge-clickhouse"
-          },
-          "rawSql": "SELECT mode,entry_stage,count() AS entries,countIf(recovered) AS completions,completions/nullIf(entries,0) AS recovery_rate,avgOrNull(attempts) AS attempts_per_episode FROM knowledge_analytics.rehab_episodes WHERE $__timeFilter(entered_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode,entry_stage",
-          "queryType": "sql",
-          "editorType": "sql",
-          "format": 1
-        }
-      ]
-    },
-    {
-      "id": 15,
-      "type": "table",
-      "title": "Cram / long-term: answers, rehab, sessions and learning",
-      "description": "Observational comparison, not a randomized causal estimate. Retention comparison is in the learning-retention table.",
-      "gridPos": {
-        "x": 0,
-        "y": 66,
-        "w": 24,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "noValue": "No observations",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(rate|retention|coverage)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(seconds|time_to_learned)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "knowledge-clickhouse"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "knowledge-clickhouse"
-          },
-          "rawSql": "WITH a AS (SELECT mode,count() AS answers,countIf(result='correct')/count() AS correct_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds,countIf(rehab_active_before=false AND rehab_active_after=true)/count() AS rehab_rate FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode),\ns AS (SELECT mode,count() AS sessions,countIf(last_status='training_completed')/count() AS completion_rate FROM knowledge_analytics.sessions WHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode),\ng AS (SELECT mode,avgOrNull(attempts_to_learned) AS attempts_to_learned,avgOrNull(seconds_to_learned) AS time_to_learned FROM knowledge_analytics.learned_materials WHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode)\nSELECT s.mode,s.sessions,s.completion_rate,a.answers,a.correct_rate,a.answer_seconds,a.rehab_rate,g.attempts_to_learned,g.time_to_learned FROM s LEFT JOIN a USING(mode) LEFT JOIN g USING(mode)",
-          "queryType": "sql",
-          "editorType": "sql",
-          "format": 1
-        }
-      ]
-    },
-    {
-      "id": 16,
-      "type": "row",
-      "title": "Mock Interview - practice-only events",
-      "collapsed": false,
-      "gridPos": {
-        "x": 0,
-        "y": 74,
-        "w": 24,
-        "h": 1
-      },
-      "panels": []
-    },
-    {
-      "id": 17,
-      "type": "table",
-      "title": "Mock sessions and deep usage",
-      "description": "Mode comes from actual start configuration. Empty means events before instrumentation; never inferred from answer text.",
-      "gridPos": {
-        "x": 0,
-        "y": 75,
-        "w": 24,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "noValue": "No observations",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(rate|retention|coverage)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(seconds|time_to_learned)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "knowledge-clickhouse"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "knowledge-clickhouse"
-          },
-          "rawSql": "SELECT interview_mode,count() AS started,countIf(last_status='training_completed') AS completed,countIf(last_status='training_abandoned') AS abandoned,avgOrNull(answers) AS questions_answered,avgOrNullIf(dateDiff('second',started_at,ended_at),last_status='training_completed') AS completed_seconds FROM knowledge_analytics.sessions WHERE mode='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY interview_mode",
-          "queryType": "sql",
-          "editorType": "sql",
-          "format": 1
-        }
-      ]
-    },
-    {
-      "id": 18,
-      "type": "table",
-      "title": "Mock answers and actual follow-up depth",
-      "description": "",
-      "gridPos": {
-        "x": 0,
-        "y": 83,
-        "w": 24,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "noValue": "No observations",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(rate|retention|coverage)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(seconds|time_to_learned)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "knowledge-clickhouse"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "knowledge-clickhouse"
-          },
-          "rawSql": "SELECT count() AS answers,countIf(result='correct') AS correct,countIf(result='wrong') AS wrong,correct/nullIf(answers,0) AS correct_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds,avgOrNull(interview_depth) AS mean_depth,countIf(interview_depth>0) AS followup_answers FROM knowledge_analytics.mock_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring})",
-          "queryType": "sql",
-          "editorType": "sql",
-          "format": 1
-        }
-      ]
-    },
-    {
-      "id": 19,
-      "type": "table",
-      "title": "Mock failure hotspots by topic / difficulty",
-      "description": "",
-      "gridPos": {
-        "x": 0,
-        "y": 91,
-        "w": 24,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "noValue": "No observations",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(rate|retention|coverage)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(seconds|time_to_learned)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "knowledge-clickhouse"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "knowledge-clickhouse"
-          },
-          "rawSql": "SELECT topic,difficulty,count() AS answers,countIf(result='wrong') AS wrong,countIf(result='correct')/count() AS correct_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds FROM knowledge_analytics.mock_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY topic,difficulty ORDER BY wrong DESC LIMIT 30",
+          "rawSql": "SELECT horizon AS days,\n       mode,\n       algorithm_version,\n       experiment_group,\n       count() AS eligible_materials,\n       countIf(observed) AS reviewed_materials,\n       countIf(observed AND first_result='correct')/nullIf(reviewed_materials,0) AS correct_rate,\n       reviewed_materials/nullIf(eligible_materials,0) AS observation_coverage\nFROM knowledge_analytics.learning_retention\nWHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY horizon,\n       mode,\n       algorithm_version,\n       experiment_group",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -1037,11 +938,11 @@
     {
       "id": 20,
       "type": "row",
-      "title": "Content usage - IDs and typed taxonomy only",
+      "title": "Rehab",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 99,
+        "y": 69,
         "w": 24,
         "h": 1
       },
@@ -1050,13 +951,13 @@
     {
       "id": 21,
       "type": "table",
-      "title": "Most used folders / templates / topics",
+      "title": "Rehab entry and wrong rate by stage",
       "description": "",
       "gridPos": {
         "x": 0,
-        "y": 100,
+        "y": 70,
         "w": 12,
-        "h": 11
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -1112,7 +1013,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT 'folder' AS dimension,folder_id AS value,count() AS answers,countIf(result='correct')/count() AS correct_rate FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY value\nUNION ALL\nSELECT 'template' AS dimension,template AS value,count() AS answers,countIf(result='correct')/count() AS correct_rate FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY value\nUNION ALL\nSELECT 'topic' AS dimension,ifNull(topic,'(unknown)') AS value,count() AS answers,countIf(result='correct')/count() AS correct_rate FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY value\nORDER BY answers DESC LIMIT 40",
+          "rawSql": "SELECT stage_before AS stage,\n       mode,\n       count() AS answers,\n       countIf(rehab_active_before=false AND rehab_active_after=true) AS entries,\n       entries/count() AS entry_rate,\n       countIf(result='wrong')/count() AS wrong_rate\nFROM knowledge_analytics.training_answers\nWHERE review_credit=true AND $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY stage,\n       mode\nORDER BY entries DESC",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -1122,11 +1023,530 @@
     {
       "id": 22,
       "type": "table",
-      "title": "Material wrong / rehab rates",
-      "description": "Minimum 3 observations; sample sizes shown. No raw question or answer text.",
+      "title": "Recovery of observed rehab episodes",
+      "description": "Cohort of observed entries in range; recovery requires a correct rehab exit. Manual skip is not recovery. Open episodes remain in the recovery-rate denominator; average attempts includes recovered episodes only.",
       "gridPos": {
         "x": 12,
-        "y": 100,
+        "y": 70,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT mode,\n       entry_stage,\n       count() AS entries,\n       countIf(recovered) AS completions,\n       completions/nullIf(entries,0) AS recovery_rate,\n       avgOrNullIf(attempts,recovered) AS attempts_before_recovery\nFROM knowledge_analytics.rehab_episodes\nWHERE $__timeFilter(entered_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode,\n       entry_stage",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Rehab entries and successful exits over time",
+      "description": "Credited transitions only. Manual skips are not recovery.",
+      "gridPos": {
+        "x": 0,
+        "y": 78,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT $__timeInterval(occurred_at) AS time,\n       countIf(rehab_active_before=false AND rehab_active_after=true) AS entries,\n       countIf(rehab_active_before=true AND rehab_active_after=false AND result='correct' AND review_kind='rehab') AS completions\nFROM knowledge_analytics.training_answers\nWHERE review_credit=true AND $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY time\nORDER BY time",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 0
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "table",
+      "title": "Topics with highest rehab entry rate",
+      "description": "At least three credited answers; sample counts are shown.",
+      "gridPos": {
+        "x": 12,
+        "y": 78,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT topic,\n        count() AS answers,\n       countIf(rehab_active_before=false AND rehab_active_after=true) AS entries,\n       entries / nullIf(answers,0) AS rehab_rate\nFROM knowledge_analytics.training_answers\nWHERE review_credit=true AND $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY topic\nHAVING answers>=3\nORDER BY rehab_rate DESC,\n       entries DESC\nLIMIT 20",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "row",
+      "title": "Cram vs Long-term",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 86,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 26,
+      "type": "table",
+      "title": "Cram / long-term: answers, rehab, sessions and learning",
+      "description": "Observational comparison, not a randomized causal estimate. Retention comparison is in the learning-retention table.",
+      "gridPos": {
+        "x": 0,
+        "y": 87,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "WITH a AS (\nSELECT mode,count() AS answers,countIf(result='correct')/count() AS correct_rate,countIf(result='wrong')/count() AS wrong_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds,countIf(review_credit=true AND rehab_active_before=false AND rehab_active_after=true)/nullIf(countIf(review_credit=true),0) AS rehab_rate\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode),\ns AS (\nSELECT mode,count() AS sessions,countIf(last_status='training_completed')/count() AS completion_rate\nFROM knowledge_analytics.sessions\nWHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode),\ng AS (\nSELECT mode,avgOrNull(attempts_to_learned) AS attempts_to_learned,avgOrNull(seconds_to_learned) AS time_to_learned\nFROM knowledge_analytics.learned_materials\nWHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode),\nkeys AS (\nSELECT mode\nFROM s UNION DISTINCT\nSELECT mode\nFROM a UNION DISTINCT\nSELECT mode\nFROM g)\nSELECT k.mode,\n       ifNull(s.sessions,0) AS sessions,\n       s.completion_rate,\n       ifNull(a.answers,0) AS answers,\n       a.correct_rate,\n       a.wrong_rate,\n       a.answer_seconds,\n       a.rehab_rate,\n       g.attempts_to_learned,\n       g.time_to_learned\nFROM keys k\nLEFT JOIN s USING(mode)\nLEFT JOIN a USING(mode)\nLEFT JOIN g USING(mode)",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "row",
+      "title": "Mock Interview - practice-only events",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 95,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 28,
+      "type": "table",
+      "title": "Mock sessions and deep usage",
+      "description": "Mode comes from actual start configuration. Empty means events before instrumentation; never inferred from answer text.",
+      "gridPos": {
+        "x": 0,
+        "y": 96,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT interview_mode,\n       count() AS started,\n       countIf(last_status='training_completed') AS completed,\n       completed/nullIf(started,0) AS completion_rate,\n       countIf(last_status='training_abandoned') AS abandoned,\n       avgOrNull(answers) AS questions_answered,\n       avgOrNullIf(dateDiff('second',started_at,ended_at),last_status='training_completed') AS completed_seconds\nFROM knowledge_analytics.sessions\nWHERE mode='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY interview_mode",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "type": "table",
+      "title": "Mock answers and actual follow-up depth",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 104,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT count() AS answers,\n       countIf(result='correct') AS correct,\n       countIf(result='wrong') AS wrong,\n       correct/nullIf(answers,0) AS correct_rate,\n       avgOrNull(answer_time_ms)/1000 AS answer_seconds,\n       avgOrNull(interview_depth) AS mean_depth,\n       countIf(interview_depth>0) AS followup_answers\nFROM knowledge_analytics.mock_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "table",
+      "title": "Mock failure hotspots by topic / difficulty",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 112,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT topic,\n       difficulty,\n       count() AS answers,\n       countIf(result='wrong') AS wrong,\n       countIf(result='correct')/count() AS correct_rate,\n       countIf(result='wrong')/count() AS wrong_rate,\n       avgOrNull(answer_time_ms)/1000 AS answer_seconds\nFROM knowledge_analytics.mock_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY topic,\n       difficulty\nORDER BY wrong DESC\nLIMIT 30",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "row",
+      "title": "Content Analytics",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 120,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 32,
+      "type": "table",
+      "title": "Most used folders / templates / topics",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 121,
         "w": 12,
         "h": 11
       },
@@ -1184,7 +1604,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT folder_id,material_id,topic,count() AS answers,countIf(result='wrong')/count() AS wrong_rate,countIf(rehab_active_before=false AND rehab_active_after=true) AS rehab_entries FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY folder_id,material_id,topic HAVING answers>=3 ORDER BY wrong_rate DESC,answers DESC LIMIT 30",
+          "rawSql": "SELECT 'folder' AS dimension,\n       folder_id AS value,\n       count() AS answers,\n       countIf(result='correct')/count() AS correct_rate\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY value\nUNION ALL\nSELECT 'template' AS dimension,\n       template AS value,\n       count() AS answers,\n       countIf(result='correct')/count() AS correct_rate\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY value\nUNION ALL\nSELECT 'topic' AS dimension,\n       ifNull(topic,'(unknown)') AS value,\n       count() AS answers,\n       countIf(result='correct')/count() AS correct_rate\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY value\nORDER BY dimension,\n       answers DESC\nLIMIT 15 BY dimension",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -1192,13 +1612,85 @@
       ]
     },
     {
-      "id": 23,
+      "id": 33,
+      "type": "table",
+      "title": "Material wrong / rehab rates",
+      "description": "Minimum 3 observations; sample sizes shown. No raw question or answer text.",
+      "gridPos": {
+        "x": 12,
+        "y": 121,
+        "w": 12,
+        "h": 11
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT folder_id,\n       material_id,\n       topic,\n       count() AS answers,\n       countIf(result='wrong')/count() AS wrong_rate,\n       countIf(rehab_active_before=false AND rehab_active_after=true) AS rehab_entries\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY folder_id,\n       material_id,\n       topic\nHAVING answers>=3\nORDER BY wrong_rate DESC,\n       answers DESC\nLIMIT 30",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 34,
       "type": "table",
       "title": "Topics with lowest correct rate",
       "description": "",
       "gridPos": {
         "x": 0,
-        "y": 111,
+        "y": 132,
         "w": 24,
         "h": 8
       },
@@ -1256,7 +1748,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT topic,count() AS answers,countIf(result='correct')/count() AS correct_rate FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY topic HAVING answers>=3 ORDER BY correct_rate,answers DESC LIMIT 20",
+          "rawSql": "SELECT topic,\n       count() AS answers,\n       countIf(result='correct')/count() AS correct_rate\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY topic\nHAVING answers>=3\nORDER BY correct_rate,\n       answers DESC\nLIMIT 20",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -1264,26 +1756,13 @@
       ]
     },
     {
-      "id": 24,
-      "type": "row",
-      "title": "Product retention and ordered first-use funnel",
-      "collapsed": false,
-      "gridPos": {
-        "x": 0,
-        "y": 119,
-        "w": 24,
-        "h": 1
-      },
-      "panels": []
-    },
-    {
-      "id": 25,
+      "id": 35,
       "type": "table",
-      "title": "User return retention D1 / D7 / D30",
-      "description": "UTC registration-day cohorts; exact calendar return day. Only fully mature cohorts. Recorded activity, not page views.",
+      "title": "Materials most often entering rehab",
+      "description": "Ranked by entry count independently of wrong-rate ranking; only IDs and taxonomy.",
       "gridPos": {
         "x": 0,
-        "y": 120,
+        "y": 140,
         "w": 24,
         "h": 8
       },
@@ -1341,7 +1820,7 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "SELECT n.days,uniqExact(c.user_id) AS eligible_users,uniqExactIf(c.user_id,a.day=addDays(c.joined,n.days)) AS returned_users,returned_users/nullIf(eligible_users,0) AS retention\nFROM knowledge_analytics.user_cohorts c CROSS JOIN (SELECT arrayJoin([1,7,30]) AS days) n\nLEFT JOIN knowledge_analytics.user_activity a ON c.user_id=a.user_id\nWHERE $__timeFilter(registered_at) AND addDays(c.joined,n.days)<toDate($__toTime,'UTC')\nGROUP BY n.days ORDER BY n.days",
+          "rawSql": "SELECT folder_id,\n       material_id,\n       topic,\n       count() AS answers,\n       countIf(rehab_active_before=false AND rehab_active_after=true) AS rehab_entries,\n       rehab_entries / nullIf(answers,0) AS rehab_rate\nFROM knowledge_analytics.training_answers\nWHERE review_credit=true AND $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY folder_id,\n       material_id,\n       topic\nHAVING rehab_entries>0\nORDER BY rehab_entries DESC,\n       rehab_rate DESC\nLIMIT 30",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -1349,98 +1828,26 @@
       ]
     },
     {
-      "id": 26,
-      "type": "table",
-      "title": "Registration  ->  folder  ->  content  ->  training  ->  completion  ->  returns",
-      "description": "Ordered first-use stages. Import qualifies as content. D1/D7 are exact UTC return days; D7 is conditional on the preceding D1 stage. Eligible columns prevent immature cohorts being counted as failures.",
-      "gridPos": {
-        "x": 0,
-        "y": 128,
-        "w": 24,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "noValue": "No observations",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(rate|retention|coverage)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percentunit"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(seconds|time_to_learned)$"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "knowledge-clickhouse"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "knowledge-clickhouse"
-          },
-          "rawSql": "WITH u AS (\nSELECT user_id,\nnullIf(minIf(occurred_at,event_name='user_registered'),toDateTime64(0,3,'UTC')) AS registered,\nnullIf(minIf(occurred_at,event_name IN ('folder_created','folder_imported')),toDateTime64(0,3,'UTC')) AS folder,\nnullIf(minIf(occurred_at,event_name IN ('material_created','folder_imported')),toDateTime64(0,3,'UTC')) AS material,\nnullIf(minIf(occurred_at,event_name='training_started' AND mode!='mock'),toDateTime64(0,3,'UTC')) AS training,\nnullIf(minIf(occurred_at,event_name='training_completed' AND mode!='mock'),toDateTime64(0,3,'UTC')) AS completed,\ngroupArrayIf(occurred_at,event_name!='user_registered') AS activity\nFROM knowledge_analytics.events_unique WHERE user_id!='' AND occurred_at<=$__toTime GROUP BY user_id),\nf AS (SELECT *,folder>=registered AND material>=folder AND training>=material AND completed>=training AS finished FROM u WHERE $__timeFilter(registered))\nSELECT count() AS registrations,countIf(folder>=registered) AS first_folder,countIf(folder>=registered AND material>=folder) AS first_content,\ncountIf(folder>=registered AND material>=folder AND training>=material) AS first_training,countIf(finished) AS first_completion,\ncountIf(finished AND completed<toDateTime(addDays(toDate(registered),2)) AND addDays(toDate(registered),1)<toDate($__toTime)) AS d1_eligible,\ncountIf(finished AND completed<toDateTime(addDays(toDate(registered),2)) AND addDays(toDate(registered),1)<toDate($__toTime) AND arrayExists(t -> t>=completed AND toDate(t)=addDays(toDate(registered),1),activity)) AS d1_return,\ncountIf(finished AND completed<toDateTime(addDays(toDate(registered),2)) AND addDays(toDate(registered),7)<toDate($__toTime) AND arrayExists(t -> t>=completed AND toDate(t)=addDays(toDate(registered),1),activity)) AS d7_eligible,\ncountIf(finished AND completed<toDateTime(addDays(toDate(registered),2)) AND addDays(toDate(registered),7)<toDate($__toTime) AND arrayExists(t -> t>=completed AND toDate(t)=addDays(toDate(registered),1),activity) AND arrayExists(t -> t>=completed AND toDate(t)=addDays(toDate(registered),7),activity)) AS d7_return FROM f",
-          "queryType": "sql",
-          "editorType": "sql",
-          "format": 1
-        }
-      ]
-    },
-    {
-      "id": 27,
+      "id": 40,
       "type": "row",
       "title": "Algorithm versions and experiment groups",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 136,
+        "y": 148,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 28,
+      "id": 41,
       "type": "table",
       "title": "Version / group effectiveness",
       "description": "No invented v2 or random A/B assignments. Compare actual emitted versions/groups. 7/30-day learning retention by version/group appears above.",
       "gridPos": {
         "x": 0,
-        "y": 137,
+        "y": 149,
         "w": 24,
         "h": 10
       },
@@ -1498,7 +1905,214 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "knowledge-clickhouse"
           },
-          "rawSql": "WITH a AS (SELECT mode,algorithm_version,experiment_group,count() AS answers,countIf(result='correct')/count() AS correct_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds,countIf(rehab_active_before=false AND rehab_active_after=true)/count() AS rehab_rate FROM knowledge_analytics.training_answers WHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode,algorithm_version,experiment_group),\ns AS (SELECT mode,algorithm_version,experiment_group,count() AS sessions,countIf(last_status='training_completed')/count() AS completion_rate FROM knowledge_analytics.sessions WHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode,algorithm_version,experiment_group),\ng AS (SELECT mode,algorithm_version,experiment_group,avgOrNull(attempts_to_learned) AS attempts_to_learned,avgOrNull(seconds_to_learned) AS time_to_learned FROM knowledge_analytics.learned_materials WHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring}) AND (${experiment:sqlstring}='__all' OR experiment_group=${experiment:sqlstring}) GROUP BY mode,algorithm_version,experiment_group)\nSELECT s.mode,s.algorithm_version,if(s.experiment_group='','(unassigned)',s.experiment_group) AS experiment_group,s.sessions,s.completion_rate,a.answers,a.correct_rate,a.answer_seconds,a.rehab_rate,g.attempts_to_learned,g.time_to_learned FROM s LEFT JOIN a USING(mode,algorithm_version,experiment_group) LEFT JOIN g USING(mode,algorithm_version,experiment_group)",
+          "rawSql": "WITH a AS (\nSELECT mode,algorithm_version,experiment_group,count() AS answers,countIf(result='correct')/count() AS correct_rate,countIf(result='wrong')/count() AS wrong_rate,avgOrNull(answer_time_ms)/1000 AS answer_seconds,countIf(review_credit=true AND rehab_active_before=false AND rehab_active_after=true)/nullIf(countIf(review_credit=true),0) AS rehab_rate\nFROM knowledge_analytics.training_answers\nWHERE $__timeFilter(occurred_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode,algorithm_version,experiment_group),\ns AS (\nSELECT mode,algorithm_version,experiment_group,count() AS sessions,countIf(last_status='training_completed')/count() AS completion_rate\nFROM knowledge_analytics.sessions\nWHERE mode!='mock' AND $__timeFilter(started_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode,algorithm_version,experiment_group),\ng AS (\nSELECT mode,algorithm_version,experiment_group,avgOrNull(attempts_to_learned) AS attempts_to_learned,avgOrNull(seconds_to_learned) AS time_to_learned\nFROM knowledge_analytics.learned_materials\nWHERE $__timeFilter(learned_at) AND (${mode:sqlstring}='__all' OR mode=${mode:sqlstring}) AND (${algorithm:sqlstring}='__all' OR algorithm_version=${algorithm:sqlstring})\nGROUP BY mode,algorithm_version,experiment_group),\nkeys AS (\nSELECT mode,algorithm_version,experiment_group\nFROM s UNION DISTINCT\nSELECT mode,algorithm_version,experiment_group\nFROM a UNION DISTINCT\nSELECT mode,algorithm_version,experiment_group\nFROM g)\nSELECT k.mode,\n       k.algorithm_version,\n       if(k.experiment_group='','(unassigned)',k.experiment_group) AS experiment_group,\n       ifNull(s.sessions,0) AS sessions,\n       s.completion_rate,\n       ifNull(a.answers,0) AS answers,\n       a.correct_rate,\n       a.wrong_rate,\n       a.answer_seconds,\n       a.rehab_rate,\n       g.attempts_to_learned,\n       g.time_to_learned\nFROM keys k\nLEFT JOIN s USING(mode,algorithm_version,experiment_group)\nLEFT JOIN a USING(mode,algorithm_version,experiment_group)\nLEFT JOIN g USING(mode,algorithm_version,experiment_group)",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "type": "row",
+      "title": "Product retention and ordered first-use funnel",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 159,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 37,
+      "type": "stat",
+      "title": "Active users (rolling to range end)",
+      "description": "Fixed rolling 1/7/30-day windows ending at range end; independent of range start and learning filters.",
+      "gridPos": {
+        "x": 0,
+        "y": 160,
+        "w": 24,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT uniqExactIf(user_id,occurred_at>=toDateTime($__toTime)-INTERVAL 1 DAY) AS DAU,\n       uniqExactIf(user_id,occurred_at>=toDateTime($__toTime)-INTERVAL 7 DAY) AS WAU,\n       uniqExact(user_id) AS MAU\nFROM knowledge_analytics.events_unique\nWHERE user_id!='' AND event_name!='login_failed'\n  AND occurred_at BETWEEN toDateTime($__toTime)-INTERVAL 30 DAY AND $__toTime",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "type": "table",
+      "title": "User return retention D1 / D7 / D30",
+      "description": "UTC registration-day cohorts; exact calendar return day. Only fully mature cohorts. Recorded activity, not page views.",
+      "gridPos": {
+        "x": 0,
+        "y": 164,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "SELECT n.days,\n       uniqExact(c.user_id) AS eligible_users,\n       uniqExactIf(c.user_id,a.day=addDays(c.joined,n.days)) AS returned_users,\n       returned_users/nullIf(eligible_users,0) AS retention\nFROM knowledge_analytics.user_cohorts c\nCROSS JOIN (\nSELECT arrayJoin([1,7,30]) AS days) n\nLEFT JOIN knowledge_analytics.user_activity a ON c.user_id=a.user_id\nWHERE $__timeFilter(registered_at) AND addDays(c.joined,n.days)<toDate($__toTime,'UTC')\nGROUP BY n.days\nORDER BY n.days",
+          "queryType": "sql",
+          "editorType": "sql",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "type": "table",
+      "title": "Registration  ->  folder  ->  content  ->  training  ->  completion  ->  returns",
+      "description": "Ordered first-use stages. Import qualifies as content. D1/D7 are exact UTC return days; D7 is conditional on the preceding D1 stage. Eligible columns prevent immature cohorts being counted as failures.",
+      "gridPos": {
+        "x": 0,
+        "y": 172,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(rate|retention|coverage)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(seconds|time_to_learned)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "knowledge-clickhouse"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "knowledge-clickhouse"
+          },
+          "rawSql": "WITH u AS (\nSELECT user_id,\nnullIf(minIf(occurred_at,event_name='user_registered'),toDateTime64(0,3,'UTC')) AS registered,\nnullIf(minIf(occurred_at,event_name IN ('folder_created','folder_imported')),toDateTime64(0,3,'UTC')) AS folder,\nnullIf(minIf(occurred_at,event_name IN ('material_created','folder_imported')),toDateTime64(0,3,'UTC')) AS material,\nnullIf(minIf(occurred_at,event_name='training_started' AND mode!='mock'),toDateTime64(0,3,'UTC')) AS training,\nnullIf(minIf(occurred_at,event_name='training_completed' AND mode!='mock'),toDateTime64(0,3,'UTC')) AS completed,\ngroupArrayIf(occurred_at,event_name!='user_registered') AS activity\nFROM knowledge_analytics.events_unique\nWHERE user_id!='' AND $__timeFilter(occurred_at)\nGROUP BY user_id),\nf AS (\nSELECT registered,folder,material,training,completed,activity,folder>=registered AND material>=folder AND training>=material AND completed>=training AS finished\nFROM u\nWHERE $__timeFilter(registered))\nSELECT count() AS registrations,\n       countIf(folder>=registered) AS first_folder,\n       countIf(folder>=registered AND material>=folder) AS first_content,\ncountIf(folder>=registered AND material>=folder AND training>=material) AS first_training,\n       countIf(finished) AS first_completion,\ncountIf(finished AND completed<toDateTime(addDays(toDate(registered),2)) AND addDays(toDate(registered),1)<toDate($__toTime)) AS d1_eligible,\ncountIf(finished AND completed<toDateTime(addDays(toDate(registered),2)) AND addDays(toDate(registered),1)<toDate($__toTime) AND arrayExists(t -> t>=completed AND toDate(t)=addDays(toDate(registered),1),activity)) AS d1_return,\ncountIf(finished AND completed<toDateTime(addDays(toDate(registered),2)) AND addDays(toDate(registered),7)<toDate($__toTime) AND arrayExists(t -> t>=completed AND toDate(t)=addDays(toDate(registered),1),activity)) AS d7_eligible,\ncountIf(finished AND completed<toDateTime(addDays(toDate(registered),2)) AND addDays(toDate(registered),7)<toDate($__toTime) AND arrayExists(t -> t>=completed AND toDate(t)=addDays(toDate(registered),1),activity) AND arrayExists(t -> t>=completed AND toDate(t)=addDays(toDate(registered),7),activity)) AS d7_return\nFROM f",
           "queryType": "sql",
           "editorType": "sql",
           "format": 1
@@ -1516,8 +2130,8 @@
           "type": "grafana-clickhouse-datasource",
           "uid": "knowledge-clickhouse"
         },
-        "query": "SELECT DISTINCT mode FROM knowledge_analytics.events_unique WHERE mode!='' ORDER BY mode",
-        "refresh": 1,
+        "query": "SELECT DISTINCT mode FROM knowledge_analytics.events_unique WHERE $__timeFilter(occurred_at) AND mode!='' ORDER BY mode",
+        "refresh": 2,
         "multi": false,
         "includeAll": true,
         "allValue": "'__all'",
@@ -1535,27 +2149,8 @@
           "type": "grafana-clickhouse-datasource",
           "uid": "knowledge-clickhouse"
         },
-        "query": "SELECT DISTINCT algorithm_version FROM knowledge_analytics.events_unique WHERE algorithm_version!='' ORDER BY algorithm_version",
-        "refresh": 1,
-        "multi": false,
-        "includeAll": true,
-        "allValue": "'__all'",
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "options": []
-      },
-      {
-        "name": "experiment",
-        "label": "Experiment",
-        "type": "query",
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "knowledge-clickhouse"
-        },
-        "query": "SELECT DISTINCT experiment_group FROM knowledge_analytics.events_unique WHERE experiment_group!='' ORDER BY experiment_group",
-        "refresh": 1,
+        "query": "SELECT DISTINCT algorithm_version FROM knowledge_analytics.events_unique WHERE $__timeFilter(occurred_at) AND algorithm_version!='' ORDER BY algorithm_version",
+        "refresh": 2,
         "multi": false,
         "includeAll": true,
         "allValue": "'__all'",

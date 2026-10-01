@@ -15,8 +15,7 @@ const progressTable = "user_material_progress"
 
 type ProgressRepository struct{ db *gorm.DB }
 
-// Pass a transaction-bound DB when coordinating progress and events. A future
-// answer service must save both in one transaction, not call Update in isolation.
+// Pass a transaction-bound DB: answers commit progress, events and receipts together.
 func NewProgressRepository(db *gorm.DB) *ProgressRepository { return &ProgressRepository{db: db} }
 
 var _ repository.ProgressRepository = (*ProgressRepository)(nil)

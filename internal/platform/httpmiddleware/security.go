@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,7 +19,16 @@ const trustedProxyKey = "http.trusted_proxy"
 
 // ProxyPolicy trusts forwarded origin headers only from explicitly configured peers.
 // Configure Gin with the same list so ClientIP and browser origin agree.
-func ProxyPolicy(peers []string) (gin.HandlerFunc, error) {
+func ProxyPolicy(peers []string, publicOrigins ...string) (gin.HandlerFunc, error) {
+	publicOrigin := ""
+	if len(publicOrigins) > 0 && publicOrigins[0] != "" {
+		u, err := url.Parse(publicOrigins[0])
+		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
+			return nil, fmt.Errorf("HTTP_PUBLIC_ORIGIN must be an http(s) origin without credentials, query or path")
+		}
+		publicOrigin = u.Scheme + "://" + u.Host
+	}
+
 	prefixes := make([]netip.Prefix, 0, len(peers))
 	for _, peer := range peers {
 		prefix, err := netip.ParsePrefix(peer)
@@ -32,6 +42,7 @@ func ProxyPolicy(peers []string) (gin.HandlerFunc, error) {
 		prefixes = append(prefixes, prefix)
 	}
 	return func(c *gin.Context) {
+		c.Set("http.public_origin", publicOrigin)
 		host, _, _ := net.SplitHostPort(c.Request.RemoteAddr)
 		addr, _ := netip.ParseAddr(host)
 		for _, prefix := range prefixes {
@@ -45,6 +56,13 @@ func ProxyPolicy(peers []string) (gin.HandlerFunc, error) {
 }
 
 func RequestOrigin(c *gin.Context) (scheme, host string) {
+	// A configured public origin supports TLS-terminating tunnels that rewrite Host.
+	// Matching the browser's Origin allows local development to keep its own origin.
+	if public := c.GetString("http.public_origin"); public != "" && strings.EqualFold(c.GetHeader("Origin"), public) {
+		u, _ := url.Parse(public)
+		return u.Scheme, u.Host
+	}
+
 	scheme, host = "http", c.Request.Host
 	if c.Request.TLS != nil {
 		scheme = "https"

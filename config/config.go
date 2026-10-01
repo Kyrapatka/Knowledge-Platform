@@ -25,6 +25,7 @@ type Config struct {
 	LogFormat   string
 	DatabaseURL string
 
+	HTTPPublicOrigin         string
 	HTTPTrustedProxies       []string
 	HTTPSlowRequestThreshold time.Duration
 	AuthLimits               httpmiddleware.AuthLimits
@@ -102,7 +103,7 @@ func Load() (Config, error) {
 			proxies = append(proxies, strings.TrimSpace(p))
 		}
 	}
-	if _, err := httpmiddleware.ProxyPolicy(proxies); err != nil {
+	if _, err := httpmiddleware.ProxyPolicy(proxies, os.Getenv("HTTP_PUBLIC_ORIGIN")); err != nil {
 		return Config{}, err
 	}
 	limits := httpmiddleware.DefaultAuthLimits()
@@ -119,7 +120,7 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	return Config{
-		HTTPTrustedProxies: proxies, HTTPSlowRequestThreshold: slowThreshold, AuthLimits: limits,
+		HTTPPublicOrigin: os.Getenv("HTTP_PUBLIC_ORIGIN"), HTTPTrustedProxies: proxies, HTTPSlowRequestThreshold: slowThreshold, AuthLimits: limits,
 		Analytics:   analyticsConfig,
 		LogLevel:    logLevel,
 		LogFormat:   logFormat,

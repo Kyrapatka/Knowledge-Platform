@@ -100,6 +100,14 @@ func importQuestions(tx Transaction, user, folder uuid.UUID, questions []BulkQue
 		if strings.TrimSpace(q.SeedKey) == "" || len(q.SeedKey) > 100 || strings.TrimSpace(q.Question) == "" || len(q.Question) > 20000 || len(q.Topic) > 200 || len(q.Category) > 96 || seen[q.SeedKey] {
 			return out, fmt.Errorf("%w: invalid or duplicate seed question", ErrInvalid)
 		}
+		for _, field := range []struct {
+			value *string
+			limit int
+		}{{q.Answer, 100000}, {q.ShortAnswer, 100000}, {q.Source, 20000}} {
+			if field.value != nil && len(*field.value) > field.limit {
+				return out, fmt.Errorf("%w: question answer or source exceeds field limit", ErrInvalid)
+			}
+		}
 		seen[q.SeedKey] = true
 		if q.Status == "" {
 			q.Status = "draft"

@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Kyrapatka/knowledge-platform/internal/platform/database"
 	"log"
@@ -50,12 +51,16 @@ func run() error {
 	}
 	defer conn.Close(ctx)
 	if action == "smoke" {
-		return smoke(ctx, conn, "migrations")
+		if err := smoke(ctx, conn, "migrations"); err != nil {
+			return err
+		}
+		fmt.Println("Migration smoke passed in an isolated empty schema.")
+		return nil
 	}
 	return migrate(ctx, conn, "migrations", action)
 }
 
-func smoke(ctx context.Context, conn *pgx.Conn, directory string) error {
+func smoke(ctx context.Context, conn *pgx.Conn, directory string) (result error) {
 	// Only the fresh, random schema created here is ever removed.
 	schema := "migration_smoke_" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	quoted := pgx.Identifier{schema}.Sanitize()
@@ -66,7 +71,7 @@ func smoke(ctx context.Context, conn *pgx.Conn, directory string) error {
 		cleanup, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if _, err := conn.Exec(cleanup, "DROP SCHEMA "+quoted+" CASCADE"); err != nil {
-			log.Printf("migration smoke schema cleanup failed")
+			result = errors.Join(result, fmt.Errorf("migration smoke schema cleanup failed: %w", err))
 		}
 	}()
 	if _, err := conn.Exec(ctx, "SET search_path TO "+quoted); err != nil {
@@ -89,7 +94,6 @@ func smoke(ctx context.Context, conn *pgx.Conn, directory string) error {
 			return err
 		}
 	}
-	fmt.Println("Migration smoke passed in an isolated empty schema.")
 	return nil
 }
 

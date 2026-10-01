@@ -69,18 +69,17 @@ Gin's built-in access logger has been removed. The middleware order is
 output format and level threshold, with no second plaintext access record.
 
 Every request entering this chain gets a fresh server-generated UUID returned in
-`X-Request-ID`. Incoming IDs are deliberately ignored, even valid UUIDs: there is
-no configured trusted proxy boundary. `ID(ctx)` exposes the ID and
+`X-Request-ID`. Incoming IDs are deliberately ignored, even valid UUIDs: request correlation is server-owned. `ID(ctx)` exposes the ID and
 `Logger(ctx, fallback)` exposes the derived logger through `c.Request.Context()`.
 Outside an HTTP request they return an empty ID and the explicit fallback.
 
-One `http request completed` record contains `request_id`, allowlisted `method`
-(nonstandard methods become `OTHER`), route template, actual `status`,
-`duration_ms` and `response_bytes`. Unmatched routes, including SPA fallback,
-use `route=unmatched`, never the raw path. 5xx and recovered panics are ERROR;
-other responses, including expected 401/404, are INFO. LOG_LEVEL can therefore
-suppress normal access records. No raw path, query, headers, body, client IP,
-user agent, path parameter or `c.Errors` text is logged.
+One `http request completed` record contains `request_id`, allowlisted `method`, normalized `route`, actual `status`, `duration_ms`, `response_bytes` and a bounded `reason`.
+
+Priority is panic (ERROR), unexpected 5xx (ERROR), deadline (WARN), cancellation (INFO), unmatched/API 404 (WARN), slow (WARN), normal (INFO). Cancellation/deadline are recognized through context and wrapped Gin errors without logging their text. A recovered panic always wins; there is no second warning/access record.
+
+Unmatched requests (including successful SPA/static fallbacks) retain `route=unmatched` and add `path=r.URL.Path`. API 404 also includes path. Query strings, headers, bodies, cookies and raw error/panic values are excluded. Raw paths and request IDs are never Prometheus labels; metrics retain normalized routes. Observed unmatched requests include `/interview`, `/train`, `/favicon.svg` and `/assets/index-*.js`; unmatched does not by itself mean an API failure.
+
+`HTTP_SLOW_REQUEST_THRESHOLD` defaults to `1s` and must be positive. LOG_LEVEL can suppress ordinary access records.
 
 Gin's automatic slash/path redirects happen before its middleware chain; those
 redirects, and requests rejected by net/http before routing, are outside this
@@ -150,3 +149,9 @@ Follow-up verification on 2026-09-23: `go test ./...` and `go vet ./...`
 passed with both database test variables configured. Targeted race checks passed
 for `internal/platform/httpmiddleware`, `internal/app` and `cmd/api`; the App
 integration used PostgreSQL. Changed Go files were formatted with gofmt.
+
+## Analytics diagnostics
+
+Metrics remain the source of truth. The worker accumulates drop counters and reports once per minute and during shutdown. `buffer_full` and `invalid` are WARN with reason, count and queue length/capacity; no event payload is logged. `closed` is DEBUG when observed before the final worker report; publications after worker exit are counted in metrics without starting another logging loop.
+
+Actual lost events at shutdown are ERROR with `reason=shutdown_timeout`, `pending_events`, the shutdown timeout budget and queue dimensions. A failed batch is ERROR with `reason=flush_error`, `batch_size` and a safe bounded error class. Repeated flush logs are throttled to once per minute. Batches are not retried (the existing delivery policy is unchanged), so there is no invented retry count. Context cancellation caused by shutdown is classified as shutdown loss rather than a normal sink failure. Sink responses, DSNs and batch content are never logged.
