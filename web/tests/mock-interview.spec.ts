@@ -4,6 +4,14 @@ test("mock: independent multi-folder plans, distributions, all depths, replaceme
   page,
 }) => {
   test.setTimeout(240000);
+  if (process.env.E2E_DISABLE_RANDOM_UUID === "true") {
+    await page.addInitScript(() => {
+      Object.defineProperty(globalThis.crypto, "randomUUID", {
+        value: undefined,
+        configurable: true,
+      });
+    });
+  }
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");

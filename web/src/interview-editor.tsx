@@ -8,7 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { api, errorText, post } from "./api";
-import { useLibrary } from "./App";
+import { useLibrary } from "./library/context";
 import { ErrorBox, Modal, Spinner } from "./ui";
 import {
   interviewProfiles,

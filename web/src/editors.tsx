@@ -1,7 +1,9 @@
+import { createClientUUID } from "./uuid";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, Check, Edit3, Plus, Trash2 } from "lucide-react";
 import { api, errorText, post } from "./api";
-import { useLibrary, TypeIcon } from "./App";
+import { useLibrary } from "./library/context";
+import { TypeIcon } from "./library/presentation";
 import type { Exercise, Folder, Material, SessionView, Topic } from "./types";
 import { algorithmNames, materialTitle, templateNames, topicOf } from "./types";
 import { DateValue, ErrorBox, Markdown, Modal, Spinner } from "./ui";
@@ -538,6 +540,7 @@ export function MaterialDetails({
   planId,
   onClose,
   onEdit,
+  onCopy,
   onChanged,
 }: {
   folder: Folder;
@@ -545,6 +548,7 @@ export function MaterialDetails({
   planId?: string;
   onClose: () => void;
   onEdit: () => void;
+  onCopy?: () => void;
   onChanged: () => void;
 }) {
   const { notify } = useLibrary();
@@ -562,7 +566,7 @@ export function MaterialDetails({
       );
       await post(
         `/training/sessions/${session.session.id}/materials/${material.id}/${action}`,
-        { command_id: crypto.randomUUID(), expected_version: p.version },
+        { command_id: createClientUUID(), expected_version: p.version },
       );
       notify(
         action === "start-final"
@@ -603,6 +607,11 @@ export function MaterialDetails({
           <span className={`difficulty-label ${material.difficulty}`}>
             {material.difficulty}
           </span>
+          {onCopy && (
+            <button className="button" onClick={onCopy}>
+              Copy question
+            </button>
+          )}
           <button className="button edit-word-button" onClick={onEdit}>
             <Edit3 size={18} />
             {folder.template_key === "english_words"

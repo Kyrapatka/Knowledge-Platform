@@ -11,6 +11,7 @@ type Repository interface {
 	Transact(context.Context, uuid.UUID, func(Transaction) error) error
 }
 type Transaction interface {
+	CopyContent(source, target uuid.UUID, allowDuplicate bool) (CopyResult, error)
 	FolderTemplate(uuid.UUID) (string, error)
 	MaterialValues(uuid.UUID, uuid.UUID) (map[string]*string, error)
 	Profile(uuid.UUID) (Profile, error)

@@ -1,3 +1,5 @@
+import { useLibraryPreferences } from "./library/preferences-context";
+import { createClientUUID } from "./uuid";
 import { useQuestionScroll } from "./question-scroll";
 import {
   useCallback,
@@ -23,7 +25,8 @@ import {
 } from "lucide-react";
 import { api, ApiError, errorText, post, readStored, saveStored } from "./api";
 import { useAuth } from "./auth";
-import { useLibrary, TypeIcon } from "./App";
+import { useLibrary } from "./library/context";
+import { TypeIcon } from "./library/presentation";
 import type { CombinedView, Folder, Material, Source } from "./types";
 import { algorithmNames } from "./types";
 import {
@@ -59,6 +62,8 @@ export function TrainingSetup({
   folders: Folder[];
   onClose: () => void;
 }) {
+  const { markUsed } = useLibraryPreferences();
+  const starting = useRef(false);
   const { user } = useAuth();
   const { reload } = useLibrary();
   const navigate = useNavigate();
@@ -107,6 +112,8 @@ export function TrainingSetup({
   }
   async function start(e: FormEvent) {
     e.preventDefault();
+    if (starting.current) return;
+    starting.current = true;
     setBusy(true);
     setError("");
     try {
@@ -114,6 +121,7 @@ export function TrainingSetup({
       const view = await post<CombinedView>("/training/combined", {
         sources: chosen,
       });
+      markUsed(chosen.map((source) => source.folder_id));
       const saved = {
         sources: chosen,
         session_ids: view.sessions.map((s) => s.session.id),
@@ -125,6 +133,7 @@ export function TrainingSetup({
     } catch (err) {
       setError(errorText(err));
     } finally {
+      starting.current = false;
       setBusy(false);
     }
   }
@@ -339,6 +348,8 @@ export function TrainingSetup({
   );
 }
 export function TrainingPage() {
+  const { markUsed } = useLibraryPreferences();
+  const visitRecorded = useRef(false);
   const { user } = useAuth();
   const { data, reload, notify } = useLibrary();
   const storageKey = `knowledge:training:${user.id}`;
@@ -398,7 +409,7 @@ export function TrainingPage() {
         return;
       }
       if (early && !earlyCommand.current)
-        earlyCommand.current = crypto.randomUUID();
+        earlyCommand.current = createClientUUID();
       if (pending.current) {
         await post(
           `/training/sessions/${pending.current.sessionId}/actions`,
@@ -418,6 +429,10 @@ export function TrainingPage() {
             sources: saved.sources,
           });
       apply(next);
+      if (!visitRecorded.current) {
+        markUsed(saved.sources.map((source) => source.folder_id));
+        visitRecorded.current = true;
+      }
       earlyCommand.current = null;
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
@@ -463,18 +478,18 @@ export function TrainingPage() {
     busyRef.current = true;
     setBusy(true);
     setError("");
-    const command = pending.current || {
-      sessionId: current.session_id,
-      body: {
-        command_id: crypto.randomUUID(),
-        presentation_id: card.id,
-        expected_version: card.progress_version,
-        action,
-      },
-    };
-    pending.current = command;
-    saveStored(pendingKey, command);
     try {
+      const command = pending.current || {
+        sessionId: current.session_id,
+        body: {
+          command_id: createClientUUID(),
+          presentation_id: card.id,
+          expected_version: card.progress_version,
+          action,
+        },
+      };
+      pending.current = command;
+      saveStored(pendingKey, command);
       await post(
         `/training/sessions/${command.sessionId}/actions`,
         command.body,
@@ -505,6 +520,9 @@ export function TrainingPage() {
             ? "This card changed elsewhere. Refresh to continue with the current card."
             : errorText(e),
         );
+      } else if (!pending.current) {
+        setUncertain(false);
+        setError(errorText(e));
       } else {
         setUncertain(true);
         setError(
@@ -520,14 +538,18 @@ export function TrainingPage() {
   async function undo() {
     if (busyRef.current || !view?.undo_actions?.length || !savedRef.current)
       return;
-    undoPending.current = {
-      command_id: crypto.randomUUID(),
-      event_id: view.undo_actions[0],
-      session_ids: savedRef.current.session_ids,
-    };
-    saveStored(undoKey, undoPending.current);
-    setUncertain(true);
-    await refresh();
+    try {
+      undoPending.current = {
+        command_id: createClientUUID(),
+        event_id: view.undo_actions[0],
+        session_ids: savedRef.current.session_ids,
+      };
+      saveStored(undoKey, undoPending.current);
+      setUncertain(true);
+      await refresh();
+    } catch (err) {
+      setError(errorText(err));
+    }
   }
   useEffect(() => {
     function keydown(e: KeyboardEvent) {
@@ -595,7 +617,7 @@ export function TrainingPage() {
       await post(
         `/training/sessions/${current.session_id}/materials/${card.material_id}/skip-rehab`,
         {
-          command_id: crypto.randomUUID(),
+          command_id: createClientUUID(),
           expected_version: card.progress_version,
         },
       );

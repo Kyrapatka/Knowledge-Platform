@@ -138,7 +138,7 @@ export function Modal({
       dialog.removeEventListener("focusin", fitViewport);
       dialog.close();
       document.body.style.overflow = original;
-      previous?.focus();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, []);
   return (

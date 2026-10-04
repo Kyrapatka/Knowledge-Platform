@@ -1,3 +1,5 @@
+import { useLibraryPreferences } from "./library/preferences-context";
+import { createClientUUID } from "./uuid";
 import { useQuestionScroll } from "./question-scroll";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -16,7 +18,7 @@ import {
 } from "lucide-react";
 import { api, ApiError, errorText, post, readStored, saveStored } from "./api";
 import { useAuth } from "./auth";
-import { useLibrary } from "./App";
+import { useLibrary } from "./library/context";
 import type { Folder } from "./types";
 import { ErrorBox, Markdown, Spinner } from "./ui";
 import {
@@ -120,6 +122,8 @@ function InterviewSetup({
   folders: Folder[];
   onStarted: (view: InterviewSession) => void;
 }) {
+  const { markUsed } = useLibraryPreferences();
+  const starting = useRef(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [topics, setTopics] = useState<Record<string, string[]>>({});
   const [preview, setPreview] = useState<InterviewPlan | null>(null);
@@ -214,14 +218,15 @@ function InterviewSetup({
   }, [previewKey]);
   async function start(e: FormEvent) {
     e.preventDefault();
-    if (busy || !selected.length) return;
+    if (starting.current || !selected.length) return;
+    starting.current = true;
     setBusy(true);
     setError("");
     setCanResume(false);
     try {
       if (!startCommand.current) {
         startCommand.current = {
-          id: crypto.randomUUID(),
+          id: createClientUUID(),
           sources: selected.map((folder_id) => ({
             folder_id,
             ...(topics[folder_id]?.length ? { topics: topics[folder_id] } : {}),
@@ -235,6 +240,7 @@ function InterviewSetup({
         config: command.config,
         sources: command.sources,
       });
+      markUsed(command.sources.map((source) => source.folder_id));
       startCommand.current = null;
       onStarted(next);
     } catch (e) {
@@ -244,6 +250,7 @@ function InterviewSetup({
       if (e instanceof ApiError && e.code === "active_mock_interview")
         setCanResume(true);
     } finally {
+      starting.current = false;
       setBusy(false);
     }
   }
@@ -730,7 +737,7 @@ function InterviewRun({
       session_id: view.session.id,
       kind: "answer",
       body: {
-        command_id: crypto.randomUUID(),
+        command_id: createClientUUID(),
         presentation_id: card.id,
         expected_version: card.progress_version,
         action,
@@ -935,7 +942,7 @@ function InterviewRun({
                   session_id: view.session.id,
                   kind: "undo",
                   body: {
-                    command_id: crypto.randomUUID(),
+                    command_id: createClientUUID(),
                     event_id: undoActions[0],
                   },
                 })

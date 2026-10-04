@@ -7,7 +7,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { api, errorText } from "./api";
-import { Metric } from "./App";
+import { Metric } from "./library/presentation";
 import { ErrorBox, Spinner } from "./ui";
 import type { Statistics } from "./types";
 

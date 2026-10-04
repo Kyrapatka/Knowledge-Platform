@@ -26,7 +26,41 @@ func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
 	api.PUT("/interview/concepts/:slug", h.saveConcept)
 	api.GET("/folders/:folderID/interview/questions/:materialID/profile", h.profile)
 	api.PUT("/folders/:folderID/interview/questions/:materialID/profile", h.saveProfile)
+	api.POST("/folders/:folderID/interview/questions/:materialID/copy", h.copyQuestion)
 	api.POST("/folders/:folderID/interview/questions:bulk", h.bulk)
+}
+func (h *Handler) copyQuestion(c *gin.Context) {
+	u, ok := userID(c)
+	if !ok {
+		return
+	}
+	f, ok := paramID(c, "folderID")
+	if !ok {
+		return
+	}
+	m, ok := paramID(c, "materialID")
+	if !ok {
+		return
+	}
+	var req CopyRequest
+	if !read(c, &req) {
+		return
+	}
+	result, err := h.service.CopyQuestion(c.Request.Context(), u, f, m, req)
+	var duplicate *DuplicateQuestion
+	if errors.As(err, &duplicate) {
+		c.JSON(409, gin.H{"error": "duplicate_question", "existing_material_id": duplicate.MaterialID, "folder_id": duplicate.FolderID})
+		return
+	}
+	if err != nil {
+		write(c, nil, err)
+		return
+	}
+	event := analytics.New(analytics.MaterialCreated, u)
+	event.FolderID, event.MaterialID, event.Template = result.FolderID.String(), result.MaterialID.String(), "interview_questions"
+	event.Difficulty = analytics.Ptr(result.Difficulty)
+	h.Publish(c.Request.Context(), event)
+	c.JSON(201, result)
 }
 func userID(c *gin.Context) (uuid.UUID, bool) {
 	u, ok := auth.UserIDFromContext(c)

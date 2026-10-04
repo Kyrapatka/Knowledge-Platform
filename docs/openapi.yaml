@@ -3151,6 +3151,62 @@ paths:
       summary: Update folder title and description
       tags:
       - Folders
+  /api/v1/folders/{folderID}/interview/questions/{materialID}/copy:
+    post:
+      operationId: copyInterviewQuestion
+      summary: Copy owned interview content and profile without learning progress
+      description: Atomically creates independent content and profile in another owned Interview folder. A normalized question duplicate returns a warning; allow_duplicate explicitly permits another copy. No seed identity, training progress, history or mock state is copied. Incompatible target schemas are rejected.
+      tags: [Interview]
+      parameters:
+      - in: path
+        name: folderID
+        required: true
+        schema: {type: string, format: uuid}
+      - in: path
+        name: materialID
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [target_folder_id]
+              properties:
+                target_folder_id: {type: string, format: uuid}
+                allow_duplicate: {type: boolean, default: false}
+      responses:
+        "201":
+          description: Independent copy created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [material_id, folder_id]
+                properties:
+                  material_id: {type: string, format: uuid}
+                  folder_id: {type: string, format: uuid}
+        "409":
+          description: A question with normalized matching text already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, existing_material_id, folder_id]
+                properties:
+                  error: {type: string, enum: [duplicate_question]}
+                  existing_material_id: {type: string, format: uuid}
+                  folder_id: {type: string, format: uuid}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/folders/{folderID}/interview/questions/{materialID}/profile:
     get:
       operationId: getInterviewProfile

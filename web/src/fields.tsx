@@ -1,3 +1,4 @@
+import { createClientUUID } from "./uuid";
 import type { Field, FolderConfig } from "./types";
 import { Plus } from "lucide-react";
 
@@ -110,8 +111,7 @@ export function CardFields({
     });
   }
   function add(group: "schema" | "metadata_schema") {
-    const key =
-      "custom_" + crypto.randomUUID().replaceAll("-", "").slice(0, 12);
+    const key = "custom_" + createClientUUID().replaceAll("-", "").slice(0, 12);
     onChange({
       ...value,
       [group]: {

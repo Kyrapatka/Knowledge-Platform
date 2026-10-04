@@ -1,3 +1,4 @@
+import { createClientUUID } from "./uuid";
 import { useEffect, useState, type FormEvent } from "react";
 import { Check } from "lucide-react";
 import { api, errorText, post, readStored, saveStored } from "./api";
@@ -82,7 +83,7 @@ export function PlanSettings({
         const result = await post<{ plan: Plan }>(
           `/training/plans/${target.id}/algorithm`,
           {
-            command_id: crypto.randomUUID(),
+            command_id: createClientUUID(),
             expected_version: target.version,
             algorithm_key: key,
             algorithm_version: 1,
