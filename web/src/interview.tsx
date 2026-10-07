@@ -981,11 +981,15 @@ function InterviewRun({
                 </b>
               </span>
               <span>
-                Root slot{" "}
+                Root{" "}
                 <b>
-                  {graph.current_root} /{" "}
-                  {graph.interview_plan?.strategy.target_roots ??
-                    graph.config.max_roots}
+                  {graph.current_root}{" "}
+                  <small>
+                    (
+                    {graph.interview_plan?.strategy.target_roots ??
+                      graph.config.max_roots}{" "}
+                    planned)
+                  </small>
                 </b>
               </span>
               <span>

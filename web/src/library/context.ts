@@ -6,7 +6,12 @@ export type LibraryContextValue = {
   error: string;
   reload: () => Promise<void>;
   notify: (message: string) => void;
-  launch: (ids: string[], topics?: string[], planId?: string) => void;
+  launch: (
+    ids: string[],
+    topics?: string[],
+    planId?: string,
+    materialIDs?: string[],
+  ) => void;
 };
 export const LibraryContext = createContext<LibraryContextValue>(null!);
 export const useLibrary = () => useContext(LibraryContext);

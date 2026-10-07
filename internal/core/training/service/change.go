@@ -148,6 +148,7 @@ func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, r
 		if req.PoolSize != nil {
 			plan.Config.PoolSize = *req.PoolSize
 		}
+		plan.Config.SetPoolPolicy(plan.AlgorithmKey, plan.Config.PoolSize)
 		plan.Version++
 		plan.UpdatedAt = now
 		if err = tx.UpdatePlan(plan, req.ExpectedVersion); err != nil {

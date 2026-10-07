@@ -8,8 +8,9 @@ import (
 // SessionSource is an immutable launch selection. Empty Topics means all topics;
 // __none__ selects materials without a topic. It never changes a material's metadata.
 type SessionSource struct {
-	FolderID uuid.UUID `json:"folder_id"`
-	Topics   []string  `json:"topics,omitempty"`
+	FolderID    uuid.UUID   `json:"folder_id"`
+	MaterialIDs []uuid.UUID `json:"material_ids,omitempty"`
+	Topics      []string    `json:"topics,omitempty"`
 }
 
 type CombinedComponent struct {

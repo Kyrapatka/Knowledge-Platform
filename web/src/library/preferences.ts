@@ -40,7 +40,13 @@ export type FolderAppearance = {
   favorite?: boolean;
   lastUsedAt?: number;
 };
-export type Category = { id: string; name: string; collapsed: boolean };
+export type Category = {
+  id: string;
+  name: string;
+  collapsed: boolean;
+  icon?: FolderAppearance["icon"];
+  color?: FolderAppearance["color"];
+};
 export type LibraryPreferences = {
   version: 1;
   favoritesFirst: boolean;
@@ -92,6 +98,8 @@ export function parsePreferences(raw: string | null): LibraryPreferences {
               id: c.id,
               name: c.name.trim().slice(0, 64),
               collapsed: c.collapsed === true,
+              ...(member(icons, c.icon) ? { icon: c.icon } : {}),
+              ...(member(colors, c.color) ? { color: c.color } : {}),
             },
           ];
         })
@@ -182,6 +190,7 @@ export function prunePreferences(
 }
 export type PreferenceAction =
   | { type: "folder"; id: string; patch: FolderAppearance }
+  | { type: "folders"; ids: string[]; patch: FolderAppearance }
   | { type: "category"; category: Category }
   | { type: "remove-category"; id: string }
   | { type: "favorites-first"; enabled: boolean }
@@ -194,6 +203,16 @@ export function updatePreferences(
   action: PreferenceAction,
 ): LibraryPreferences {
   switch (action.type) {
+    case "folders":
+      return {
+        ...p,
+        folders: {
+          ...p.folders,
+          ...Object.fromEntries(
+            action.ids.map((id) => [id, { ...p.folders[id], ...action.patch }]),
+          ),
+        },
+      };
     case "folder":
       return {
         ...p,

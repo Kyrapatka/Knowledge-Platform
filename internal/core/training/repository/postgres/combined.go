@@ -16,20 +16,29 @@ func selectedMaterials(query *gorm.DB, sources []model.SessionSource) *gorm.DB {
 	var alternatives []string
 	var args []any
 	for _, source := range sources {
-		if len(source.Topics) == 0 {
-			alternatives = append(alternatives, "m.folder_id=?")
-			args = append(args, source.FolderID)
-			continue
-		}
-		topics := make([]string, len(source.Topics))
-		for i, topic := range source.Topics {
-			if topic != "__none__" {
-				topics[i] = topic
+		clause := "m.folder_id=?"
+		args = append(args, source.FolderID)
+		if source.MaterialIDs != nil {
+			if len(source.MaterialIDs) == 0 {
+				clause += " AND FALSE"
+			} else {
+				clause += " AND m.id IN ?"
+				args = append(args, source.MaterialIDs)
 			}
 		}
-		alternatives = append(alternatives, "(m.folder_id=? AND "+topicExpression+" IN ?)")
-		args = append(args, source.FolderID, topics)
+		if len(source.Topics) > 0 {
+			topics := make([]string, len(source.Topics))
+			for i, topic := range source.Topics {
+				if topic != "__none__" {
+					topics[i] = topic
+				}
+			}
+			clause += " AND " + topicExpression + " IN ?"
+			args = append(args, topics)
+		}
+		alternatives = append(alternatives, "("+clause+")")
 	}
+
 	return query.Where("("+strings.Join(alternatives, " OR ")+")", args...)
 }
 

@@ -211,7 +211,7 @@ func TestMockBranchesHistoryAndCompletion(t *testing.T) {
 	if !reflect.DeepEqual(first.State, original) {
 		t.Fatal("input mutated")
 	}
-	if v.Candidate != nil || len(v.State.CompletedRootIDs) != 6 || v.State.AnsweredQuestions == 0 {
+	if v.Candidate != nil || v.State.StopReason != "no_remaining_questions" || v.State.AnsweredQuestions != len(pool) {
 		t.Fatalf("did not complete branches: %+v", v.State)
 	}
 }

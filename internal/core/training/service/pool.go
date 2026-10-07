@@ -176,7 +176,7 @@ func (s *Service) preparePool(ctx context.Context, tx repository.Tx, p model.Tra
 		}
 		active = append(active, i)
 	}
-	if slots := p.Config.PoolSize - len(active); slots > 0 {
+	if slots := p.PoolPolicy().RefillSlots(len(active)); slots > 0 {
 		materials, err := tx.Candidates(p, session.ID, now, slots)
 		if err != nil {
 			return nil, err

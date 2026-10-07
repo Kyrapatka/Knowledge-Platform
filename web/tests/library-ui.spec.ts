@@ -116,18 +116,18 @@ for (const width of [360, 390, 430, 1280]) {
     await expect(page.locator(".folder-card")).toHaveCount(50);
     await noOverflow(page);
     await page
-      .getByRole("button", { name: "New category", exact: true })
+      .getByRole("button", { name: "New section", exact: true })
       .click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByLabel("Category name").fill("Interview practice");
+    await dialog.getByLabel("Section name").fill("Interview practice");
     await dialog
-      .getByRole("button", { name: "Save category", exact: true })
+      .getByRole("button", { name: "Save section", exact: true })
       .click();
     await page
       .getByRole("button", { name: "Customize Collection 00", exact: true })
       .click();
     await dialog
-      .getByLabel("Folder category")
+      .getByLabel("Folder section")
       .selectOption({ label: "Interview practice" });
     await dialog
       .getByRole("button", { name: "Color blue", exact: true })
@@ -140,9 +140,12 @@ for (const width of [360, 390, 430, 1280]) {
     await page.screenshot({ path: info.outputPath(`customize-${width}.png`) });
     await dialog.getByRole("button", { name: "Save appearance" }).click();
     await page.reload();
-    const card = page.locator(".folder-card").filter({
-      has: page.getByRole("link", { name: "Collection 00", exact: true }),
-    });
+    const card = page
+      .getByRole("region", { name: "Favorites", exact: true })
+      .locator(".folder-card")
+      .filter({
+        has: page.getByRole("link", { name: "Collection 00", exact: true }),
+      });
     await expect(card).toHaveClass(/folder-color-blue/);
     await expect(
       card.getByRole("button", {
@@ -152,27 +155,32 @@ for (const width of [360, 390, 430, 1280]) {
     ).toHaveAttribute("aria-pressed", "true");
     expect((await preferences(page)).folders.f0.icon).toBe("brain");
     await page.getByLabel("Filter folders").fill("INTERVIEW PRACTICE");
+    await expect(page.locator(".folder-card")).toHaveCount(2);
+    await page.getByRole("tab", { name: "Sections", exact: true }).click();
+    await expect(page.locator(".folder-card")).toHaveCount(0);
+    await page.getByRole("link", { name: /Interview practice/ }).click();
+    await expect(page).toHaveURL(/\/sections\//);
     await expect(page.locator(".folder-card")).toHaveCount(1);
-    const category = page.getByRole("button", { name: /^Interview practice/ });
-    await category.click();
-    await expect(category).toHaveAttribute("aria-expanded", "false");
-    await page.reload();
-    await expect(category).toHaveAttribute("aria-expanded", "false");
-    await category.click();
+    await page.getByLabel("Search in section").fill("absent");
+    await expect(page.locator(".folder-card")).toHaveCount(0);
+    await page.getByLabel("Search in section").fill("");
+    await page.getByRole("link", { name: "← Sections", exact: true }).click();
     await page
-      .getByRole("button", { name: "Edit category Interview practice" })
+      .getByRole("button", { name: "Edit section Interview practice" })
       .click();
-    await dialog.getByLabel("Category name").fill("Renamed");
-    await dialog.getByRole("button", { name: "Save category" }).click();
-    await page.getByRole("button", { name: "Edit category Renamed" }).click();
+    await dialog.getByLabel("Section name").fill("Renamed");
+    await dialog.getByRole("button", { name: "Save section" }).click();
+    await page.getByRole("button", { name: "Edit section Renamed" }).click();
     await dialog
-      .getByRole("button", { name: "Delete category", exact: true })
+      .getByRole("button", { name: "Delete section", exact: true })
       .click();
     await dialog
-      .getByRole("button", { name: "Confirm delete category" })
+      .getByRole("button", { name: "Confirm delete section" })
       .click();
-    await expect(page.locator(".folder-card")).toHaveCount(50);
+    await page.getByRole("tab", { name: "All folders", exact: true }).click();
+    await expect(page.locator(".folder-card")).toHaveCount(51);
     await page
+      .getByRole("region", { name: "Favorites", exact: true })
       .getByRole("button", { name: "Unfavorite Collection 00", exact: true })
       .click();
     expect((await preferences(page)).folders.f0.favorite).toBe(false);
@@ -258,7 +266,10 @@ test("Copy dialog default, one-off target, conflict, explicit duplicate and muta
 }) => {
   await mockLibrary(page);
   await page.addInitScript(
-    ({ key, p }) => localStorage.setItem(key, JSON.stringify(p)),
+    ({ key, p }) => {
+      if (!localStorage.getItem(key))
+        localStorage.setItem(key, JSON.stringify(p));
+    },
     { key, p: { ...defaultPreferences(), defaultCopyFolderId: "f1" } },
   );
   const bodies: unknown[] = [];
@@ -353,7 +364,10 @@ test("Deleted default target is pruned before opening Copy", async ({
 }) => {
   await mockLibrary(page);
   await page.addInitScript(
-    ({ key, p }) => localStorage.setItem(key, JSON.stringify(p)),
+    ({ key, p }) => {
+      if (!localStorage.getItem(key))
+        localStorage.setItem(key, JSON.stringify(p));
+    },
     {
       key,
       p: {
@@ -375,3 +389,162 @@ test("Deleted default target is pruned before opening Copy", async ({
   expect((await preferences(page)).defaultCopyFolderId).toBeNull();
   expect((await preferences(page)).recentCopyTargets).toEqual(["f1"]);
 });
+
+for (const width of [360, 390, 430]) {
+  test(`Mobile long category header and 100 folders (${width}px)`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await mockLibrary(page, 100);
+    const name =
+      "Interview preparation and very long category title for mobile";
+    const p = {
+      ...defaultPreferences(),
+      categories: [{ id: "long", name, collapsed: false }],
+      folders: { f0: { categoryId: "long", favorite: true } },
+    };
+    await page.addInitScript(
+      ({ key, p }) => {
+        if (!localStorage.getItem(key))
+          localStorage.setItem(key, JSON.stringify(p));
+      },
+      { key, p },
+    );
+    await page.goto("/");
+    await expect(page.locator(".folder-card")).toHaveCount(101);
+    await noOverflow(page);
+    await page.getByRole("tab", { name: "Sections", exact: true }).click();
+    await expect(page.locator(".folder-card")).toHaveCount(0);
+    const link = page.getByRole("link", { name: new RegExp("^" + name) });
+    await expect(link.locator("strong")).toHaveCSS("text-overflow", "ellipsis");
+    await expect(link.locator("strong")).toHaveCSS("white-space", "nowrap");
+    await link.focus();
+    await link.press("Enter");
+    await expect(
+      page.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".folder-card")).toHaveCount(1);
+    await noOverflow(page);
+    await page
+      .getByRole("button", { name: "Edit section", exact: true })
+      .click();
+    await page.getByLabel("Section icon").selectOption("brain");
+    await page.getByLabel("Section color").selectOption("purple");
+    await page
+      .getByRole("button", { name: "Save section", exact: true })
+      .click();
+    await page.reload();
+    expect((await preferences(page)).categories[0]).toMatchObject({
+      icon: "brain",
+      color: "purple",
+    });
+    await page
+      .getByRole("button", { name: "Edit section", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toBeInViewport();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("button", { name: "Edit section", exact: true }),
+    ).toBeFocused();
+    await page.getByRole("link", { name: "← Sections", exact: true }).click();
+    await noOverflow(page);
+  });
+}
+
+for (const width of [390, 1440]) {
+  test(`Folder bulk visible selection, section, appearance and delete confirmation ${width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const { folders } = await mockLibrary(page, 24);
+    let deletes = 0;
+    await page.route("**/api/v1/folders/*", async (route) => {
+      if (route.request().method() !== "DELETE") return route.fallback();
+      deletes++;
+      const id = new URL(route.request().url()).pathname.split("/").at(-1);
+      const index = folders.findIndex((f) => f.id === id);
+      if (index >= 0) folders.splice(index, 1);
+      await route.fulfill({ status: 204 });
+    });
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "New section", exact: true })
+      .click();
+    await page.getByLabel("Section name").fill("Bulk group");
+    await page
+      .getByRole("button", { name: "Save section", exact: true })
+      .click();
+    await page.getByLabel("Filter folders").fill("Collection 0");
+    await page
+      .getByRole("button", { name: "Select all 10 shown", exact: true })
+      .click();
+    const toolbar = page.getByRole("region", { name: "Folder bulk actions" });
+    await expect(toolbar).toContainText("10 selected");
+    await toolbar
+      .getByRole("button", { name: "Move to section", exact: true })
+      .click();
+    await page
+      .getByLabel("Target section")
+      .selectOption({ label: "Bulk group" });
+    await page
+      .getByRole("button", { name: "Apply to selected", exact: true })
+      .click();
+    expect(
+      Object.values((await preferences(page)).folders).filter(
+        (f: any) => f.categoryId,
+      ),
+    ).toHaveLength(10);
+    await page
+      .getByRole("button", { name: "Select all 10 shown", exact: true })
+      .click();
+    const action = async (name: string, value: string) => {
+      if (width < 600)
+        await toolbar.getByLabel("More folder actions").selectOption(value);
+      else await toolbar.getByRole("button", { name, exact: true }).click();
+    };
+    await action("Favorite", "favorite");
+    expect(
+      Object.values((await preferences(page)).folders).filter(
+        (f: any) => f.favorite,
+      ),
+    ).toHaveLength(10);
+    await page
+      .getByRole("button", { name: "Select all 10 shown", exact: true })
+      .click();
+    await action("Customize", "customize");
+    await page.getByLabel("Bulk folder color").selectOption("cyan");
+    await page.getByLabel("Bulk folder icon").selectOption("database");
+    await page
+      .getByRole("button", { name: "Apply to selected", exact: true })
+      .click();
+    expect((await preferences(page)).folders.f0).toMatchObject({
+      color: "cyan",
+      icon: "database",
+      favorite: true,
+    });
+    await page
+      .getByRole("button", { name: "Select all 10 shown", exact: true })
+      .click();
+    await toolbar.getByRole("button", { name: "Train", exact: true }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Find your focus" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("dialog").getByRole("checkbox", { checked: true }),
+    ).toHaveCount(10);
+    await page.keyboard.press("Escape");
+    await action("Delete", "delete");
+    expect(deletes).toBe(0);
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    expect(deletes).toBe(0);
+    await action("Delete", "delete");
+    await page
+      .getByRole("button", { name: "Confirm delete folders", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(deletes).toBe(10);
+    await page.getByLabel("Filter folders").fill("");
+    await expect(page.locator(".folder-card")).toHaveCount(14);
+    await noOverflow(page);
+  });
+}

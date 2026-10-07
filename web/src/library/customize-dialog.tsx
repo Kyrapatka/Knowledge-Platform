@@ -26,9 +26,9 @@ export function CustomizeDialog({
     <Modal title="Customize folder" subtitle={folder.title} onClose={onClose}>
       <form className="form-body" onSubmit={save}>
         <label>
-          Category
+          Section
           <select
-            aria-label="Folder category"
+            aria-label="Folder section"
             value={draft.categoryId || ""}
             onChange={(e) => patch({ categoryId: e.target.value || null })}
           >

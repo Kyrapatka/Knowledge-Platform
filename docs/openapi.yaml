@@ -2162,6 +2162,10 @@ components:
           type: integer
         pool_size:
           type: integer
+        refill_threshold:
+          type: integer
+          minimum: 0
+          description: New materials are admitted only when active count is at or below this threshold. Defaults are Interview 3 of 5 and English 5 of 8; custom targets cap the threshold below target. Legacy snapshots without this property resolve the algorithm default. Formula retains immediate refill.
       required:
       - cards
       - pool_size

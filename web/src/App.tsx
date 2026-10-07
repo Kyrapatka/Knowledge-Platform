@@ -33,6 +33,7 @@ import {
   useLibrary,
   type LibraryContextValue,
 } from "./library/context";
+import { SectionPage } from "./library/sections";
 import { FolderPage } from "./library/folder-page";
 import { LibraryPage } from "./library/library-page";
 import {
@@ -60,6 +61,7 @@ function LibraryApp() {
     ids: string[];
     topics?: string[];
     planId?: string;
+    materialIDs?: string[];
   } | null>(null);
   useEffect(() => {
     if (toast) {
@@ -73,7 +75,8 @@ function LibraryApp() {
     error,
     reload,
     notify: setToast,
-    launch: (ids, topics, planId) => setSetup({ ids, topics, planId }),
+    launch: (ids, topics, planId, materialIDs) =>
+      setSetup({ ids, topics, planId, materialIDs }),
   };
   return (
     <LibraryContext.Provider value={value}>
@@ -86,6 +89,7 @@ function LibraryApp() {
               <Routes>
                 <Route path="/" element={<LibraryPage />} />
                 <Route path="/folders/:folderID" element={<FolderPage />} />
+                <Route path="/sections/:sectionID" element={<SectionPage />} />
                 <Route path="/training" element={<TrainingHome />} />
                 <Route path="/statistics" element={<StatisticsPage />} />
                 <Route path="/interview" element={<InterviewPage />} />
@@ -156,7 +160,9 @@ function Shell({ children }: { children: ReactNode }) {
             to="/"
             end
             className={({ isActive }) =>
-              isActive || location.pathname.startsWith("/folders/")
+              isActive ||
+              location.pathname.startsWith("/folders/") ||
+              location.pathname.startsWith("/sections/")
                 ? "active"
                 : ""
             }

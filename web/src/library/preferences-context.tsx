@@ -23,7 +23,7 @@ type PreferencesContextValue = {
   prune: (folders: Folder[]) => void;
   markUsed: (ids: string[]) => void;
   storageFailed: boolean;
-  libraryScroll: { current: number };
+  scrollPositions: { current: Record<string, number> };
 };
 const Context = createContext<PreferencesContextValue | null>(null);
 export const useLibraryPreferences = () => {
@@ -38,7 +38,7 @@ export function LibraryPreferencesProvider({
   userId: string;
   children: ReactNode;
 }) {
-  const libraryScroll = useRef(0);
+  const scrollPositions = useRef<Record<string, number>>({});
   const [preferences, setPreferences] = useState(() =>
     libraryPreferencesStorage.load(userId),
   );
@@ -66,7 +66,7 @@ export function LibraryPreferencesProvider({
       prune,
       markUsed,
       storageFailed,
-      libraryScroll,
+      scrollPositions,
     }),
     [preferences, dispatch, prune, markUsed, storageFailed],
   );

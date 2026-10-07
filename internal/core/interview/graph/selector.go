@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -55,6 +56,9 @@ func Eligible(c Candidate, s State) bool {
 	}
 	for _, source := range s.Sources {
 		if source.FolderID == c.FolderID {
+			if source.MaterialIDs != nil && !slices.Contains(source.MaterialIDs, c.MaterialID) {
+				continue
+			}
 			if len(source.Topics) == 0 {
 				return true
 			}

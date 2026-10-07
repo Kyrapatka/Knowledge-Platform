@@ -98,7 +98,7 @@ export function CopyDialog({
       {f.title}
       <small>
         {f.material_count} materials
-        {f.id === preferences.defaultCopyFolderId ? " � Default" : ""}
+        {f.id === preferences.defaultCopyFolderId ? " - Default" : ""}
       </small>
     </button>
   );
@@ -113,7 +113,7 @@ export function CopyDialog({
             value={query}
             disabled={busy}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by folder name�"
+            placeholder="Search by folder name..."
           />
         </label>
         {recent.length > 0 && (
@@ -161,7 +161,9 @@ export function CopyDialog({
         )}
         {duplicate && (
           <section className="duplicate-warning" role="alert">
-            <h3>This question already exists in �{selected?.title}�.</h3>
+            <h3>
+              This question already exists in &ldquo;{selected?.title}&rdquo;.
+            </h3>
             <p>
               You can open the existing question or explicitly create another
               independent copy.
@@ -190,7 +192,7 @@ export function CopyDialog({
             onClick={() => void copy(!!duplicate)}
           >
             {busy
-              ? "Copying�"
+              ? "Copying..."
               : duplicate
                 ? "Create another copy"
                 : "Copy question"}

@@ -27,6 +27,9 @@ func mockContext(tx repository.Tx, user uuid.UUID, sources []model.SessionSource
 			return p, fmt.Errorf("%w: duplicate or invalid interview source", ErrInvalid)
 		}
 		seen[source.FolderID] = true
+		if err := validateExactSource(tx, source); err != nil {
+			return p, err
+		}
 		f, err := tx.Folder(source.FolderID)
 		if err != nil {
 			return p, err
@@ -100,7 +103,7 @@ func (s *Service) PreviewMock(ctx context.Context, user uuid.UUID, req StartGrap
 		}
 		state := graph.State{Config: config, RandomSeed: 1}
 		for _, source := range req.Sources {
-			state.Sources = append(state.Sources, graph.Source{FolderID: source.FolderID, Topics: source.Topics})
+			state.Sources = append(state.Sources, graph.Source{FolderID: source.FolderID, Topics: source.Topics, MaterialIDs: source.MaterialIDs})
 		}
 		out, err = graph.BuildPlan(state, candidates)
 		if err != nil {

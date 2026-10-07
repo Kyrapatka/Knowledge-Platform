@@ -116,7 +116,7 @@ func BuildPlan(state State, candidates []Candidate) (InterviewPlan, error) {
 	p := InterviewPlan{Mode: c.InterviewMode, DepthLevel: c.DepthLevel, Strategy: StrategyFor(c), Topics: []TopicAllocation{}, Slots: []string{}}
 	areas := map[string]map[string]bool{}
 	for _, candidate := range candidates {
-		if candidate.RootWeight <= 0 || !Eligible(candidate, state) {
+		if !Eligible(candidate, state) {
 			continue
 		}
 		key := Classify(candidate)

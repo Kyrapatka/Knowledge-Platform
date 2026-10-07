@@ -18,6 +18,12 @@ func deepScore(c Candidate, s State, wrong bool) float64 {
 	return p.DifficultyBoost*float64(c.InterviewDifficulty-1)/4 + p.RarityBoost*float64(10-c.Frequency)/9
 }
 func selectMockRoot(state State, candidates []Candidate) Selection {
+	return selectMockRootWithReplacement(state, candidates, false)
+}
+
+// Explicit Next route keeps the existing tiny-bank replacement behavior. Rated
+// answers never relax asked history: exhausted planned roots are not a limit.
+func selectMockRootWithReplacement(state State, candidates []Candidate, replacement bool) Selection {
 	s := clone(state)
 	if s.Plan == nil {
 		p, err := BuildPlan(s, candidates)
@@ -26,58 +32,55 @@ func selectMockRoot(state State, candidates []Candidate) Selection {
 		}
 		s.Plan = &p
 	}
+	if s.AnsweredQuestions >= s.Config.QuestionLimit {
+		return mockStop(s, "question_limit")
+	}
 	slot := len(s.CompletedRootIDs)
-	if slot >= len(s.Plan.Slots) {
-		return mockStop(s, "roots_completed")
+	desired := ""
+	if slot < len(s.Plan.Slots) {
+		desired = s.Plan.Slots[slot]
 	}
-	// Eligibility is independent of presentation history; novelty is relaxed only
-	// after every alternative in this slot has been shown (tiny banks remain usable).
-	base := s
-	base.AskedMaterialIDs = nil
-	pool := []Candidate{}
-	all := []Candidate{}
-	desired := s.Plan.Slots[slot]
-	allowed := map[string]bool{}
-	for _, t := range s.Plan.Topics {
-		allowed[t.Key] = t.Weight > 0
-	}
+	remaining := []Candidate{}
 	for _, c := range candidates {
-		if c.RootWeight > 0 && Eligible(c, base) && allowed[Classify(c)] {
-			all = append(all, c)
+		if Eligible(c, s) {
+			remaining = append(remaining, c)
+		}
+	}
+	if len(remaining) == 0 && replacement {
+		base := s
+		base.AskedMaterialIDs = nil
+		for _, c := range candidates {
+			if Eligible(c, base) && (s.LastMaterialID == nil || c.MaterialID != *s.LastMaterialID) {
+				remaining = append(remaining, c)
+			}
+		}
+		if len(remaining) == 0 {
+			for _, c := range candidates {
+				if Eligible(c, base) {
+					remaining = append(remaining, c)
+				}
+			}
+		}
+	}
+	if len(remaining) == 0 {
+		return mockStop(s, "no_remaining_questions")
+	}
+	roots := []Candidate{}
+	preferred := []Candidate{}
+	for _, c := range remaining {
+		if c.RootWeight > 0 {
+			roots = append(roots, c)
 			if Classify(c) == desired {
-				pool = append(pool, c)
+				preferred = append(preferred, c)
 			}
 		}
 	}
-	if len(pool) == 0 {
-		pool = all
+	pool, reason := remaining, "fallback_root"
+	if len(roots) > 0 {
+		pool, reason = roots, "root"
 	}
-	if len(pool) == 0 {
-		return mockStop(s, "no_ready_roots")
-	}
-	unseen := []Candidate{}
-	for _, c := range pool {
-		if !slices.Contains(s.AskedMaterialIDs, c.MaterialID) {
-			unseen = append(unseen, c)
-		}
-	}
-	if len(unseen) == 0 { // Exhausted slot: prefer unseen selected topics before cycling.
-		for _, c := range all {
-			if !slices.Contains(s.AskedMaterialIDs, c.MaterialID) {
-				unseen = append(unseen, c)
-			}
-		}
-	}
-	if len(unseen) > 0 {
-		pool = unseen
-	} else if len(pool) > 1 {
-		filtered := []Candidate{}
-		for _, c := range pool {
-			if c.MaterialID != s.CurrentRootID {
-				filtered = append(filtered, c)
-			}
-		}
-		pool = filtered
+	if len(preferred) > 0 {
+		pool = preferred
 	}
 	out := Selection{State: s, Matches: []Match{}, Scores: []Score{}}
 	byID := map[uuid.UUID]Candidate{}
@@ -120,7 +123,7 @@ func selectMockRoot(state State, candidates []Candidate) Selection {
 	if len(out.State.RootConcepts) > 12 {
 		out.State.RootConcepts = out.State.RootConcepts[len(out.State.RootConcepts)-12:]
 	}
-	out.Reason = "root"
+	out.Reason = reason
 	return finishSelection(out, pick, 0, true)
 }
 
@@ -128,10 +131,14 @@ func selectMockNext(state State, current Candidate, action string, candidates []
 	s := clone(state)
 	if action == "next_route" || action == "next_root" {
 		s.SkippedRootIDs = append(s.SkippedRootIDs, s.CurrentRootID)
-		return selectMockRoot(s, candidates)
+		return selectMockRootWithReplacement(s, candidates, true)
 	}
 	s.AnsweredQuestions++
 	s.BranchAnswered++
+	if s.AnsweredQuestions >= s.Config.QuestionLimit {
+		s.CompletedRootIDs = append(s.CompletedRootIDs, s.CurrentRootID)
+		return mockStop(s, "question_limit")
+	}
 	complete := func() Selection {
 		s.CompletedRootIDs = append(s.CompletedRootIDs, s.CurrentRootID)
 		if s.AnsweredQuestions >= s.Config.QuestionLimit {
@@ -142,7 +149,7 @@ func selectMockNext(state State, current Candidate, action string, candidates []
 	if s.Plan == nil {
 		return complete()
 	}
-	remainingSlots := len(s.Plan.Slots) - len(s.CompletedRootIDs)
+	remainingSlots := max(1, len(s.Plan.Slots)-len(s.CompletedRootIDs))
 	remainingQuestions := s.Config.QuestionLimit - s.AnsweredQuestions
 	if remainingQuestions <= remainingSlots-1 {
 		return complete()

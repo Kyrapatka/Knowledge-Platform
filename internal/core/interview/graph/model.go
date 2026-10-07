@@ -72,8 +72,9 @@ func (c Config) Validate() error {
 }
 
 type Source struct {
-	FolderID uuid.UUID `json:"folder_id"`
-	Topics   []string  `json:"topics,omitempty"`
+	FolderID    uuid.UUID   `json:"folder_id"`
+	MaterialIDs []uuid.UUID `json:"material_ids,omitempty"`
+	Topics      []string    `json:"topics,omitempty"`
 }
 type Link struct {
 	Slug    string  `json:"slug"`

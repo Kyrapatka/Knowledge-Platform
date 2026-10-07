@@ -2,7 +2,6 @@ import {
   ArrowRight,
   BookOpen,
   Check,
-  ChevronRight,
   Clock3,
   FolderOpen,
   Plus,
@@ -10,8 +9,8 @@ import {
   TrendingUp,
   Upload,
 } from "lucide-react";
-import { useLayoutEffect, useState } from "react";
-import { useNavigate, useNavigationType } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { readStored } from "../api";
 import { useAuth } from "../auth";
 import { FolderEditor } from "../editors";
@@ -20,9 +19,12 @@ import { type SavedTraining } from "../training";
 import { Empty, ErrorBox, Spinner } from "../ui";
 
 import { useMemo } from "react";
+import { SectionList } from "./sections";
+import { useLibraryScroll } from "./use-library-scroll";
+import { FolderBulkActions } from "./folder-bulk-actions";
+import { FolderSection } from "./folder-section";
 import { CategoryDialog } from "./category-dialog";
 import { useLibrary } from "./context";
-import { FolderCard } from "./folder-card";
 import {
   selectFolders,
   type Category,
@@ -39,19 +41,10 @@ export function LibraryPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [create, setCreate] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const { preferences, dispatch, storageFailed, libraryScroll } =
-    useLibraryPreferences();
-  const navigationType = useNavigationType();
-  useLayoutEffect(() => {
-    if (loading || !data) return;
-    if (navigationType === "POP")
-      window.scrollTo({ top: libraryScroll.current, behavior: "instant" });
-    const remember = () => {
-      libraryScroll.current = window.scrollY;
-    };
-    window.addEventListener("scroll", remember, { passive: true });
-    return () => window.removeEventListener("scroll", remember);
-  }, [loading, !!data, navigationType, libraryScroll]);
+  const { preferences, dispatch, storageFailed } = useLibraryPreferences();
+  const [params, setParams] = useSearchParams();
+  const sectionsView = params.get("view") === "sections";
+  useLibraryScroll(!loading && !!data);
   const [categoryEditor, setCategoryEditor] = useState<Category | "new" | null>(
     null,
   );
@@ -62,20 +55,9 @@ export function LibraryPage() {
     () => selectFolders(data?.folders || [], preferences, query, filter),
     [data?.folders, preferences, query, filter],
   );
-  const groups = useMemo(
-    () => [
-      ...preferences.categories.map((c) => ({
-        category: c,
-        folders: folders.filter(
-          (f) => preferences.folders[f.id]?.categoryId === c.id,
-        ),
-      })),
-      {
-        category: null,
-        folders: folders.filter((f) => !preferences.folders[f.id]?.categoryId),
-      },
-    ],
-    [folders, preferences],
+  const favorites = useMemo(
+    () => folders.filter((f) => preferences.folders[f.id]?.favorite),
+    [folders, preferences.folders],
   );
   if (loading) return <Spinner />;
   if (error) return <ErrorBox error={error} retry={reload} />;
@@ -182,40 +164,74 @@ export function LibraryPage() {
           icon={<FolderOpen size={17} />}
         />
       </div>
+      <div
+        className="tabs library-tabs"
+        role="tablist"
+        aria-label="Library views"
+      >
+        <button
+          role="tab"
+          aria-selected={!sectionsView}
+          className={!sectionsView ? "active" : ""}
+          onClick={() => {
+            setQuery("");
+            setParams({});
+          }}
+        >
+          All folders
+        </button>
+        <button
+          role="tab"
+          aria-selected={sectionsView}
+          className={sectionsView ? "active" : ""}
+          onClick={() => {
+            setQuery("");
+            setParams({ view: "sections" });
+          }}
+        >
+          Sections
+        </button>
+      </div>
       <div className="section-top">
         <div className="section-title">
-          <h2>Your collections</h2>
+          <h2>{sectionsView ? "Your sections" : "Your collections"}</h2>
           <span className="count-pill">{data.folders.length}</span>
         </div>
         <div className="search-input">
           <Search size={16} />
           <input
-            aria-label="Filter folders"
-            placeholder="Find a folder…"
+            aria-label={sectionsView ? "Filter sections" : "Filter folders"}
+            placeholder={
+              sectionsView ? "Find a section..." : "Find a folder..."
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
       </div>
-      <div className="collection-controls">
-        <div className="tabs" aria-label="Folder types">
-          {[
-            ["all", "All folders"],
-            ["english_words", "Languages"],
-            ["interview_questions", "Interview prep"],
-            ["formulas", "Formulas"],
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              className={filter === key ? "active" : ""}
-              onClick={() => setFilter(key)}
-            >
-              {label}
-            </button>
-          ))}
+      {!sectionsView && (
+        <div className="collection-controls">
+          <div className="tabs" aria-label="Folder types">
+            {[
+              ["all", "All types"],
+              ["english_words", "Languages"],
+              ["interview_questions", "Interview prep"],
+              ["formulas", "Formulas"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                className={filter === key ? "active" : ""}
+                onClick={() => setFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="selection-hint">
+            Select folders for bulk actions
+          </span>
         </div>
-        <span className="selection-hint">Select folders to train together</span>
-      </div>
+      )}
       <div className="library-toolbar">
         <label>
           Sort{" "}
@@ -231,8 +247,8 @@ export function LibraryPage() {
           >
             <option value="recent">Recently used</option>
             <option value="created">Recently created</option>
-            <option value="title-asc">Title A�Z</option>
-            <option value="title-desc">Title Z�A</option>
+            <option value="title-asc">Title A-Z</option>
+            <option value="title-desc">Title Z-A</option>
             <option value="count-desc">Most materials</option>
             <option value="count-asc">Fewest materials</option>
             <option value="due">Most ready to review</option>
@@ -252,77 +268,38 @@ export function LibraryPage() {
           className="button small"
           onClick={() => setCategoryEditor("new")}
         >
-          New category
+          New section
         </button>
       </div>
       {storageFailed && (
         <ErrorBox error="Browser storage is unavailable. Your organization changes will last until this page is closed." />
       )}
-      {groups.map(({ category, folders: grouped }) =>
-        !category && !grouped.length ? null : (
-          <section
-            className="category-section"
-            key={category?.id || "uncategorized"}
-          >
-            <div className="category-heading">
-              {category ? (
-                <button
-                  className="text-button category-toggle"
-                  aria-expanded={!category.collapsed}
-                  onClick={() =>
-                    dispatch({
-                      type: "category",
-                      category: { ...category, collapsed: !category.collapsed },
-                    })
-                  }
-                >
-                  <ChevronRight
-                    className={category.collapsed ? "" : "expanded"}
-                    size={18}
-                  />
-                  {category.name}
-                  <span className="count-pill">{grouped.length}</span>
-                </button>
-              ) : (
-                <h3>
-                  {preferences.categories.length
-                    ? "Uncategorized"
-                    : "All collections"}{" "}
-                  <span className="count-pill">{grouped.length}</span>
-                </h3>
-              )}
-              {category && (
-                <button
-                  className="text-button"
-                  aria-label={`Edit category ${category.name}`}
-                  onClick={() => setCategoryEditor(category)}
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-            {!category?.collapsed && (
-              <div className="folder-grid">
-                {grouped.map((folder) => (
-                  <FolderCard
-                    key={folder.id}
-                    folder={folder}
-                    selected={selected.includes(folder.id)}
-                    toggle={() => toggle(folder.id)}
-                  />
-                ))}
-                {!grouped.length && (
-                  <p className="muted">
-                    No matching folders in this category. Use Customize on a
-                    folder to assign it.
-                  </p>
-                )}
-              </div>
-            )}
-          </section>
-        ),
+      {!sectionsView && (
+        <FolderBulkActions
+          selected={selected}
+          setSelected={setSelected}
+          shown={folders}
+        />
       )}
-      {!folders.length && (
+      {!sectionsView && !!favorites.length && (
+        <FolderSection
+          title="Favorites"
+          folders={favorites}
+          selected={selected}
+          toggle={toggle}
+        />
+      )}
+      {sectionsView ? (
+        <SectionList query={query} />
+      ) : (
+        <FolderSection
+          title="All folders"
+          folders={folders}
+          selected={selected}
+          toggle={toggle}
+        />
+      )}
+      {!sectionsView && !folders.length && (
         <Empty
           icon={<FolderOpen size={28} />}
           title={
@@ -339,7 +316,7 @@ export function LibraryPage() {
         >
           {data.folders.length
             ? "Try another name or choose a different type."
-            : "Collect vocabulary, interview questions or formulas. We�ll help you remember them."}
+            : "Collect vocabulary, interview questions or formulas. We will help you remember them."}
         </Empty>
       )}
       {categoryEditor && (
@@ -347,21 +324,6 @@ export function LibraryPage() {
           category={categoryEditor === "new" ? undefined : categoryEditor}
           onClose={() => setCategoryEditor(null)}
         />
-      )}
-      {!!selected.length && (
-        <div className="selection-bar">
-          <span>
-            <Check size={16} />
-            {selected.length} folders selected
-          </span>
-          <button className="text-button" onClick={() => setSelected([])}>
-            Clear
-          </button>
-          <button className="button primary" onClick={() => launch(selected)}>
-            Train together
-            <ArrowRight size={16} />
-          </button>
-        </div>
       )}
       {create && (
         <FolderEditor

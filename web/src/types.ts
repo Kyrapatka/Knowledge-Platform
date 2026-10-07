@@ -144,6 +144,7 @@ export type CombinedView = {
 };
 export type Source = {
   folder_id: string;
+  material_ids?: string[];
   topics?: string[];
   plan_id?: string;
   algorithm_key?: string;

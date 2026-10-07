@@ -173,6 +173,7 @@ func (s *Service) createPlan(tx repository.Tx, user uuid.UUID, req CreatePlanReq
 		now := s.now().UTC()
 		out = model.TrainingPlan{Version: 1, ID: uuid.New(), UserID: user, Track: track, AlgorithmKey: key, AlgorithmVersion: 1, Status: model.StatusActive,
 			Config: model.PlanConfig{PoolSize: pool, HorizonDays: req.HorizonDays, Cards: cards}, SourceFolderIDs: append([]uuid.UUID(nil), req.SourceFolderIDs...), StartedAt: now, CreatedAt: now, UpdatedAt: now}
+		out.Config.SetPoolPolicy(key, pool)
 		return tx.CreatePlan(out)
 	}()
 	return out, err

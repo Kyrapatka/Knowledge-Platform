@@ -35,6 +35,7 @@ import { DateValue, Empty, ErrorBox, Spinner } from "../ui";
 import { useSearchParams } from "react-router-dom";
 import { FolderIcon } from "./appearance";
 import { useLibrary } from "./context";
+import { MaterialBulkActions } from "./material-bulk-actions";
 import { CopyDialog } from "./copy-dialog";
 import { CustomizeDialog } from "./customize-dialog";
 import { FolderDescription } from "./folder-description";
@@ -56,6 +57,9 @@ export function FolderPage() {
   useEffect(() => {
     if (folder?.id) markUsed([folder.id]);
   }, [folder?.id, markUsed]);
+  const section = preferences.categories.find(
+    (c) => c.id === preferences.folders[folderID]?.categoryId,
+  );
   const [customize, setCustomize] = useState(false);
   const [copyMaterial, setCopyMaterial] = useState<Material | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,6 +72,11 @@ export function FolderPage() {
   const [sort, setSort] = useState("created_at");
   const [plan, setPlan] = useState("");
   const [offset, setOffset] = useState(0);
+  const [selected, setSelected] = useState<string[]>([]);
+  useEffect(
+    () => setSelected([]),
+    [folderID, query, topic, sort, plan, offset],
+  );
   const [revision, setRevision] = useState(0);
   const [editor, setEditor] = useState<Material | "new" | null>(null);
   const [details, setDetails] = useState<Material | null>(null);
@@ -153,8 +162,11 @@ export function FolderPage() {
     );
   return (
     <>
-      <Link className="back-link" to="/">
-        ← Back to library
+      <Link
+        className="back-link"
+        to={section ? `/sections/${encodeURIComponent(section.id)}` : "/"}
+      >
+        {section ? `← ${section.name}` : "← Back to library"}
       </Link>
       <div className="page-heading folder-page-heading">
         <div className="folder-title-row">
@@ -347,6 +359,13 @@ export function FolderPage() {
           </Empty>
         ) : (
           <>
+            <MaterialBulkActions
+              folder={folder}
+              shown={page.items}
+              selected={selected}
+              setSelected={setSelected}
+              onSaved={refresh}
+            />
             <div className="material-table">
               <div className="material-table-head">
                 <span>MATERIAL / QUESTION</span>
@@ -356,47 +375,61 @@ export function FolderPage() {
                 <span />
               </div>
               {page.items.map((m) => (
-                <button
-                  className="material-row"
-                  key={m.id}
-                  onClick={() => setDetails(m)}
-                >
-                  <span className="material-question">
-                    <span className={`difficulty-dot ${m.difficulty}`} />
-                    <span>
-                      {materialTitle(m, folder)}
-                      <small>{m.difficulty} difficulty</small>
-                    </span>
-                  </span>
-                  <span className="material-topic">
-                    <span className="subtle-tag">
-                      {topicOf(m) || "No topic"}
-                    </span>
-                  </span>
-                  <span className="material-date">
-                    {m.progress?.completed_at ? (
-                      "Completed"
-                    ) : m.progress ? (
-                      <DateValue value={m.progress.next_review_at} />
-                    ) : (
-                      "Not started"
-                    )}
-                  </span>
-                  <span className="material-stage">
-                    {m.progress ? (
-                      <span className="stage-pill">
-                        {m.progress.completed_at ? (
-                          <Check size={13} />
-                        ) : (
-                          `S${m.progress.stage}`
-                        )}
+                <div className="material-row-shell" key={m.id}>
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${materialTitle(m, folder)}`}
+                    checked={selected.includes(m.id)}
+                    onChange={() =>
+                      setSelected((ids) =>
+                        ids.includes(m.id)
+                          ? ids.filter((id) => id !== m.id)
+                          : [...ids, m.id],
+                      )
+                    }
+                  />
+                  <button
+                    className="material-row"
+                    key={m.id}
+                    onClick={() => setDetails(m)}
+                  >
+                    <span className="material-question">
+                      <span className={`difficulty-dot ${m.difficulty}`} />
+                      <span>
+                        {materialTitle(m, folder)}
+                        <small>{m.difficulty} difficulty</small>
                       </span>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </span>
-                  <ChevronRight size={16} />
-                </button>
+                    </span>
+                    <span className="material-topic">
+                      <span className="subtle-tag">
+                        {topicOf(m) || "No topic"}
+                      </span>
+                    </span>
+                    <span className="material-date">
+                      {m.progress?.completed_at ? (
+                        "Completed"
+                      ) : m.progress ? (
+                        <DateValue value={m.progress.next_review_at} />
+                      ) : (
+                        "Not started"
+                      )}
+                    </span>
+                    <span className="material-stage">
+                      {m.progress ? (
+                        <span className="stage-pill">
+                          {m.progress.completed_at ? (
+                            <Check size={13} />
+                          ) : (
+                            `S${m.progress.stage}`
+                          )}
+                        </span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </span>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               ))}
             </div>
             <div className="pagination">

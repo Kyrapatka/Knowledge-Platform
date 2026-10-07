@@ -24,6 +24,7 @@ type Tx interface {
 	RestoreUndo(model.UndoSnapshot, int, time.Time) error
 	LastEnglishDirection(uuid.UUID) (string, error)
 	Folder(uuid.UUID) (folder.Folder, error)
+	CheckMaterialSelection(uuid.UUID, []uuid.UUID) error
 	SaveDefaults(uuid.UUID, folderconfig.TrainingConfig, int64, time.Time) error
 	HasPlanOverlap([]uuid.UUID, model.ProgressTrack) (bool, error)
 	HasIncompatibleProgress([]uuid.UUID, model.ProgressTrack, string, int) (bool, error)

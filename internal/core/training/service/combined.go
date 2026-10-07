@@ -17,12 +17,13 @@ import (
 )
 
 type CombinedSource struct {
-	FolderID     uuid.UUID  `json:"folder_id"`
-	Topics       []string   `json:"topics,omitempty"`
-	PlanID       *uuid.UUID `json:"plan_id,omitempty"`
-	AlgorithmKey *string    `json:"algorithm_key,omitempty"`
-	HorizonDays  *int       `json:"horizon_days,omitempty"`
-	PoolSize     *int       `json:"pool_size,omitempty"`
+	FolderID     uuid.UUID   `json:"folder_id"`
+	MaterialIDs  []uuid.UUID `json:"material_ids,omitempty"`
+	Topics       []string    `json:"topics,omitempty"`
+	PlanID       *uuid.UUID  `json:"plan_id,omitempty"`
+	AlgorithmKey *string     `json:"algorithm_key,omitempty"`
+	HorizonDays  *int        `json:"horizon_days,omitempty"`
+	PoolSize     *int        `json:"pool_size,omitempty"`
 }
 
 type CombinedRequest struct {
@@ -51,6 +52,9 @@ func selectedMaterial(m material.Material, sources []model.SessionSource) bool {
 	}
 	for _, source := range sources {
 		if source.FolderID != m.FolderID {
+			continue
+		}
+		if source.MaterialIDs != nil && !containsMaterial(source.MaterialIDs, m.ID) {
 			continue
 		}
 		if len(source.Topics) == 0 {
@@ -136,6 +140,9 @@ func (s *Service) StartCombined(ctx context.Context, user uuid.UUID, req Combine
 			if err != nil {
 				return err
 			}
+			if err = validateExactSource(tx, model.SessionSource{FolderID: source.FolderID, MaterialIDs: source.MaterialIDs}); err != nil {
+				return err
+			}
 			var plan model.TrainingPlan
 			if source.PlanID != nil {
 				plan, err = tx.Plan(*source.PlanID)
@@ -203,7 +210,7 @@ func (s *Service) StartCombined(ctx context.Context, user uuid.UUID, req Combine
 				order = append(order, plan.ID)
 			}
 			resolved[plan.ID] = plan
-			selections[plan.ID] = append(selections[plan.ID], model.SessionSource{FolderID: source.FolderID, Topics: source.Topics})
+			selections[plan.ID] = append(selections[plan.ID], model.SessionSource{FolderID: source.FolderID, Topics: source.Topics, MaterialIDs: source.MaterialIDs})
 		}
 		var sessions []model.TrainingSession
 		for _, id := range order {

@@ -21,6 +21,9 @@ export function FolderCard({
   const { preferences, dispatch } = useLibraryPreferences();
   const [customize, setCustomize] = useState(false);
   const appearance = preferences.folders[folder.id];
+  const section = preferences.categories.find(
+    (c) => c.id === appearance?.categoryId,
+  );
   return (
     <>
       <article
@@ -77,6 +80,14 @@ export function FolderCard({
           </small>
         )}
         <div className="folder-tags">
+          {section && (
+            <Link
+              className="subtle-tag section-badge"
+              to={`/sections/${encodeURIComponent(section.id)}`}
+            >
+              {section.name}
+            </Link>
+          )}
           <span className="type-tag">
             {templateNames[folder.template_key] || "Collection"}
           </span>

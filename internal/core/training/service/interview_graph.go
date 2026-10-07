@@ -87,6 +87,9 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 				return fmt.Errorf("%w: graph sources must be a unique subset of the plan", ErrInvalid)
 			}
 			seen[source.FolderID] = true
+			if err := validateExactSource(tx, source); err != nil {
+				return err
+			}
 			folder, err := tx.Folder(source.FolderID)
 			if err != nil {
 				return err
@@ -137,7 +140,7 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 			}
 			state := graph.State{StrategyVersion: 1, RandomSeed: int64(binary.LittleEndian.Uint64(seed[:]) & 0x7fffffffffffffff), Config: config, AskedMaterialIDs: []uuid.UUID{}, RecentConcepts: []string{}, Frontier: []graph.FrontierEntry{}, ForksUsed: map[int]int{}}
 			for _, source := range sources {
-				state.Sources = append(state.Sources, graph.Source{FolderID: source.FolderID, Topics: source.Topics})
+				state.Sources = append(state.Sources, graph.Source{FolderID: source.FolderID, Topics: source.Topics, MaterialIDs: source.MaterialIDs})
 			}
 			state.PracticeOnly = planID == uuid.Nil
 			candidates, err := tx.InterviewGraph().RootCandidates(plan, session, now)

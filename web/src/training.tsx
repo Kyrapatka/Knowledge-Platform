@@ -58,10 +58,17 @@ export function TrainingSetup({
   folders,
   onClose,
 }: {
-  initial: { ids: string[]; topics?: string[]; planId?: string };
+  initial: {
+    ids: string[];
+    topics?: string[];
+    planId?: string;
+    materialIDs?: string[];
+  };
   folders: Folder[];
   onClose: () => void;
 }) {
+  if (initial.materialIDs)
+    folders = folders.filter((f) => initial.ids.includes(f.id));
   const { markUsed } = useLibraryPreferences();
   const starting = useRef(false);
   const { user } = useAuth();
@@ -74,6 +81,7 @@ export function TrainingSetup({
         f.id,
         {
           folder_id: f.id,
+          ...(initial.materialIDs ? { material_ids: initial.materialIDs } : {}),
           ...(initial.ids.includes(f.id) && initial.topics
             ? { topics: initial.topics }
             : {}),
@@ -147,6 +155,12 @@ export function TrainingSetup({
       wide
     >
       <form className="form-body" onSubmit={start}>
+        {initial.materialIDs && (
+          <p>
+            Training is restricted to {initial.materialIDs.length} selected
+            materials.
+          </p>
+        )}
         <div className="source-selection-top">
           <span>
             {selected.length} {selected.length === 1 ? "folder" : "folders"}{" "}
@@ -348,6 +362,8 @@ export function TrainingSetup({
   );
 }
 export function TrainingPage() {
+  if (initial.materialIDs)
+    folders = folders.filter((f) => initial.ids.includes(f.id));
   const { markUsed } = useLibraryPreferences();
   const visitRecorded = useRef(false);
   const { user } = useAuth();

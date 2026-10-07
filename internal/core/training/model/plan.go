@@ -17,9 +17,11 @@ const (
 // PlanConfig is a resolved snapshot. HorizonDays is a duration applied afresh
 // to each material, not a shared deadline measured from Plan.StartedAt.
 type PlanConfig struct {
-	Cards       map[string]folderconfig.FolderConfig `json:"cards"`
-	PoolSize    int                                  `json:"pool_size"`
-	HorizonDays int                                  `json:"horizon_days"`
+	// Nil in legacy JSON snapshots: resolve from the algorithm policy.
+	RefillThreshold *int                                 `json:"refill_threshold,omitempty"`
+	Cards           map[string]folderconfig.FolderConfig `json:"cards"`
+	PoolSize        int                                  `json:"pool_size"`
+	HorizonDays     int                                  `json:"horizon_days"`
 }
 
 type TrainingPlan struct {

@@ -38,16 +38,14 @@ func (g *graphTx) candidates(p model.TrainingPlan, s model.TrainingSession, now 
 			Where("f.owner_id=? AND f.deleted_at IS NULL AND m.deleted_at IS NULL AND f.template_key='interview_questions' AND m.folder_id IN ? AND COALESCE(q.status,'ready') IN ('ready','draft')", g.t.user, p.SourceFolderIDs).
 			Where("COALESCE(btrim(m.values->>'question'),'') NOT IN ('','.')")
 		query = selectedMaterials(query, s.Selection)
-		if root {
-			query = query.Where("COALESCE(q.root_weight,5)>0")
-		}
+		// Mock planning includes fallback-only questions and all selected content.
 		err := query.Select(`m.id AS material_id,m.folder_id,f.title AS folder_title,COALESCE(m.metadata->>'keywords','') AS keywords,
  m.values->>'question' AS question,COALESCE(NULLIF(m.metadata->>'topic',''),m.metadata->>'category','') AS topic,
  COALESCE(q.domain,m.metadata->>'domain','') AS domain,COALESCE(q.subtopic,m.metadata->>'subtopic',m.metadata->>'category','') AS subtopic,
  COALESCE(q.status,'ready') AS status,COALESCE(q.frequency,5) AS frequency,COALESCE(q.interview_difficulty,3) AS interview_difficulty,
  COALESCE(q.specificity,2) AS specificity,COALESCE(q.root_weight,5) AS root_weight,COALESCE(q.followup_weight,5) AS followup_weight,
  COALESCE(q.level_min,1) AS level_min,COALESCE(q.level_max,5) AS level_max,q.seed_key,q.profile_version,
- (COALESCE(btrim(m.values->>'answer'),'') NOT IN ('','.') OR COALESCE(btrim(m.values->>'short_answer'),'') NOT IN ('','.')) AS has_answer`).Order("m.id").Limit(5000).Scan(&out).Error
+ (COALESCE(btrim(m.values->>'answer'),'') NOT IN ('','.') OR COALESCE(btrim(m.values->>'short_answer'),'') NOT IN ('','.')) AS has_answer`).Order("m.id").Scan(&out).Error
 		if err != nil {
 			return nil, err
 		}

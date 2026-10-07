@@ -284,7 +284,7 @@ test("folder fields control the material editor", async ({ page }) => {
     .getByRole("button", { name: "Create folder", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.locator(".folder-card .folder-description").click();
+  await page.getByRole("link", { name: folder.title, exact: true }).click();
   await expect(page).toHaveURL(/\/folders\/folder$/);
   await page.getByRole("button", { name: "Add material", exact: true }).click();
   await expect(page.getByLabel("Memory cue", { exact: false })).toBeVisible();
