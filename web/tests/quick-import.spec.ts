@@ -1,145 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { initialConfig } from "../src/fields";
-async function fixture(
-  page: Page,
-  template = "english_words",
-  uncertain = false,
-) {
-  const folder = {
-    id: "f1",
-    title: "Import destination",
-    template_key: template,
-    description: "",
-    config: initialConfig(template),
-    config_version: 1,
-    training_config: {
-      default_algorithm_key: "english_basic",
-      pool_size: 8,
-      refill_threshold: 5,
-    },
-    training_config_version: 1,
-    material_count: 1,
-    due_count: 0,
-    learning_count: 0,
-    completed_count: 0,
-    topics: [],
-    selected_plan: null,
-    created_at: "2026-10-25T00:00:00Z",
-    updated_at: "2026-10-25T00:00:00Z",
-  };
-  const old = {
-    id: "old",
-    folder_id: "f1",
-    values:
-      template === "english_words"
-        ? { foreign: "existing", native: "старое" }
-        : { question: "Existing?", short_answer: "Yes" },
-    metadata: {},
-    difficulty: "medium",
-    created_at: folder.created_at,
-    updated_at: folder.updated_at,
-  };
-  const materials: any[] = [old];
-  const commands: any[] = [];
-  const receipts = new Map<string, any>();
-  let folderWrites = 0;
-  await page.route("**/api/v1/**", async (route) => {
-    const path = new URL(route.request().url()).pathname,
-      method = route.request().method();
-    if (path.endsWith("/auth/browser/refresh"))
-      return route.fulfill({
-        json: {
-          access_token: "fixture",
-          user: {
-            id: "quick-import-tests",
-            nickname: "Import test",
-            status: "active",
-          },
-        },
-      });
-    if (path.endsWith("/library"))
-      return route.fulfill({
-        json: {
-          folders: [{ ...folder, material_count: materials.length }],
-          totals: {
-            folder_count: 1,
-            material_count: materials.length,
-            due_count: 0,
-            learning_count: 0,
-            completed_count: 0,
-          },
-        },
-      });
-    if (path.endsWith("/library/folders/f1/materials"))
-      return route.fulfill({
-        json: {
-          items: materials,
-          total: materials.length,
-          limit: 30,
-          offset: 0,
-          topics: [],
-          selected_plan: null,
-          plans: [],
-        },
-      });
-    if (path.includes("/materials/import") && method === "POST") {
-      const body = route.request().postDataJSON();
-      const key = template === "english_words" ? "foreign" : "question";
-      const normalize = (s: string) =>
-        s.trim().toLowerCase().replace(/\s+/g, " ");
-      const seen = new Set(materials.map((m) => normalize(m.values[key])));
-      const items = body.items.map((i: any) => {
-        const duplicate = seen.has(normalize(i.values[key]));
-        seen.add(normalize(i.values[key]));
-        return {
-          client_id: i.client_id,
-          status:
-            duplicate && i.duplicate_policy !== "allow" ? "skipped" : "create",
-          duplicate_kind: duplicate ? "existing" : undefined,
-          duplicate_of: duplicate ? "old" : undefined,
-        };
-      });
-      const out = {
-        valid: true,
-        created: items.filter((i: any) => i.status === "create").length,
-        skipped: items.filter((i: any) => i.status === "skipped").length,
-        failed: 0,
-        issues: [],
-        items,
-      };
-      if (path.endsWith("/validate")) return route.fulfill({ json: out });
-      commands.push(body);
-      if (receipts.has(body.command_id))
-        return route.fulfill({ json: receipts.get(body.command_id) });
-      for (const i of body.items)
-        if (
-          items.find((r: any) => r.client_id === i.client_id).status ===
-          "create"
-        )
-          materials.push({ ...old, id: `new-${materials.length}`, ...i });
-      receipts.set(body.command_id, out);
-      if (uncertain && commands.length === 1) return route.abort("failed");
-      return route.fulfill({ json: out });
-    }
-    if (path.endsWith("/folders/import") && method === "POST") folderWrites++;
-    if (path.endsWith("/training/sessions/active"))
-      return route.fulfill({ status: 204 });
-    return route.fulfill({ json: [] });
-  });
-  await page.goto("/folders/f1");
-  await page.getByRole("button", { name: "Import", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Review import" }),
-  ).toBeVisible();
-  return {
-    folder,
-    commands,
-    materials,
-    get folderWrites() {
-      return folderWrites;
-    },
-  };
-}
+import { fixture } from "./quick-import-fixture";
 async function parse(page: Page, text: string) {
   await page.getByLabel("Import source").fill(text);
   await page
@@ -148,12 +8,14 @@ async function parse(page: Page, text: string) {
   await expect(page.getByLabel("Review filter")).toBeVisible();
 }
 async function save(page: Page) {
-  await page.getByRole("button", { name: "Import all", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^Import \d+( ready)? cards?$/ })
+    .click();
   await page
     .getByRole("button", { name: "Confirm import", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Import confirmed" }),
+    page.getByRole("heading", { name: "Import complete" }),
   ).toBeVisible();
 }
 test("text review preserves examples, unknown fragment, source navigation and refresh", async ({
@@ -165,7 +27,7 @@ test("text review preserves examples, unknown fragment, source navigation and re
     "subtle - тонкий - сатл\nExample: A subtle change.\nExample: Subtle choices matter.",
   );
   await expect(
-    page.getByRole("button", { name: "Import all", exact: true }),
+    page.getByRole("button", { name: /^Import \d+( ready)? cards?$/ }),
   ).toBeDisabled();
   const issue = page
     .getByTestId("import-fragment")
@@ -196,7 +58,9 @@ test("text review preserves examples, unknown fragment, source navigation and re
   });
   expect(f.commands[0].items[0].values.transcription).toBeUndefined();
   expect(f.folderWrites).toBe(0);
-  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Back to folder", exact: true })
+    .click();
   await expect(
     page.getByRole("checkbox", { name: "Select subtle", exact: true }),
   ).toBeVisible();
@@ -214,9 +78,9 @@ test("valid-only requires explicit excluded-fragment confirmation", async ({
   const f = await fixture(page);
   await parse(page, "run - бегать\nbroken -");
   await expect(
-    page.getByRole("button", { name: "Import all", exact: true }),
-  ).toBeDisabled();
-  await page.getByRole("button", { name: "Import valid only" }).click();
+    page.getByRole("button", { name: /^Import \d+( ready)? cards?$/ }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: /^Import \d+ ready cards?$/ }).click();
   await expect(page.getByLabel("Confirm import")).toContainText(
     "1 unresolved fragments excluded",
   );
@@ -225,7 +89,7 @@ test("valid-only requires explicit excluded-fragment confirmation", async ({
     .getByRole("button", { name: "Confirm import", exact: true })
     .click();
   await expect(
-    page.getByText("Import confirmed", { exact: true }),
+    page.getByText("Import complete", { exact: true }),
   ).toBeVisible();
   expect(f.commands[0].items).toHaveLength(1);
 });
@@ -269,7 +133,9 @@ test("uncertain commit freezes edits, restores and retries identical command", a
 }) => {
   const f = await fixture(page, "english_words", true);
   await parse(page, "apple - яблоко");
-  await page.getByRole("button", { name: "Import all", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^Import \d+( ready)? cards?$/ })
+    .click();
   await page
     .getByRole("button", { name: "Confirm import", exact: true })
     .click();
@@ -283,7 +149,7 @@ test("uncertain commit freezes edits, restores and retries identical command", a
   await page.getByRole("button", { name: "Restore draft" }).click();
   await page.getByRole("button", { name: "Retry same import" }).click();
   await expect(
-    page.getByText("Import confirmed", { exact: true }),
+    page.getByText("Import complete", { exact: true }),
   ).toBeVisible();
   expect(f.commands).toHaveLength(2);
   expect(f.commands[1]).toEqual(f.commands[0]);
@@ -295,7 +161,9 @@ test("edit and revalidate preserve manual values; reparse asks before replacing"
   await fixture(page);
   await parse(page, "run - бегать");
   await page.getByLabel("native", { exact: true }).fill("управлять");
-  await page.getByRole("button", { name: "Revalidate", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Revalidate", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByLabel("native", { exact: true })).toHaveValue(
     "управлять",
   );
@@ -316,6 +184,7 @@ test("move, copy, merge and split preserve edits and explicit example order", as
     page,
     "apple - яблоко\nExample: Apple one.\nExample: Apple two.\nbook - книга",
   );
+  await page.getByText("Advanced", { exact: true }).click();
   await page.getByLabel("Target card").selectOption({ label: "book" });
   await page.getByRole("button", { name: "Copy to target" }).first().click();
   await page.getByRole("button", { name: "Move to target" }).last().click();
@@ -326,11 +195,14 @@ test("move, copy, merge and split preserve edits and explicit example order", as
   await expect(page.getByLabel("Example 1", { exact: true })).toHaveValue(
     "Apple one.",
   );
+  await page.getByText("Advanced", { exact: true }).click();
   await page.getByRole("button", { name: "Split card", exact: true }).click();
   await expect(page.getByLabel("foreign", { exact: true })).toHaveValue("");
   await page.getByLabel("foreign", { exact: true }).fill("pear");
   await page.getByLabel("native", { exact: true }).fill("груша");
-  await page.getByRole("button", { name: "Revalidate", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Revalidate", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByLabel("native", { exact: true })).toHaveValue("груша");
 });
 test("existing duplicates are shown and explicit allow overrides skip", async ({
@@ -338,10 +210,13 @@ test("existing duplicates are shown and explicit allow overrides skip", async ({
 }) => {
   const f = await fixture(page);
   await parse(page, "existing - существующий");
-  await page.getByRole("button", { name: "Import all", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^Import \d+( ready)? cards?$/ })
+    .click();
   await expect(page.getByLabel("Confirm import")).toContainText(
     "0 will be created · 1 duplicates skipped",
   );
+  await page.getByText("Advanced", { exact: true }).click();
   await page.getByLabel("Duplicate decision").selectOption("allow");
   await save(page);
   expect(f.commands[0].items[0].duplicate_policy).toBe("allow");
@@ -394,7 +269,7 @@ test("mobile 500 cards paginate and navigate exactly to the last source fragment
   await parse(page, source);
   expect(Date.now() - started).toBeLessThan(10000);
   await expect(page.locator(".qi-list li")).toHaveCount(25);
-  await page.getByLabel("Review filter").selectOption("issues");
+  await page.getByRole("button", { name: "Issues 1", exact: true }).click();
   await page
     .locator(".qi-list li button")
     .filter({ hasText: "entry499" })

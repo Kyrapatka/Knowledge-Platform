@@ -75,6 +75,7 @@ export function Modal({
   onClose,
   wide = false,
   drawer = false,
+  footer,
 }: {
   title: string;
   subtitle?: string;
@@ -82,6 +83,7 @@ export function Modal({
   onClose: () => void;
   wide?: boolean;
   drawer?: boolean;
+  footer?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -177,6 +179,7 @@ export function Modal({
         </button>
       </div>
       <div className="dialog-content">{children}</div>
+      {footer}
     </dialog>
   );
 }

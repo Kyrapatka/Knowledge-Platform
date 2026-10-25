@@ -1,30 +1,69 @@
+.dialog.wide:has(.quick-import) {
+  width: min(1100px, calc(100vw - 32px));
+  max-height: calc(var(--dialog-viewport-height, 100dvh) - 32px);
+}
+.dialog:has(.quick-import) > .dialog-content {
+  flex: 1;
+  scroll-padding: 18px;
+}
 .quick-import {
+  padding: 20px;
   min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
   color: var(--text);
+}
+.quick-import * {
+  box-sizing: border-box;
+}
+.quick-import .button-row {
+  flex-wrap: wrap;
+}
+.quick-import .button,
+.qi-footer .button,
+.import-materials-button {
+  min-height: 44px;
+}
+.quick-import button:disabled,
+.qi-footer button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.quick-import :focus-visible,
+.qi-footer :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .qi-steps {
   display: flex;
-  gap: 24px;
-  margin-bottom: 20px;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+.qi-steps .button {
+  background: transparent;
+  border-color: transparent;
   color: var(--muted);
 }
 .qi-steps [aria-current] {
   color: var(--text);
-  font-weight: 700;
+  border-color: var(--accent);
+  background: var(--surface);
 }
 .qi-form {
   border: 0;
   padding: 0;
-  margin: 16px 0;
+  margin: 12px 0 0;
   min-width: 0;
 }
 .qi-field {
   display: grid;
-  gap: 7px;
+  gap: 8px;
   margin: 14px 0;
   font-size: 13px;
   font-weight: 600;
+  min-width: 0;
 }
 .qi-field textarea,
 .qi-field input,
@@ -36,43 +75,80 @@
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  padding: 10px;
+  padding: 11px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
   background: var(--surface);
   color: inherit;
   font: inherit;
+  min-width: 0;
+}
+.qi-field textarea,
+.qi-example textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.qi-field [aria-invalid="true"] {
+  border-color: #e69a83;
 }
 .qi-source {
   line-height: 22px !important;
   font-family: monospace !important;
-  resize: vertical;
   min-height: 200px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
-.qi-counts {
+.qi-input-actions {
+  margin-top: 20px;
+}
+.qi-summary {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
-  margin: 16px 0;
+  margin: 12px 0;
 }
-.qi-counts span {
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
+.qi-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.qi-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  padding: 4px;
+  border-radius: 12px;
+}
+.qi-tabs .button {
+  background: transparent;
+  border-color: transparent;
+  padding: 8px 12px;
+}
+.qi-tabs .button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: #ffffff0a;
+}
+.qi-problem-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
   font-size: 12px;
+  color: var(--muted);
 }
 .qi-review {
   display: grid;
-  grid-template-columns: minmax(180px, 28%) minmax(0, 1fr);
-  gap: 20px;
-  margin-top: 16px;
+  grid-template-columns: minmax(200px, 32%) minmax(0, 1fr);
+  gap: 24px;
   align-items: start;
 }
 .qi-list {
-  position: sticky;
-  top: 0;
-  max-height: 65vh;
-  overflow: auto;
   min-width: 0;
 }
 .qi-list ol {
@@ -81,17 +157,22 @@
   padding: 0;
 }
 .qi-list li button {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   text-align: left;
   width: 100%;
-  padding: 12px;
+  padding: 13px 10px;
   border: 1px solid transparent;
   background: transparent;
   color: inherit;
   border-radius: 8px;
   cursor: pointer;
   overflow-wrap: anywhere;
+  min-height: 48px;
+}
+.qi-list li button strong {
+  min-width: 0;
 }
 .qi-list li button[aria-current] {
   border-color: var(--accent);
@@ -99,105 +180,211 @@
 }
 .qi-list small {
   color: var(--muted);
+  font-size: 11px;
+  flex-shrink: 0;
 }
-.qi-detail,
+.qi-pagination {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.qi-detail {
+  min-width: 0;
+  position: sticky;
+  top: 0;
+}
 .qi-editor {
   min-width: 0;
 }
 .qi-editor h3 {
-  font-size: 17px;
+  font-size: 18px;
   overflow-wrap: anywhere;
+  margin: 6px 0;
+}
+.qi-editor-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
 }
 .qi-source-link {
   background: none;
   border: 0;
   color: var(--accent);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   text-align: left;
-  padding: 4px;
+  padding: 8px 2px;
+  min-height: 36px;
 }
-.qi-issue {
-  border: 1px solid var(--border);
+.qi-issue,
+.qi-diagnostic {
+  border-left: 3px solid #d9ae69;
   padding: 12px;
-  border-radius: 10px;
+  background: #d9ae6909;
+  border-radius: 6px;
   margin: 12px 0;
   overflow-wrap: anywhere;
+  scroll-margin: 16px;
+}
+.qi-diagnostic-error {
+  border-color: #e69a83;
+}
+.qi-diagnostic-info {
+  border-color: var(--accent);
+  background: transparent;
+}
+.qi-issue p,
+.qi-diagnostic p,
+.qi-inline-help {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.qi-field-error {
+  color: #eeb09a;
+  font-size: 12px;
+  font-weight: 400;
 }
 .qi-issue pre,
-.qi-editor pre {
+.qi-editor pre,
+.qi-fragment-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font-size: 12px;
-  max-height: 180px;
-  overflow: auto;
-}
-.qi-issue p {
-  font-size: 13px;
+  max-width: 100%;
 }
 .qi-assignment {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
+  gap: 10px;
   margin-top: 12px;
 }
 .qi-assignment label {
   font-size: 12px;
   display: grid;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
 }
 .qi-example {
-  border-bottom: 1px solid var(--border);
-  padding: 12px 0;
+  padding: 10px 0;
 }
-.qi-actions {
-  margin-top: 20px;
-  border-top: 1px solid var(--border);
-  padding-top: 16px;
-}
-.qi-confirm {
-  margin: 20px 0;
-  padding: 16px;
-  border: 1px solid var(--accent);
-  border-radius: 12px;
-}
-.qi-back {
-  display: none !important;
+.qi-example-actions {
+  margin-top: 8px;
 }
 .qi-profile {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   min-width: 0;
 }
 .qi-profile label {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   font-size: 12px;
+  min-width: 0;
 }
 .qi-profile p {
   grid-column: 1/-1;
   font-size: 12px;
 }
-.quick-import .button-row {
+.qi-advanced {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  padding-top: 10px;
+}
+.quick-import summary {
+  cursor: pointer;
+  padding: 10px 0;
+  min-height: 44px;
+  color: var(--muted);
+}
+.qi-technical {
+  font-size: 12px;
+}
+.qi-back {
+  display: none !important;
+}
+.qi-empty {
+  color: var(--muted);
+  padding: 20px 0;
+}
+.qi-footer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface, #1a2027);
+  z-index: 6;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.qi-footer p {
+  font-size: 12px;
+  margin: 6px 0;
+  line-height: 1.4;
+}
+.qi-footer strong {
+  font-size: 14px;
+}
+.qi-footer .button-row {
+  flex-shrink: 0;
   flex-wrap: wrap;
 }
-.quick-import button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.qi-confirm {
+  min-width: 0;
+}
+.qi-result {
+  padding: 20px 0;
 }
 @media (max-width: 700px) {
+  .dialog.wide:has(.quick-import) {
+    width: calc(100vw - 16px);
+    max-height: calc(var(--dialog-viewport-height, 100dvh) - 16px);
+  }
+  .quick-import {
+    padding: 14px;
+  }
+  .qi-steps {
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .qi-steps .button {
+    padding: 8px;
+    flex: 1;
+    font-size: 12px;
+  }
+  .qi-toolbar {
+    gap: 10px;
+  }
+  .qi-tabs {
+    width: 100%;
+  }
+  .qi-tabs .button {
+    flex: 1;
+    padding: 8px 6px;
+  }
+  .qi-toolbar > .button-row {
+    width: 100%;
+  }
+  .qi-toolbar > .button-row .button {
+    flex: 1;
+    padding: 8px;
+    font-size: 12px;
+  }
   .qi-review {
     display: block;
   }
-  .qi-list {
-    max-height: 55vh;
-    position: static;
-  }
   .qi-detail {
     display: none;
+    position: static;
   }
   .qi-mobile-editor .qi-list {
     display: none;
@@ -207,54 +394,53 @@
   }
   .qi-back {
     display: inline-flex !important;
+    margin-bottom: 12px;
   }
-  .qi-steps {
-    gap: 16px;
-    font-size: 13px;
-  }
-  .qi-assignment {
-    grid-template-columns: 1fr;
-  }
-  .qi-source {
-    min-height: 200px;
-  }
-  .qi-counts {
-    gap: 5px;
-  }
-  .qi-counts span {
-    font-size: 11px;
-  }
+  .qi-assignment,
   .qi-profile {
     grid-template-columns: 1fr;
   }
+  .qi-field input,
+  .qi-field textarea,
+  .qi-field select,
+  .qi-example textarea,
+  .qi-assignment select {
+    font-size: 16px;
+  }
+  .qi-footer {
+    flex-wrap: wrap;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    gap: 10px;
+  }
+  .qi-footer > div,
+  .qi-footer > section,
+  .qi-footer > .button {
+    width: 100%;
+  }
+  .qi-footer .button-row {
+    display: flex;
+  }
+  .qi-footer .button-row .button {
+    flex: 1;
+    min-width: 0;
+  }
+  .qi-footer small {
+    display: none;
+  }
+  .qi-problem-nav .button {
+    padding: 8px;
+    font-size: 12px;
+  }
 }
-
-.dialog.wide:has(.quick-import) {
-  width: min(1100px, calc(100vw - 40px));
-}
-.quick-import {
-  padding: 22px;
-  box-sizing: border-box;
-}
-.qi-steps {
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.qi-list {
-  top: 0;
-}
-.qi-editor .qi-field:has(textarea[aria-label="foreign"]),
-.qi-editor .qi-field:has(textarea[aria-label="native"]) {
-  margin-top: 10px;
-}
-@media (max-width: 700px) {
-  .dialog.wide:has(.quick-import) {
-    width: calc(100vw - 24px);
+@media (max-height: 520px) {
+  .qi-footer {
+    padding-block: 8px;
+  }
+  .qi-footer p,
+  .qi-footer small {
+    display: none;
   }
   .quick-import {
-    padding: 14px;
-  }
-  .qi-counts {
-    margin-top: 10px;
+    padding-top: 8px;
   }
 }

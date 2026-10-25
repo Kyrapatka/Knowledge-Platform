@@ -1,6 +1,7 @@
 import { QuickImport } from "../features/quick-import/components/quick-import";
 import {
   ArrowDownUp,
+  Upload,
   BookOpen,
   Check,
   ChevronRight,
@@ -256,10 +257,10 @@ export function FolderPage() {
               folder.template_key,
             ) && (
               <button
-                className="button small"
+                className="button import-materials-button"
                 onClick={() => setQuickImport(true)}
               >
-                Import
+                <Upload size={16} /> Import
               </button>
             )}
             <button
