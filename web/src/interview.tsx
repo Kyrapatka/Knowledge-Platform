@@ -1,8 +1,7 @@
-import { useLibraryPreferences } from "./library/preferences-context";
 import { createClientUUID } from "./uuid";
 import { useQuestionScroll } from "./question-scroll";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,7 +9,6 @@ import {
   Check,
   ChevronDown,
   GitBranch,
-  Layers3,
   RotateCcw,
   Settings2,
   Sparkles,
@@ -19,17 +17,14 @@ import {
 import { api, ApiError, errorText, post, readStored, saveStored } from "./api";
 import { useAuth } from "./auth";
 import { useLibrary } from "./library/context";
-import type { Folder } from "./types";
+import type { Source } from "./types";
+import { MockSetup } from "./mock-setup";
 import { ErrorBox, Markdown, Spinner } from "./ui";
 import {
-  defaultGraphConfig,
   interviewProfiles,
   interviewLevels,
-  type InterviewGraphConfig,
   type InterviewSession,
-  type InterviewPlan,
 } from "./interview-types";
-import { InterviewBankTools } from "./interview-editor";
 import "./interview.css";
 
 type GraphCommand = {
@@ -45,6 +40,19 @@ type GraphCommand = {
 };
 
 export function InterviewPage() {
+  const location = useLocation();
+  const [initialSources, setInitialSources] = useState<Source[] | undefined>(
+    () => location.state?.mockSources,
+  );
+  const explicitSetup = useRef(!!initialSources?.length);
+  useEffect(() => {
+    if (location.state?.mockSources?.length) {
+      setInitialSources(location.state.mockSources);
+      explicitSetup.current = true;
+      setView(null);
+      setLoading(false);
+    }
+  }, [location.key]);
   const { user } = useAuth();
   const { data, reload } = useLibrary();
   const storageKey = `knowledge:interview:${user.id}`;
@@ -81,9 +89,14 @@ export function InterviewPage() {
     }
   }
   useEffect(() => {
+    if (explicitSetup.current) {
+      setLoading(false);
+      return;
+    }
     void restore();
   }, [sessionID]);
   function opened(next: InterviewSession) {
+    explicitSetup.current = false;
     saveStored(storageKey, next.session.id);
     setSessionID(next.session.id);
     setView(next);
@@ -98,568 +111,23 @@ export function InterviewPage() {
           key={view.session.id}
           initial={view}
           onSetup={() => {
+            explicitSetup.current = true;
+            setInitialSources(undefined);
             setView(null);
             setSessionID("");
             saveStored(storageKey, null);
           }}
         />
       ) : (
-        <InterviewSetup
+        <MockSetup
           folders={(data?.folders || []).filter(
             (f) => f.template_key === "interview_questions",
           )}
           onStarted={opened}
+          initialSources={initialSources}
         />
       )}
     </div>
-  );
-}
-
-function InterviewSetup({
-  folders,
-  onStarted,
-}: {
-  folders: Folder[];
-  onStarted: (view: InterviewSession) => void;
-}) {
-  const { markUsed } = useLibraryPreferences();
-  const starting = useRef(false);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [topics, setTopics] = useState<Record<string, string[]>>({});
-  const [preview, setPreview] = useState<InterviewPlan | null>(null);
-  const [previewError, setPreviewError] = useState("");
-  const [previewBusy, setPreviewBusy] = useState(false);
-  const [availableTopicKeys, setAvailableTopicKeys] = useState<string[]>([]);
-  const [canResume, setCanResume] = useState(false);
-  const [config, setConfig] = useState(defaultGraphConfig);
-  const [advanced, setAdvanced] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const startCommand = useRef<{
-    id: string;
-    sources: { folder_id: string; topics?: string[] }[];
-    config: InterviewGraphConfig;
-  } | null>(null);
-  useEffect(() => {
-    let alive = true;
-    async function load() {
-      const defaults = await api<InterviewGraphConfig>(
-        "/training/interview-graph/config",
-      );
-      if (alive) {
-        setConfig(defaults);
-      }
-    }
-    void load().catch((e) => {
-      if (alive) setError(errorText(e));
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-  const available = folders;
-  const sources = selected.map((folder_id) => ({
-    folder_id,
-    ...(topics[folder_id]?.length ? { topics: topics[folder_id] } : {}),
-  }));
-  const previewKey = JSON.stringify({ sources, config });
-  useEffect(() => {
-    let alive = true;
-    setPreview(null);
-    setPreviewError("");
-    setPreviewBusy(!!selected.length);
-    if (!selected.length) {
-      setAvailableTopicKeys([]);
-      return;
-    }
-    const timer = setTimeout(() => {
-      void post<InterviewPlan>("/training/mock-interviews/preview", {
-        sources,
-        config,
-      })
-        .then((value) => {
-          if (alive) {
-            setPreview(value);
-            setAvailableTopicKeys(value.topics.map((t) => t.key));
-          }
-        })
-        .catch(async (e) => {
-          if (alive) setPreviewError(errorText(e));
-          // Keep the controls for available topics even when all custom weights
-          // are zero, so the user can correct the invalid configuration.
-          if (config.interview_mode === "custom") {
-            try {
-              const available = await post<InterviewPlan>(
-                "/training/mock-interviews/preview",
-                {
-                  sources,
-                  config: {
-                    ...config,
-                    interview_mode: "balanced",
-                    custom_weights: undefined,
-                  },
-                },
-              );
-              if (alive)
-                setAvailableTopicKeys(available.topics.map((t) => t.key));
-            } catch {
-              /* The original source/validation error remains visible. */
-            }
-          }
-        })
-        .finally(() => {
-          if (alive) setPreviewBusy(false);
-        });
-    }, 200);
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [previewKey]);
-  async function start(e: FormEvent) {
-    e.preventDefault();
-    if (starting.current || !selected.length) return;
-    starting.current = true;
-    setBusy(true);
-    setError("");
-    setCanResume(false);
-    try {
-      if (!startCommand.current) {
-        startCommand.current = {
-          id: createClientUUID(),
-          sources: selected.map((folder_id) => ({
-            folder_id,
-            ...(topics[folder_id]?.length ? { topics: topics[folder_id] } : {}),
-          })),
-          config: structuredClone(config),
-        };
-      }
-      const command = startCommand.current;
-      const next = await post<InterviewSession>("/training/mock-interviews", {
-        command_id: command.id,
-        config: command.config,
-        sources: command.sources,
-      });
-      markUsed(command.sources.map((source) => source.folder_id));
-      startCommand.current = null;
-      onStarted(next);
-    } catch (e) {
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500)
-        startCommand.current = null;
-      setError(errorText(e));
-      if (e instanceof ApiError && e.code === "active_mock_interview")
-        setCanResume(true);
-    } finally {
-      starting.current = false;
-      setBusy(false);
-    }
-  }
-  return (
-    <>
-      <header className="interview-heading">
-        <div>
-          <span className="eyebrow">A conversation with your knowledge</span>
-          <h1>
-            Mock interview<span>.</span>
-          </h1>
-          <p>
-            Answer out loud or in your head. Check the reference, rate yourself,
-            and follow the next connection.
-          </p>
-        </div>
-        <span className="interview-heading-icon">
-          <GitBranch size={32} />
-        </span>
-      </header>
-      <InterviewBankTools />
-      <form className="interview-setup" onSubmit={start}>
-        <div className="interview-setup-main">
-          <div className="interview-section-title">
-            <div>
-              <h2>Choose your subjects</h2>
-              <p>Ready questions from these folders shape your interview.</p>
-            </div>
-            <span>
-              {selected.length && selected.length === available.length
-                ? `All selected (${selected.length})`
-                : `${selected.length} selected`}
-            </span>
-          </div>
-          <div className="interview-source-actions">
-            <button
-              type="button"
-              className="button"
-              disabled={busy || !!startCommand.current || !available.length}
-              onClick={() => {
-                setSelected(available.map((f) => f.id));
-                setTopics({});
-              }}
-            >
-              Select all
-            </button>
-            <button
-              type="button"
-              className="button"
-              disabled={busy || !!startCommand.current || !selected.length}
-              onClick={() => {
-                setSelected([]);
-                setTopics({});
-              }}
-            >
-              Clear all
-            </button>
-          </div>
-          {!available.length ? (
-            <div className="interview-empty-source">
-              <BookOpen size={32} />
-              <h3>Your question bank starts here</h3>
-              <p>
-                Create an Interview prep folder, add questions with answers, and
-                mark them ready.
-              </p>
-              <Link className="button" to="/">
-                Open library <ArrowRight size={16} />
-              </Link>
-            </div>
-          ) : (
-            <fieldset
-              className="interview-sources"
-              disabled={busy || !!startCommand.current}
-            >
-              <legend className="sr-only">Interview folders</legend>
-              {available.map((folder) => {
-                const active = selected.includes(folder.id);
-                return (
-                  <div
-                    key={folder.id}
-                    className={`interview-source ${active ? "selected" : ""}`}
-                  >
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={() =>
-                          setSelected((ids) =>
-                            active
-                              ? ids.filter((id) => id !== folder.id)
-                              : [...ids, folder.id],
-                          )
-                        }
-                      />
-                      <span className="interview-source-icon">
-                        <Layers3 size={21} />
-                      </span>
-                      <span>
-                        <strong>{folder.title}</strong>
-                        <small>{folder.material_count} questions</small>
-                      </span>
-                      <Check size={18} className="interview-source-check" />
-                    </label>
-                    {active && !!folder.topics?.length && (
-                      <div className="interview-topic-list">
-                        {folder.topics
-                          .filter((t) => t.name)
-                          .map((topic) => (
-                            <button
-                              type="button"
-                              key={topic.name}
-                              className={
-                                (topics[folder.id] || []).includes(topic.name)
-                                  ? "active"
-                                  : ""
-                              }
-                              onClick={() =>
-                                setTopics((values) => ({
-                                  ...values,
-                                  [folder.id]: (
-                                    values[folder.id] || []
-                                  ).includes(topic.name)
-                                    ? values[folder.id].filter(
-                                        (name) => name !== topic.name,
-                                      )
-                                    : [
-                                        ...(values[folder.id] || []),
-                                        topic.name,
-                                      ],
-                                }))
-                              }
-                            >
-                              {topic.name}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </fieldset>
-          )}
-        </div>
-        <aside className="interview-session-options">
-          <span className="eyebrow">Your session</span>
-          <h2>Make room to think.</h2>
-          <p>
-            Explain in your own words. You decide whether your answer was
-            correct. Every mode is practice only — your SRS schedule stays
-            unchanged.
-          </p>
-          <label className="interview-label">
-            Interview mode
-            <select
-              value={config.interview_mode}
-              disabled={busy || !!startCommand.current}
-              onChange={(e) =>
-                setConfig({
-                  ...config,
-                  interview_mode: e.target
-                    .value as InterviewGraphConfig["interview_mode"],
-                  custom_weights: config.custom_weights || {
-                    go: 5,
-                    sql: 3,
-                    http: 2,
-                    architecture: 1,
-                    messaging: 1,
-                    ops: 1,
-                    other: 1,
-                  },
-                })
-              }
-            >
-              <option value="real">Real Interview</option>
-              <option value="balanced">Balanced</option>
-              <option value="custom">Custom</option>
-              <option value="deep">Deep Interview</option>
-            </select>
-          </label>
-          <p className="interview-mode-help">
-            {
-              {
-                real: "A Go backend preset, adjusted to your selected subjects. Broad coverage with short branches.",
-                balanced:
-                  "Give every available subject an equal share of the interview.",
-                custom:
-                  "Set relative weights. For example, 5 / 3 / 2 means 50% / 30% / 20%.",
-                deep: "Fewer starting topics, longer connected branches and more challenging follow-ups.",
-              }[config.interview_mode]
-            }
-          </p>
-          {config.interview_mode === "deep" && (
-            <label className="interview-label">
-              Depth level
-              <select
-                value={config.depth_level}
-                disabled={busy || !!startCommand.current}
-                onChange={(e) =>
-                  setConfig({ ...config, depth_level: +e.target.value })
-                }
-              >
-                <option value={1}>1 — Focused</option>
-                <option value={2}>2 — In depth</option>
-                <option value={3}>3 — Expert deep dive</option>
-              </select>
-            </label>
-          )}
-          {config.interview_mode === "custom" && (
-            <fieldset
-              className="interview-weights"
-              disabled={busy || !!startCommand.current}
-            >
-              <legend>Relative topic weights</legend>
-              {Object.entries({
-                go: "Go",
-                sql: "SQL",
-                http: "HTTP / Networks",
-                architecture: "Architecture",
-                messaging: "Messaging",
-                ops: "Testing / Ops",
-                other: "Other",
-              })
-                .filter(([key]) => availableTopicKeys.includes(key))
-                .map(([key, label]) => (
-                  <label key={key}>
-                    {label}
-                    <input
-                      aria-label={`${label} weight`}
-                      type="number"
-                      min={0}
-                      max={1000000}
-                      step="any"
-                      value={config.custom_weights?.[key] ?? 0}
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          custom_weights: {
-                            ...config.custom_weights,
-                            [key]: +e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </label>
-                ))}
-              <small>
-                Only topics with eligible questions participate. Zero excludes a
-                topic.
-              </small>
-            </fieldset>
-          )}
-          <label className="interview-label">
-            Questions
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={config.question_limit}
-              disabled={busy || !!startCommand.current}
-              onChange={(e) =>
-                setConfig((value) => ({
-                  ...value,
-                  question_limit: +e.target.value,
-                }))
-              }
-            />
-          </label>
-          <label className="interview-label">
-            Interview profile
-            <select
-              value={config.profile}
-              disabled={busy || !!startCommand.current}
-              onChange={(e) =>
-                setConfig({ ...config, profile: e.target.value })
-              }
-            >
-              {interviewProfiles.map(([slug, label]) => (
-                <option value={slug} key={slug}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="interview-label">
-            Interview level
-            <select
-              value={config.level}
-              disabled={busy || !!startCommand.current}
-              onChange={(e) => setConfig({ ...config, level: +e.target.value })}
-            >
-              {interviewLevels.map((label, i) => (
-                <option value={i + 1} key={label}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="interview-bank-mode">
-            <input
-              type="checkbox"
-              checked={config.include_draft}
-              disabled={busy || !!startCommand.current}
-              onChange={(e) =>
-                setConfig({ ...config, include_draft: e.target.checked })
-              }
-            />
-            <span>
-              <strong>Bank testing mode / Include drafts</strong>
-              <small>
-                Allows draft questions for graph testing. Practice only; does
-                not modify SRS.
-              </small>
-            </span>
-          </label>
-          <button
-            className="interview-advanced-toggle"
-            type="button"
-            onClick={() => setAdvanced(!advanced)}
-          >
-            <Settings2 size={16} /> Session options <ChevronDown size={15} />
-          </button>
-          {advanced && (
-            <div className="interview-advanced">
-              {(
-                [
-                  ["max_depth_per_branch", "Maximum depth", 1, 20],
-                  ["max_forks_per_root", "Branches per topic", 0, 10],
-                ] as const
-              ).map(([key, label, min, max]) => (
-                <label className="interview-label" key={key}>
-                  {label}
-                  <input
-                    type="number"
-                    min={min}
-                    max={max}
-                    disabled={busy || !!startCommand.current}
-                    value={config[key]}
-                    onChange={(e) =>
-                      setConfig((value) => ({
-                        ...value,
-                        [key]: +e.target.value,
-                      }))
-                    }
-                  />
-                </label>
-              ))}
-            </div>
-          )}
-          {previewBusy && <p role="status">Checking available questions…</p>}
-          {preview && (
-            <div
-              className="interview-distribution"
-              aria-label="Interview distribution"
-            >
-              <strong>
-                {preview.strategy.target_roots} root branches planned
-              </strong>
-              {preview.topics.map((topic) => (
-                <div key={topic.key}>
-                  <span>{topic.label}</span>
-                  <b>{(topic.weight * 100).toFixed(1)}%</b>
-                  <small>
-                    {topic.roots} roots · {topic.available} available areas
-                  </small>
-                </div>
-              ))}
-              <small>
-                Percentages are relative shares. Root counts account for
-                rounding and available areas.
-              </small>
-            </div>
-          )}
-          {previewError && <ErrorBox error={previewError} />}
-          {error && <ErrorBox error={error} />}
-          {canResume && (
-            <button
-              type="button"
-              className="button"
-              disabled={busy}
-              onClick={() => {
-                setBusy(true);
-                void api<InterviewSession>("/training/mock-interviews/active")
-                  .then(onStarted)
-                  .catch((e) => setError(errorText(e)))
-                  .finally(() => setBusy(false));
-              }}
-            >
-              Resume existing interview
-            </button>
-          )}
-          <button
-            className="button primary interview-start"
-            disabled={busy || !selected.length || previewBusy || !!previewError}
-          >
-            {busy
-              ? "Preparing…"
-              : startCommand.current
-                ? "Retry start"
-                : "Start interview"}
-            <ArrowRight size={18} />
-          </button>
-          <small>
-            Upcoming questions can appear for practice. Their review dates stay
-            on schedule.
-          </small>
-        </aside>
-      </form>
-    </>
   );
 }
 

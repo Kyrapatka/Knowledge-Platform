@@ -17,13 +17,14 @@ import (
 )
 
 type CombinedSource struct {
-	FolderID     uuid.UUID   `json:"folder_id"`
-	MaterialIDs  []uuid.UUID `json:"material_ids,omitempty"`
-	Topics       []string    `json:"topics,omitempty"`
-	PlanID       *uuid.UUID  `json:"plan_id,omitempty"`
-	AlgorithmKey *string     `json:"algorithm_key,omitempty"`
-	HorizonDays  *int        `json:"horizon_days,omitempty"`
-	PoolSize     *int        `json:"pool_size,omitempty"`
+	RefillThreshold *int        `json:"refill_threshold,omitempty"`
+	FolderID        uuid.UUID   `json:"folder_id"`
+	MaterialIDs     []uuid.UUID `json:"material_ids,omitempty"`
+	Topics          []string    `json:"topics,omitempty"`
+	PlanID          *uuid.UUID  `json:"plan_id,omitempty"`
+	AlgorithmKey    *string     `json:"algorithm_key,omitempty"`
+	HorizonDays     *int        `json:"horizon_days,omitempty"`
+	PoolSize        *int        `json:"pool_size,omitempty"`
 }
 
 type CombinedRequest struct {
@@ -196,14 +197,14 @@ func (s *Service) StartCombined(ctx context.Context, user uuid.UUID, req Combine
 					if source.HorizonDays != nil {
 						horizon = *source.HorizonDays
 					}
-					plan, err = s.createPlan(tx, user, CreatePlanRequest{SourceFolderIDs: []uuid.UUID{source.FolderID}, AlgorithmKey: &key, PoolSize: source.PoolSize, HorizonDays: horizon})
+					plan, err = s.createPlan(tx, user, CreatePlanRequest{SourceFolderIDs: []uuid.UUID{source.FolderID}, AlgorithmKey: &key, PoolSize: source.PoolSize, RefillThreshold: source.RefillThreshold, HorizonDays: horizon})
 					if err != nil {
 						return err
 					}
 					plans = append([]model.TrainingPlan{plan}, plans...)
 				}
 			}
-			if source.AlgorithmKey != nil && plan.AlgorithmKey != *source.AlgorithmKey || source.HorizonDays != nil && plan.Config.HorizonDays != *source.HorizonDays || source.PoolSize != nil && plan.Config.PoolSize != *source.PoolSize {
+			if source.RefillThreshold != nil && plan.PoolPolicy().RefillThreshold != *source.RefillThreshold || source.AlgorithmKey != nil && plan.AlgorithmKey != *source.AlgorithmKey || source.HorizonDays != nil && plan.Config.HorizonDays != *source.HorizonDays || source.PoolSize != nil && plan.Config.PoolSize != *source.PoolSize {
 				return fmt.Errorf("%w: change the existing plan settings explicitly before starting", ErrInvalid)
 			}
 			if _, ok := resolved[plan.ID]; !ok {

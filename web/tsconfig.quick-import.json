@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": ".cache/quick-import",
+    "rootDir": "src"
+  },
+  "include": [
+    "src/features/quick-import/model/**/*.ts",
+    "src/features/quick-import/parser/**/*.ts"
+  ],
+  "exclude": ["src/features/quick-import/parser/worker.ts"]
+}

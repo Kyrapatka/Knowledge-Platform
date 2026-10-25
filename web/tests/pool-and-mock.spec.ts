@@ -147,10 +147,9 @@ for (const mode of ["real", "deep"] as const) {
       .getByRole("link", { name: "Mock interview", exact: true })
       .click();
     await page
-      .locator(".interview-source")
-      .filter({ hasText: "Fallback bank" })
-      .getByRole("checkbox")
-      .check();
+      .getByRole("button", { name: "Choose folders manually", exact: true })
+      .click();
+    await page.getByRole("checkbox", { name: /Fallback bank/ }).check();
     await page
       .getByRole("combobox", { name: "Interview mode", exact: true })
       .selectOption(mode);
@@ -162,16 +161,14 @@ for (const mode of ["real", "deep"] as const) {
       .getByRole("spinbutton", { name: "Questions", exact: true })
       .fill("20");
     await expect(
-      page.getByRole("button", { name: "Start interview", exact: true }),
+      page.getByRole("button", { name: "Start Mock", exact: true }),
     ).toBeEnabled();
     const started = page.waitForResponse(
       (r) =>
         r.url().endsWith("/training/mock-interviews") &&
         r.request().method() === "POST",
     );
-    await page
-      .getByRole("button", { name: "Start interview", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Start Mock", exact: true }).click();
     let view = await (await started).json();
     const seen = new Set<string>();
     let fallback = false;

@@ -14,7 +14,7 @@ import (
 
 func TestMigrationPairs(t *testing.T) {
 	files, err := migrationFiles("../../migrations")
-	if err != nil || len(files) != 23 {
+	if err != nil || len(files) != 26 {
 		t.Fatalf("pairs: %d %v", len(files), err)
 	}
 }
@@ -44,6 +44,47 @@ func TestMigrationsRefuseLossyRollback(t *testing.T) {
 	user := uuid.New()
 	if _, err = conn.Exec(ctx, "INSERT INTO users(id,nickname,nickname_normalized,password_hash) VALUES($1,'smoke','smoke','hash')", user); err != nil {
 		t.Fatal(err)
+	}
+	command := uuid.New()
+	if _, err = conn.Exec(ctx, "INSERT INTO material_import_commands(user_id,command_id,request_hash,response) VALUES($1,$2,'hash','{}')", user, command); err != nil {
+		t.Fatal(err)
+	}
+	if err = migrate(ctx, conn, "../../migrations", "down"); err == nil {
+		t.Fatal("removed import receipt")
+	}
+	var importVersion int
+	if err = conn.QueryRow(ctx, "SELECT version FROM schema_migrations").Scan(&importVersion); err != nil || importVersion != 26 {
+		t.Fatal("receipt rollback changed version", importVersion, err)
+	}
+	if _, err = conn.Exec(ctx, "DELETE FROM material_import_commands WHERE user_id=$1", user); err != nil {
+		t.Fatal(err)
+	}
+	if err = migrate(ctx, conn, "../../migrations", "down"); err != nil {
+		t.Fatal(err)
+	}
+	preset := uuid.New()
+	if _, err = conn.Exec(ctx, "INSERT INTO mock_presets(id,user_id,name,created_at,updated_at) VALUES($1,$2,'Keep me',now(),now())", preset, user); err != nil {
+		t.Fatal(err)
+	}
+	if err = migrate(ctx, conn, "../../migrations", "down"); err == nil {
+		t.Fatal("removed saved preset")
+	}
+	var current int
+	if err = conn.QueryRow(ctx, "SELECT version FROM schema_migrations").Scan(&current); err != nil || current != 25 {
+		t.Fatal("failed preset rollback changed version", current, err)
+	}
+	var name string
+	if err = conn.QueryRow(ctx, "SELECT name FROM mock_presets WHERE id=$1", preset).Scan(&name); err != nil || name != "Keep me" {
+		t.Fatal("preset lost", err)
+	}
+	if _, err = conn.Exec(ctx, "DELETE FROM mock_presets WHERE id=$1", preset); err != nil {
+		t.Fatal(err)
+	}
+	// Remove the newer empty tables before exercising migration 23's guard.
+	for i := 0; i < 2; i++ {
+		if err = migrate(ctx, conn, "../../migrations", "down"); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if _, err = conn.Exec(ctx, "INSERT INTO training_sessions(id,user_id,status,started_at,created_at,selection_strategy) VALUES($1,$2,'active',now(),now(),'interview_graph_v1')", uuid.New(), user); err != nil {
 		t.Fatal(err)

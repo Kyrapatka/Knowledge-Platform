@@ -1,0 +1,75 @@
+[
+  {
+    "foreign": "subtle",
+    "native": "едва уловимый/тонкий",
+    "examples": [
+      "There was a subtle difference in her voice.",
+      "I like the subtle design of this website."
+    ]
+  },
+  {
+    "foreign": "mature",
+    "native": "зрелый/взрослый",
+    "examples": ["Jane made a mature decision to apologize"]
+  },
+  {
+    "foreign": "chick-lit",
+    "native": "литература для девушек",
+    "examples": []
+  },
+  {
+    "foreign": "reliable/rely",
+    "native": "надёжный/полагаться",
+    "examples": []
+  },
+  {
+    "foreign": "wields",
+    "native": "владеть (уметь обращаться)",
+    "examples": ["Nobody quite wields a heavy mace like me"]
+  },
+  {
+    "foreign": "Hissed",
+    "native": "прошипел",
+    "examples": ["\"Don't move,\" she hissed in my ear."]
+  },
+  {
+    "foreign": "abomination",
+    "native": "жуткий монстр (мерзость)",
+    "examples": ["That undead monster is an abomination."]
+  },
+  {
+    "foreign": "squinting",
+    "native": "прищуриваться",
+    "examples": ["He was squinting at the screen, trying to read the tiny text"]
+  },
+  {
+    "foreign": "scowl",
+    "native": "сердитый взгляд",
+    "examples": ["She answered with a scowl on her face."]
+  },
+  {
+    "foreign": "odd",
+    "native": "странно",
+    "examples": ["It's odd that he didn't call"]
+  },
+  {
+    "foreign": "biased",
+    "native": "предвзятый",
+    "examples": ["You are biased because he is your friend"]
+  },
+  {
+    "foreign": "It slips my mind",
+    "native": "вылетело из головы",
+    "examples": []
+  },
+  {
+    "foreign": "slips",
+    "native": "мелкие ошибки",
+    "examples": ["The teacher noticed a few minor slips in his essay."]
+  },
+  {
+    "foreign": "striving",
+    "native": "стремится (к успеху)",
+    "examples": ["She is always striving to be the best in her field"]
+  }
+]

@@ -111,20 +111,17 @@ test("Bank interview folder supports normal recall and independent mock", async 
   expect(switchedView.current.plan_id).not.toBe(view.current.plan_id);
 
   await page.goto("/interview");
-  await page.getByRole("checkbox", { name: /Bank testing mode/ }).check();
   await page
-    .locator(".interview-source")
-    .filter({ hasText: "Interview / Go" })
-    .getByRole("checkbox")
-    .check();
+    .getByRole("button", { name: "Choose folders manually", exact: true })
+    .click();
+  await page.getByRole("checkbox", { name: /Bank testing mode/ }).check();
+  await page.getByRole("checkbox", { name: /Interview \/ Go/ }).check();
   const mockStarted = page.waitForResponse(
     (r) =>
       r.url().endsWith("/training/mock-interviews") &&
       r.request().method() === "POST",
   );
-  await page
-    .getByRole("button", { name: "Start interview", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Start Mock", exact: true }).click();
   const mock = await (await mockStarted).json();
   expect(mock.current.interview_graph.review_credit).toBe(false);
   expect(mock.current.progress_version).toBe(0);

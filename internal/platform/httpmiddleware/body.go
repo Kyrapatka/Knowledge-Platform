@@ -20,6 +20,9 @@ func OrdinaryBodyLimit() gin.HandlerFunc {
 			return
 		}
 		limit := int64(1 << 20)
+		if route == "/api/v1/folders/:folderID/materials/import" || route == "/api/v1/folders/:folderID/materials/import/validate" {
+			limit = 10 << 20
+		}
 		if strings.HasPrefix(route, "/api/v1/auth/") {
 			limit = 64 << 10
 		}

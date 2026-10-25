@@ -29,6 +29,9 @@ A down file is not a promise of data-safe rollback. Categories below concern ret
 | 21 question bank | Conditional, data-sensitive | Refuses bank imports/policies/memberships/profiles/new roles/nondefault metadata; restores legacy seed keys |
 | 22 interview navigation | Conditional | Old action/event-mode constraints reject navigation history |
 | 23 mock sessions | Conditional, data-sensitive | NOT NULL restoration rejects planless sessions/events/undo; graph-selection event references are dropped |
+| 24 material bulk commands | Data-sensitive | Removes idempotency receipts |
+| 25 Mock presets | Conditional | Refuses down while any saved preset exists |
+| 26 material import commands | Conditional | Refuses down while import receipts exist; deleting them would make retries unsafe |
 
 **Fully reversible with arbitrary production data:** none of these pairs can honestly be given that blanket guarantee. Individual index-only operations are reversible, but the migrations containing them also change data or constraints. Empty-schema down/up is a smoke check, not a production rollback certification.
 
@@ -44,7 +47,7 @@ The inspected queries already have relevant indexes: active materials by folder,
 
 ## Safe smoke and strict tests
 
-Set `TRAINING_TEST_DATABASE_URL` to a dedicated test database and run `make migrate-test`. It creates a UUID-named schema, applies all 23 up migrations, tests 23 down/up only on that empty schema, then removes only that schema. Cleanup failure fails the command. It does not reset the application database. The allowlist requires review when a new migration is added.
+Set `TRAINING_TEST_DATABASE_URL` to a dedicated test database and run `make migrate-test`. It creates a UUID-named schema, applies all 26 up migrations, tests 26 down/up only on that empty schema, then removes only that schema. Cleanup failure fails the command. It does not reset the application database. The allowlist requires review when a new migration is added.
 
 PostgreSQL tests also verify that rolling back migration 23 with planless history fails atomically and retains version 23, and that migration 21 refuses bank metadata without erasing it. `make test-integration` requires both test database variables and rejects any skipped test in its selected suites.
 
@@ -56,3 +59,11 @@ rollback currently requires the same clean migration version recorded with that
 image; any schema version change is refused pending manual compatibility review,
 even if additive. See [local deployment](local-deployment.md). Prefer expand/contract
 changes and keep old application readers/writers compatible during transitions.
+
+## Mock presets and bulk receipts
+
+Migration 24 stores idempotent material bulk command receipts. Migration 25 adds user-owned Mock presets, with JSON folder identities and nullable existing graph settings. Presets never store a frozen material set. An owner/created index supports the list query. Preset version checks prevent lost edits; last_used_at is updated in the successful Mock start transaction. Migration 25 down refuses to erase any saved preset; migration smoke runs down/up only in its own empty schema.
+
+Training pool size and threshold remain in existing folder/plan JSON settings, so they require no separate table or data migration. Explicit writes validate size 1..100 and threshold 0..size-1. Missing legacy thresholds resolve to Interview 3, English 5, and the existing formula policy. Existing plans can still run with old small targets: admission never exceeds the target. Editing an incompatible legacy combination requires explicitly choosing a valid threshold; it is never clamped.
+
+Migration 26 stores Quick Import receipts separately from bulk-operation receipts. It adds no new card table. The command hash binds the operation, destination folder and payload; (user_id, command_id) is unique. Apply migration 26 before using the new endpoints. Down refuses to erase any receipt.

@@ -8,6 +8,15 @@ import type { Folder, Plan } from "./types";
 import { algorithmNames } from "./types";
 import { ErrorBox, Modal, Spinner } from "./ui";
 
+export const defaultThreshold = (key: string, size: number) =>
+  key.startsWith("interview") ? 3 : key.startsWith("english") ? 5 : size - 1;
+export const validPool = (size: number, threshold: number) =>
+  Number.isInteger(size) &&
+  size >= 1 &&
+  size <= 100 &&
+  Number.isInteger(threshold) &&
+  threshold >= 0 &&
+  threshold < size;
 export const algorithmsFor = (folder: Folder) =>
   folder.template_key === "interview_questions"
     ? ["interview_long_term", "interview_cram"]
@@ -29,6 +38,9 @@ export function PlanSettings({
   const [plan, setPlan] = useState<Plan | null>(null);
   const [key, setKey] = useState(folder.training_config.default_algorithm_key);
   const [pool, setPool] = useState(folder.training_config.pool_size);
+  const [threshold, setThreshold] = useState(
+    folder.training_config.refill_threshold ?? defaultThreshold(key, pool),
+  );
   const [horizon, setHorizon] = useState(150);
   const [mode, setMode] = useState("keep");
   const [loading, setLoading] = useState(!!planId);
@@ -41,6 +53,10 @@ export function PlanSettings({
           setPlan(p);
           setKey(p.algorithm_key);
           setPool(p.config.pool_size);
+          setThreshold(
+            p.config.refill_threshold ??
+              defaultThreshold(p.algorithm_key, p.config.pool_size),
+          );
           setHorizon(p.config.horizon_days || 150);
         })
         .catch((e) => setError(errorText(e)))
@@ -52,6 +68,12 @@ export function PlanSettings({
     (key === "interview_cram") !== (plan.algorithm_key === "interview_cram");
   async function save(e: FormEvent) {
     e.preventDefault();
+    if (!validPool(pool, threshold)) {
+      setError(
+        "Pool size must be 1–100; refill threshold must be 0 or more and less than pool size.",
+      );
+      return;
+    }
     if (
       mode === "reset" &&
       !window.confirm(
@@ -90,6 +112,7 @@ export function PlanSettings({
             mode,
             horizon_days: isInterview ? horizon : 0,
             pool_size: pool,
+            refill_threshold: threshold,
             end_active_session: true,
           },
         );
@@ -99,6 +122,7 @@ export function PlanSettings({
           source_folder_ids: [folder.id],
           algorithm_key: key,
           pool_size: pool,
+          refill_threshold: threshold,
           horizon_days: isInterview ? horizon : 0,
         });
       }
@@ -109,7 +133,12 @@ export function PlanSettings({
         saveStored(storageKey, {
           sources: saved.sources.map((s) =>
             s.folder_id === folder.id
-              ? { folder_id: folder.id, topics: s.topics, plan_id: updated.id }
+              ? {
+                  folder_id: folder.id,
+                  topics: s.topics,
+                  material_ids: s.material_ids,
+                  plan_id: updated.id,
+                }
               : s,
           ),
           session_ids: [],
@@ -118,7 +147,11 @@ export function PlanSettings({
         method: "PATCH",
         body: {
           version: folder.training_config_version,
-          training_config: { default_algorithm_key: key, pool_size: pool },
+          training_config: {
+            default_algorithm_key: key,
+            pool_size: pool,
+            refill_threshold: threshold,
+          },
         },
       });
       onSaved();
@@ -162,10 +195,21 @@ export function PlanSettings({
                 <input
                   type="number"
                   min={1}
-                  max={50}
+                  max={100}
                   required
                   value={pool}
                   onChange={(e) => setPool(Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Refill threshold
+                <input
+                  type="number"
+                  min={0}
+                  max={pool - 1}
+                  required
+                  value={threshold}
+                  onChange={(e) => setThreshold(Number(e.target.value))}
                 />
               </label>
               {isInterview && (
@@ -182,6 +226,13 @@ export function PlanSettings({
                 </label>
               )}
             </div>
+            {!validPool(pool, threshold) && (
+              <ErrorBox error="Pool size must be 1–100; refill threshold must be 0 or more and less than pool size." />
+            )}
+            <p className="info-note">
+              When active materials reach the refill threshold or fall below it,
+              the pool tries to refill to the pool size.
+            </p>
             <p className="info-note">
               The pool is the number of materials in active practice. Each
               material follows its own schedule.
@@ -221,7 +272,10 @@ export function PlanSettings({
               >
                 Cancel
               </button>
-              <button className="button primary" disabled={busy}>
+              <button
+                className="button primary"
+                disabled={busy || !validPool(pool, threshold)}
+              >
                 {busy ? "Saving…" : "Save settings"}
                 <Check size={16} />
               </button>

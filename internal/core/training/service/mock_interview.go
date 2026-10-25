@@ -92,6 +92,17 @@ func (s *Service) PreviewMock(ctx context.Context, user uuid.UUID, req StartGrap
 		config = *req.Config
 	}
 	err := s.transact(ctx, user, func(tx repository.Tx) error {
+		var err error
+		req, err = resolveMockRequest(tx, req)
+		if err != nil {
+			return err
+		}
+		if req.Config != nil {
+			config = *req.Config
+		}
+		if err = config.Validate(); err != nil {
+			return errors.Join(ErrInvalid, err)
+		}
 		p, err := mockContext(tx, user, req.Sources)
 		if err != nil {
 			return err

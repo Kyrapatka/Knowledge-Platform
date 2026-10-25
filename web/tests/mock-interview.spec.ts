@@ -85,31 +85,33 @@ test("mock: independent multi-folder plans, distributions, all depths, replaceme
     await page.request.get("/api/v1/training/plans", { headers })
   ).json();
   await page.reload();
-  await expect(page.locator(".interview-source")).toHaveCount(3);
-  await page.getByRole("button", { name: "Select all", exact: true }).click();
-  await expect(page.locator(".interview-sources input:checked")).toHaveCount(3);
+  await page
+    .getByRole("button", { name: "Choose folders manually", exact: true })
+    .click();
+  await expect(page.locator(".selector-folder-list input")).toHaveCount(3);
+  await page
+    .getByRole("checkbox", { name: "Select section Без секции", exact: true })
+    .check();
   await expect(
-    page.getByText("All selected (3)", { exact: true }),
+    page.getByText("3 folders selected", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Clear all", exact: true }).click();
-  await expect(page.getByText("0 selected", { exact: true })).toBeVisible();
+  await page
+    .getByRole("checkbox", { name: "Select section Без секции", exact: true })
+    .uncheck();
   await expect(
-    page.getByRole("button", { name: "Start interview", exact: true }),
+    page.getByText("0 folders selected", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Start Mock", exact: true }),
   ).toBeDisabled();
-  await page
-    .locator(".interview-source")
-    .filter({ hasText: "Interview / Go" })
-    .getByRole("checkbox")
-    .check();
-  await page
-    .locator(".interview-source")
-    .filter({ hasText: "Interview / Networking" })
-    .getByRole("checkbox")
-    .check();
+  await page.getByRole("checkbox", { name: /Interview \/ Go/ }).check();
+  await page.getByRole("checkbox", { name: /Interview \/ Networking/ }).check();
   await page.getByRole("checkbox", { name: /Bank testing mode/ }).check();
   await expect(page.locator(".interview-distribution")).toContainText("78.9%");
   await expect(page.locator(".interview-distribution")).toContainText("21.1%");
-  await page.getByRole("button", { name: "Select all", exact: true }).click();
+  await page
+    .getByRole("checkbox", { name: "Select section Без секции", exact: true })
+    .check();
   for (const mode of [
     "real",
     "balanced",
@@ -120,8 +122,14 @@ test("mock: independent multi-folder plans, distributions, all depths, replaceme
   ]) {
     if (mode !== "real") {
       await page
-        .getByRole("button", { name: "Select all", exact: true })
+        .getByRole("button", { name: "Choose folders manually", exact: true })
         .click();
+      await page
+        .getByRole("checkbox", {
+          name: "Select section Без секции",
+          exact: true,
+        })
+        .check();
       await page.getByRole("checkbox", { name: /Bank testing mode/ }).check();
     }
     await page
@@ -146,7 +154,7 @@ test("mock: independent multi-folder plans, distributions, all depths, replaceme
         ),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Start interview", exact: true }),
+        page.getByRole("button", { name: "Start Mock", exact: true }),
       ).toBeDisabled();
       for (const [label, value] of [
         ["Go", "5"],
@@ -166,9 +174,17 @@ test("mock: independent multi-folder plans, distributions, all depths, replaceme
             () => document.documentElement.scrollWidth <= innerWidth + 1,
           ),
         ).toBeTruthy();
+        if (width <= 700)
+          await page
+            .getByRole("button", { name: "Continue →", exact: true })
+            .click();
         await page
           .locator(".interview-weights")
           .screenshot({ path: `test-results/mock-custom-${width}.png` });
+        if (width <= 700)
+          await page
+            .getByRole("button", { name: "← Select sources", exact: true })
+            .click();
       }
     }
     const started = page.waitForResponse(
@@ -176,9 +192,7 @@ test("mock: independent multi-folder plans, distributions, all depths, replaceme
         r.url().endsWith("/training/mock-interviews") &&
         r.request().method() === "POST",
     );
-    await page
-      .getByRole("button", { name: "Start interview", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Start Mock", exact: true }).click();
     const result = await started;
     expect(result.status()).toBe(200);
     let view = await result.json();

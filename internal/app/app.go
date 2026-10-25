@@ -30,6 +30,7 @@ import (
 	workshophandler "github.com/Kyrapatka/knowledge-platform/internal/core/folder/workshop/handler"
 	workshopservice "github.com/Kyrapatka/knowledge-platform/internal/core/folder/workshop/service"
 
+	materialimport "github.com/Kyrapatka/knowledge-platform/internal/core/importing/material"
 	materialbulk "github.com/Kyrapatka/knowledge-platform/internal/core/material/bulk"
 	materialhandler "github.com/Kyrapatka/knowledge-platform/internal/core/material/handler"
 	materialpostgres "github.com/Kyrapatka/knowledge-platform/internal/core/material/repository/postgres"
@@ -204,6 +205,9 @@ func New(
 	bulkService := materialbulk.NewService(postgresDB.GORM)
 	bulkService.SetPublisher(publisher)
 	materialbulk.NewHandler(bulkService).RegisterRoutes(trainingAPI)
+	materialImportService := materialimport.NewService(postgresDB.GORM)
+	materialImportService.SetPublisher(publisher)
+	materialimport.NewHandler(materialImportService).RegisterRoutes(trainingAPI)
 	webui.Register(router, "web/dist")
 
 	// Publish readiness only after DB validation and all route/dependency wiring.

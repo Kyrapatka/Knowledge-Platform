@@ -17,6 +17,7 @@ type RuntimeStore interface {
 }
 
 type Tx interface {
+	MockPresets() MockPresetRepository
 	ExerciseTx
 	InterviewGraph() InterviewGraphRepository
 	SaveUndo(model.UndoSnapshot) error

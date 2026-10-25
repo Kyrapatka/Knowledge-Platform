@@ -23,7 +23,7 @@ func run() error {
 			return fmt.Errorf("%s is required; use a dedicated PostgreSQL test database with schema permissions", key)
 		}
 	}
-	cmd := exec.Command("go", "test", "-count=1", "-json", "./internal/auth/repository/postgres", "./internal/core/training/repository/postgres", "./internal/core/training/handler", "./internal/core/dashboard", "./internal/app", "./cmd/migrate")
+	cmd := exec.Command("go", "test", "-count=1", "-json", "./internal/auth/repository/postgres", "./internal/core/training/repository/postgres", "./internal/core/training/handler", "./internal/core/dashboard", "./internal/app", "./cmd/migrate", "./internal/core/importing/material")
 	cmd.Stderr = os.Stderr
 	output, err := cmd.StdoutPipe()
 	if err != nil {

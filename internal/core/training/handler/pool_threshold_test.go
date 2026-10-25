@@ -32,7 +32,7 @@ func TestTrainingPoolThresholdAndEligibility(t *testing.T) {
 				f.exec(t, `UPDATE materials SET values='{"front":"Question","back":""}' WHERE id=?`, empty)
 				size := tc.target
 				key := tc.key
-				plan := decode[model.TrainingPlan](t, f.request(f.user, "POST", "/training/plans", service.CreatePlanRequest{SourceFolderIDs: []uuid.UUID{f.folder}, AlgorithmKey: &key, PoolSize: &size, HorizonDays: tc.horizon}), 201)
+				plan := decode[model.TrainingPlan](t, f.request(f.user, "POST", "/training/plans", service.CreatePlanRequest{SourceFolderIDs: []uuid.UUID{f.folder}, AlgorithmKey: &key, PoolSize: &size, RefillThreshold: &tc.threshold, HorizonDays: tc.horizon}), 201)
 				if plan.Config.RefillThreshold == nil || *plan.Config.RefillThreshold != tc.threshold {
 					t.Fatal("threshold missing from plan", plan.Config)
 				}

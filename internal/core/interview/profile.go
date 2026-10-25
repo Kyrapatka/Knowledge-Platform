@@ -146,3 +146,6 @@ func normalizeAlias(s string) string {
 	s = strings.NewReplacer("ё", "е", "–", "-", "—", "-", "‑", "-").Replace(s)
 	return strings.Join(strings.Fields(s), " ")
 }
+
+// ValidateProfile shares domain validation with import previews; SaveProfile validates again.
+func ValidateProfile(p *Profile) error { return p.validate() }

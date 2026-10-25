@@ -20,6 +20,7 @@ import (
 )
 
 type StartGraphRequest struct {
+	PresetIDs []uuid.UUID           `json:"preset_ids,omitempty"`
 	CommandID uuid.UUID             `json:"command_id"`
 	Sources   []model.SessionSource `json:"sources"`
 	Config    *graph.Config         `json:"config"`
@@ -56,6 +57,19 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 		}
 		if !errors.Is(err, repository.ErrNotFound) {
 			return err
+		}
+		if len(req.PresetIDs) > 0 && planID != uuid.Nil {
+			return ErrInvalid
+		}
+		req, err = resolveMockRequest(tx, req)
+		if err != nil {
+			return err
+		}
+		if req.Config != nil {
+			config = *req.Config
+		}
+		if err = config.Validate(); err != nil {
+			return errors.Join(ErrInvalid, err)
 		}
 		var plan model.TrainingPlan
 		if planID == uuid.Nil {
@@ -105,6 +119,7 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 				topics[topic] = true
 			}
 		}
+		startedNew := false
 		active, err := tx.ActiveSession(planID)
 		if err == nil {
 			if active.SelectionStrategy != model.SelectionInterviewGraphV1 || active.Combined {
@@ -128,6 +143,7 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 			if !errors.Is(err, repository.ErrNotFound) {
 				return err
 			}
+			startedNew = true
 			now := s.now().UTC()
 			session := model.TrainingSession{ID: uuid.New(), PlanID: plan.ID, UserID: user, SelectionStrategy: model.SelectionInterviewGraphV1, Selection: sources, Status: model.StatusActive, StartedAt: now, CreatedAt: now}
 			if err = tx.CreateSession(session); err != nil {
@@ -161,6 +177,13 @@ func (s *Service) StartGraph(ctx context.Context, user, planID uuid.UUID, req St
 			out, err = s.graphView(ctx, tx, plan, session)
 			if err != nil {
 				return err
+			}
+		}
+		if startedNew {
+			for _, id := range req.PresetIDs {
+				if err = tx.MockPresets().Used(id, s.now().UTC()); err != nil {
+					return err
+				}
 			}
 		}
 		response, err := json.Marshal(out)

@@ -107,7 +107,7 @@ func newFixture(t *testing.T) *fixture {
 	f := &fixture{db: db, user: uuid.New(), folder: uuid.New(), now: time.Date(2026, 9, 6, 12, 0, 0, 0, time.UTC)}
 	f.exec(t, "INSERT INTO users(id,nickname,nickname_normalized,password_hash) VALUES(?,'training','training','unused')", f.user)
 	config := `{"schema":{"fields":[{"key":"front","label":"Question","active":true},{"key":"back","label":"Answer","active":true}]},"metadata_schema":{"fields":[]},"card":{"question_fields":["front"],"answer_fields":["back"]}}`
-	f.exec(t, "INSERT INTO folders(id,owner_id,title,template_key,config,training_config) VALUES(?,?,'Test','custom_origin',?,'{\"default_algorithm_key\":\"english_basic\",\"pool_size\":2}')", f.folder, f.user, config)
+	f.exec(t, "INSERT INTO folders(id,owner_id,title,template_key,config,training_config) VALUES(?,?,'Test','custom_origin',?,'{\"default_algorithm_key\":\"english_basic\",\"pool_size\":2,\"refill_threshold\":1}')", f.folder, f.user, config)
 	f.restart()
 	return f
 }
@@ -386,7 +386,7 @@ func TestCancellationEmptyCardsAndDefaults(t *testing.T) {
 	}
 	// Defaults have a separate optimistic-lock version.
 	defaultsPath := "/folders/" + f.folder.String() + "/training-config"
-	d := service.FolderDefaults{Config: folderconfig.TrainingConfig{DefaultAlgorithmKey: "english_basic", PoolSize: 4}, Version: 1}
+	d := service.FolderDefaults{Config: folderconfig.TrainingConfig{DefaultAlgorithmKey: "english_basic", PoolSize: 4, RefillThreshold: intPointer(3)}, Version: 1}
 	decode[service.FolderDefaults](t, f.request(f.user, "PATCH", defaultsPath, d), 200)
 	decode[map[string]any](t, f.request(f.user, "PATCH", defaultsPath, d), 409)
 	d.Version = 2
@@ -433,6 +433,7 @@ func TestConflictingDefaultsRequireExplicitChoice(t *testing.T) {
 	pool := 3
 	req.AlgorithmKey = &key
 	req.PoolSize = &pool
+	req.RefillThreshold = intPointer(1)
 	p := decode[model.TrainingPlan](t, f.request(f.user, "POST", "/training/plans", req), 201)
 	if p.Config.PoolSize != 3 || len(p.SourceFolderIDs) != 2 {
 		t.Fatal("explicit settings did not resolve conflict")
@@ -495,3 +496,5 @@ func TestAdaptiveHTTPMastery(t *testing.T) {
 		t.Fatal("adaptive mastery not completed")
 	}
 }
+
+func intPointer(v int) *int { return &v }

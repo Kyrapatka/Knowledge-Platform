@@ -559,10 +559,17 @@ components:
       type: object
     FolderConfigTrainingConfig:
       properties:
+        refill_threshold:
+          type: integer
+          minimum: 0
+          maximum: 99
+          description: Must be less than pool_size. Independent setting; never recalculated when size changes. Missing legacy values use Interview 3 or English 5.
         default_algorithm_key:
           type: string
         pool_size:
           type: integer
+          minimum: 1
+          maximum: 100
       required:
       - default_algorithm_key
       - pool_size
@@ -1657,6 +1664,11 @@ components:
       type: object
     TrainingChangeRequest:
       properties:
+        refill_threshold:
+          type: integer
+          minimum: 0
+          maximum: 99
+          description: Must be less than pool_size. Independent setting; never recalculated when size changes. Missing legacy values use Interview 3 or English 5.
         algorithm_key:
           type: string
         algorithm_version:
@@ -1676,6 +1688,8 @@ components:
         pool_size:
           nullable: true
           type: integer
+          minimum: 1
+          maximum: 100
         stage:
           type: integer
       required:
@@ -1729,6 +1743,20 @@ components:
       type: object
     TrainingCombinedSource:
       properties:
+        material_ids:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          uniqueItems: true
+          description: Optional exact selection; every ID must be an active material in the owned source folder. Omission keeps normal folder selection.
+          items:
+            type: string
+            format: uuid
+        refill_threshold:
+          type: integer
+          minimum: 0
+          maximum: 99
+          description: Must be less than pool_size. Independent setting; never recalculated when size changes. Missing legacy values use Interview 3 or English 5.
         algorithm_key:
           nullable: true
           type: string
@@ -1745,6 +1773,8 @@ components:
         pool_size:
           nullable: true
           type: integer
+          minimum: 1
+          maximum: 100
         topics:
           items:
             type: string
@@ -1755,6 +1785,11 @@ components:
       type: object
     TrainingCreatePlanRequest:
       properties:
+        refill_threshold:
+          type: integer
+          minimum: 0
+          maximum: 99
+          description: Must be less than pool_size. Independent setting; never recalculated when size changes. Missing legacy values use Interview 3 or English 5.
         algorithm_key:
           nullable: true
           type: string
@@ -1763,6 +1798,8 @@ components:
         pool_size:
           nullable: true
           type: integer
+          minimum: 1
+          maximum: 100
         source_folder_ids:
           items:
             format: uuid
@@ -2162,10 +2199,12 @@ components:
           type: integer
         pool_size:
           type: integer
+          minimum: 1
+          maximum: 100
         refill_threshold:
           type: integer
           minimum: 0
-          description: New materials are admitted only when active count is at or below this threshold. Defaults are Interview 3 of 5 and English 5 of 8; custom targets cap the threshold below target. Legacy snapshots without this property resolve the algorithm default. Formula retains immediate refill.
+          description: New materials are admitted only when active count is at or below this threshold. Defaults are Interview 3 of 5 and English 5 of 8; explicit custom thresholds must be below pool_size and are never silently changed. Legacy snapshots without this property resolve the algorithm default. Formula retains immediate refill.
       required:
       - cards
       - pool_size
@@ -2255,6 +2294,15 @@ components:
       type: string
     TrainingModelSessionSource:
       properties:
+        material_ids:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          uniqueItems: true
+          description: Optional exact selection; every ID must be an active material in the owned source folder. Omission keeps normal folder selection.
+          items:
+            type: string
+            format: uuid
         folder_id:
           format: uuid
           type: string
@@ -2539,6 +2587,14 @@ components:
     TrainingStartGraphRequest:
       description: Mock/Deep Interview starts a graph session with an idempotent command_id. Obtain the current defaults from GET /training/interview-graph/config before customizing config.
       properties:
+        preset_ids:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: string
+            format: uuid
+          description: Alternative to sources for practice-only Mock. Resolve live owned folders and deduplicate. Single preset supplies saved defaults unless config overrides them. Multiple presets use global defaults, never merged settings. Successful start updates last_used_at atomically.
         command_id:
           format: uuid
           type: string
@@ -2553,7 +2609,6 @@ components:
           type: array
       required:
       - command_id
-      - sources
       type: object
     TrainingUndoRequest:
       properties:
@@ -2604,6 +2659,145 @@ components:
       type: string
     core_training_algorithmChangeMode:
       type: string
+    MockPreset:
+      type: object
+      required: [id, name, folder_ids, settings, version, created_at, updated_at, last_used_at, unavailable_folder_ids]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 120
+        folder_ids:
+          type: array
+          description: Available owned interview folders, resolved live. No material snapshot is stored.
+          items:
+            type: string
+            format: uuid
+        unavailable_folder_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        settings:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/GraphConfig'
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+    SaveMockPresetRequest:
+      type: object
+      required: [name, folder_ids, settings]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        folder_ids:
+          type: array
+          maxItems: 100
+          description: Duplicates are removed. IDs must refer to owned active interview folders. Empty presets may be saved but cannot start.
+          items:
+            type: string
+            format: uuid
+        settings:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/GraphConfig'
+        expected_version:
+          type: integer
+          minimum: 1
+          description: Required on update to prevent lost concurrent edits.
+    MaterialImportProfile:
+      type: object
+      additionalProperties: false
+      properties:
+        frequency: {type: integer, minimum: 1, maximum: 10}
+        difficulty: {type: integer, minimum: 1, maximum: 5}
+        level_min: {type: integer, minimum: 1, maximum: 5}
+        level_max: {type: integer, minimum: 1, maximum: 5}
+        topic: {type: string, maxLength: 200}
+        subtopic: {type: string, maxLength: 200}
+        concepts:
+          type: array
+          maxItems: 31
+          items: {type: string, minLength: 1, maxLength: 200}
+    MaterialImportItem:
+      type: object
+      additionalProperties: false
+      required: [client_id, values]
+      properties:
+        client_id: {type: string, minLength: 1, maxLength: 128}
+        values:
+          type: object
+          maxProperties: 64
+          additionalProperties: {type: string, minLength: 1, maxLength: 100000}
+          description: Active destination fields only. No pronunciation/transcription. Each string is limited to 100000 UTF-8 bytes; total values 8 MiB.
+        metadata:
+          type: object
+          maxProperties: 64
+          additionalProperties: {type: string, minLength: 1, maxLength: 100000}
+        difficulty: {type: string, enum: [easy, medium, hard], default: medium}
+        profile:
+          $ref: '#/components/schemas/MaterialImportProfile'
+        duplicate_policy: {type: string, enum: [skip, conflict, allow]}
+    MaterialImportRequest:
+      type: object
+      additionalProperties: false
+      required: [command_id, items]
+      properties:
+        command_id: {type: string, format: uuid}
+        duplicate_policy: {type: string, enum: [skip, conflict, allow], default: skip}
+        items:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/MaterialImportItem'
+    MaterialImportIssue:
+      type: object
+      required: [path, code, severity, message]
+      properties:
+        client_id: {type: string}
+        path: {type: string}
+        code: {type: string}
+        severity: {type: string, enum: [error, warning]}
+        message: {type: string}
+    MaterialImportResult:
+      type: object
+      required: [valid, created, skipped, failed, issues, items]
+      properties:
+        valid: {type: boolean}
+        created: {type: integer, minimum: 0}
+        skipped: {type: integer, minimum: 0}
+        failed: {type: integer, minimum: 0}
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialImportIssue'
+        items:
+          type: array
+          items:
+            type: object
+            required: [client_id, status]
+            properties:
+              client_id: {type: string}
+              status: {type: string, enum: [create, created, skipped, invalid]}
+              material_id: {type: string, format: uuid}
+              duplicate_of: {type: string}
+              duplicate_kind: {type: string, enum: [batch, existing]}
   securitySchemes:
     bearerAuth:
       bearerFormat: JWT
@@ -2615,11 +2809,253 @@ components:
       name: kp_refresh
       type: apiKey
 info:
-  description: HTTP contract for the current application. All application routes are under /api/v1. Use token login and Authorize with the returned access_token for Swagger requests; browser authentication additionally uses exact Origin checks and HttpOnly refresh cookies. Owned resources are never selected by an owner ID supplied by the client. Ordinary JSON is capped at 1 MiB, authentication at 64 KiB, training at 1 MiB and interview JSON at 2 MiB; folder imports have a separate 10 MiB file limit. Handler-bound oversized bodies may return 400, while declared ordinary oversized requests return 413. Examples are illustrative; IDs and versions must come from real responses.
+  description: HTTP contract for the current application. All application routes are under /api/v1. Use token login and Authorize with the returned access_token for Swagger requests; browser authentication additionally uses exact Origin checks and HttpOnly refresh cookies. Owned resources are never selected by an owner ID supplied by the client. Ordinary JSON is capped at 1 MiB, authentication at 64 KiB, training at 1 MiB and interview JSON at 2 MiB; folder imports have a separate 10 MiB file limit and existing-folder material imports allow 10 MiB JSON. Handler-bound oversized bodies may return 400, while declared ordinary oversized requests return 413. Examples are illustrative; IDs and versions must come from real responses.
   title: Knowledge Platform API
   version: 1.0.0
 openapi: 3.0.3
 paths:
+  /api/v1/folders/{folderID}/materials/import/validate:
+    post:
+      operationId: validateMaterialImport
+      summary: Validate existing-folder material import
+      description: Read-only validation against the owned active folder, current schema and all existing materials. Counts are predictions. No materials, profiles, receipts or analytics are written. Strict JSON UTF-8, no duplicate or unknown keys; body maximum 10 MiB.
+      tags: [Materials]
+      parameters:
+      - name: folderID
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialImportRequest'
+      responses:
+        "200":
+          description: Validation predictions (valid can be false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialImportResult'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "413":
+          description: Request exceeds 10 MiB
+        "422":
+          description: Invalid submitted batch; entire transaction rolled back
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: {type: string, enum: [invalid_material_import]}
+                  message: {type: string}
+                  result:
+                    $ref: '#/components/schemas/MaterialImportResult'
+        "500":
+          $ref: '#/components/responses/InternalError'
+  /api/v1/folders/{folderID}/materials/import:
+    post:
+      operationId: commitMaterialImport
+      summary: Commit existing-folder material import
+      description: Atomically import into an existing folder. Locks owner and folder, revalidates schema and duplicates, creates profiles and durable receipt in one transaction. Identical command replay returns the original result without new events; changed payload conflicts. No folder is created. Ready interview profiles require usable answers; unanswered questions are explicitly reported as drafts. Strict JSON UTF-8, no duplicate or unknown keys; body maximum 10 MiB.
+      tags: [Materials]
+      parameters:
+      - name: folderID
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialImportRequest'
+      responses:
+        "200":
+          description: Confirmed result or identical-command replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialImportResult'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "413":
+          description: Request exceeds 10 MiB
+        "422":
+          description: Invalid submitted batch; entire transaction rolled back
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: {type: string, enum: [invalid_material_import]}
+                  message: {type: string}
+                  result:
+                    $ref: '#/components/schemas/MaterialImportResult'
+        "500":
+          $ref: '#/components/responses/InternalError'
+  /training/mock-presets:
+    get:
+      operationId: listMockPresets
+      summary: listMockPresets
+      tags: [Training]
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MockPreset'
+        '400':
+          description: Invalid preset or settings
+        '401':
+          description: Authentication required
+        '404':
+          description: Owned preset or folder not found
+        '409':
+          description: Preset changed; reload before saving
+    post:
+      operationId: createMockPreset
+      summary: createMockPreset
+      tags: [Training]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveMockPresetRequest'
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockPreset'
+        '400':
+          description: Invalid preset or settings
+        '401':
+          description: Authentication required
+        '404':
+          description: Owned preset or folder not found
+        '409':
+          description: Preset changed; reload before saving
+  /training/mock-presets/{presetID}:
+    parameters:
+    - in: path
+      name: presetID
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      operationId: getMockPreset
+      summary: getMockPreset
+      tags: [Training]
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockPreset'
+        '400':
+          description: Invalid preset or settings
+        '401':
+          description: Authentication required
+        '404':
+          description: Owned preset or folder not found
+        '409':
+          description: Preset changed; reload before saving
+    put:
+      operationId: updateMockPreset
+      summary: updateMockPreset
+      tags: [Training]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveMockPresetRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockPreset'
+        '400':
+          description: Invalid preset or settings
+        '401':
+          description: Authentication required
+        '404':
+          description: Owned preset or folder not found
+        '409':
+          description: Preset changed; reload before saving
+    delete:
+      operationId: deleteMockPreset
+      summary: deleteMockPreset
+      tags: [Training]
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+        '400':
+          description: Invalid preset or settings
+        '401':
+          description: Authentication required
+        '404':
+          description: Owned preset or folder not found
+        '409':
+          description: Preset changed; reload before saving
+  /training/mock-presets/{presetID}/duplicate:
+    parameters:
+    - in: path
+      name: presetID
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      operationId: duplicateMockPreset
+      summary: duplicateMockPreset
+      tags: [Training]
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockPreset'
+        '400':
+          description: Invalid preset or settings
+        '401':
+          description: Authentication required
+        '404':
+          description: Owned preset or folder not found
+        '409':
+          description: Preset changed; reload before saving
   /api/v1/auth/browser/login:
     post:
       description: Browser requests require an exact matching Origin (scheme + host). Refresh credentials are stored in the HttpOnly SameSite kp_refresh cookie scoped to /api/v1/auth/browser; Secure on HTTPS. Access tokens are returned in JSON. Swagger sends same-origin requests; JavaScript cannot manually set HttpOnly cookies.

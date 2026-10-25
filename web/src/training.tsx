@@ -39,7 +39,7 @@ import {
   Spinner,
 } from "./ui";
 import { MaterialEditor } from "./editors";
-import { algorithmsFor } from "./settings";
+import { algorithmsFor, defaultThreshold, validPool } from "./settings";
 import { WordExample } from "./example";
 import { RecallCard } from "./recall-card";
 
@@ -94,6 +94,12 @@ export function TrainingSetup({
               : {
                   algorithm_key: f.training_config.default_algorithm_key,
                   pool_size: f.training_config.pool_size,
+                  refill_threshold:
+                    f.training_config.refill_threshold ??
+                    defaultThreshold(
+                      f.training_config.default_algorithm_key,
+                      f.training_config.pool_size,
+                    ),
                   ...(f.training_config.default_algorithm_key.startsWith(
                     "interview",
                   )
@@ -121,6 +127,18 @@ export function TrainingSetup({
   async function start(e: FormEvent) {
     e.preventDefault();
     if (starting.current) return;
+    if (
+      selected.some(
+        (id) =>
+          !sources[id].plan_id &&
+          !validPool(sources[id].pool_size!, sources[id].refill_threshold!),
+      )
+    ) {
+      setError(
+        "Pool size must be 1–100; refill threshold must be 0 or more and less than pool size.",
+      );
+      return;
+    }
     starting.current = true;
     setBusy(true);
     setError("");
@@ -262,11 +280,26 @@ export function TrainingSetup({
                             <input
                               type="number"
                               min={1}
-                              max={50}
+                              max={100}
                               value={src.pool_size}
                               onChange={(e) =>
                                 update(f.id, {
                                   pool_size: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Refill threshold
+                            <input
+                              type="number"
+                              min={0}
+                              max={(src.pool_size ?? 1) - 1}
+                              required
+                              value={src.refill_threshold}
+                              onChange={(e) =>
+                                update(f.id, {
+                                  refill_threshold: Number(e.target.value),
                                 })
                               }
                             />
@@ -362,8 +395,6 @@ export function TrainingSetup({
   );
 }
 export function TrainingPage() {
-  if (initial.materialIDs)
-    folders = folders.filter((f) => initial.ids.includes(f.id));
   const { markUsed } = useLibraryPreferences();
   const visitRecorded = useRef(false);
   const { user } = useAuth();

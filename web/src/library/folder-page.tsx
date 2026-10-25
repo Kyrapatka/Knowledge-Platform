@@ -1,3 +1,4 @@
+import { QuickImport } from "../features/quick-import/components/quick-import";
 import {
   ArrowDownUp,
   BookOpen,
@@ -60,6 +61,7 @@ export function FolderPage() {
   const section = preferences.categories.find(
     (c) => c.id === preferences.folders[folderID]?.categoryId,
   );
+  const [quickImport, setQuickImport] = useState(false);
   const [customize, setCustomize] = useState(false);
   const [copyMaterial, setCopyMaterial] = useState<Material | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -249,13 +251,25 @@ export function FolderPage() {
               {page?.total ?? folder.material_count}
             </span>
           </div>
-          <button
-            className="button primary small"
-            onClick={() => setEditor("new")}
-          >
-            <Plus size={16} />
-            Add material
-          </button>
+          <div className="button-row">
+            {["english_words", "interview_questions"].includes(
+              folder.template_key,
+            ) && (
+              <button
+                className="button small"
+                onClick={() => setQuickImport(true)}
+              >
+                Import
+              </button>
+            )}
+            <button
+              className="button primary small"
+              onClick={() => setEditor("new")}
+            >
+              <Plus size={16} />
+              Add material
+            </button>
+          </div>
         </div>
         <div className="table-toolbar">
           <div className="search-input">
@@ -457,6 +471,13 @@ export function FolderPage() {
           </>
         )}
       </div>
+      {quickImport && (
+        <QuickImport
+          folder={folder}
+          onClose={() => setQuickImport(false)}
+          onSaved={refresh}
+        />
+      )}
       {editor && (
         <MaterialEditor
           folder={folder}

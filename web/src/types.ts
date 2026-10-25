@@ -16,6 +16,7 @@ export type PlanOption = {
   track: string;
   status: string;
   horizon_days: number;
+  refill_threshold?: number;
   pool_size: number;
   created_at: string;
 };
@@ -26,7 +27,11 @@ export type Folder = {
   template_key: string;
   config: FolderConfig;
   config_version: number;
-  training_config: { default_algorithm_key: string; pool_size: number };
+  training_config: {
+    default_algorithm_key: string;
+    refill_threshold?: number;
+    pool_size: number;
+  };
   training_config_version: number;
   created_at: string;
   updated_at: string;
@@ -92,7 +97,11 @@ export type Plan = {
   algorithm_version: number;
   track: string;
   status: string;
-  config: { pool_size: number; horizon_days: number };
+  config: {
+    refill_threshold?: number;
+    pool_size: number;
+    horizon_days: number;
+  };
   source_folder_ids: string[];
   created_at: string;
 };
@@ -127,6 +136,7 @@ export type SessionView = {
   session: { id: string; plan_id: string; status: string };
   current: Presentation | null;
   summary: Summary;
+  refill_threshold?: number;
   pool_size: number;
 };
 export type CombinedView = {
@@ -149,6 +159,7 @@ export type Source = {
   plan_id?: string;
   algorithm_key?: string;
   horizon_days?: number;
+  refill_threshold?: number;
   pool_size?: number;
 };
 export type Exercise = {

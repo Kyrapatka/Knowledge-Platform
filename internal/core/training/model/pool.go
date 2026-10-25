@@ -1,19 +1,24 @@
 package model
 
-// PoolPolicy separates admitting new materials from recycling current items.
-// Explicit custom pool sizes remain supported; their threshold is capped below
-// the target. Formula training keeps its existing refill-on-every-free-slot rule.
+import (
+	"fmt"
+	folderconfig "github.com/Kyrapatka/knowledge-platform/internal/core/folder/config"
+)
+
+// PoolPolicy admits new materials independently from recycling existing items.
 type PoolPolicy struct{ PoolSize, RefillThreshold int }
 
 func DefaultPoolPolicy(algorithm string, size int) PoolPolicy {
-	threshold := size - 1
-	switch algorithm {
-	case "interview_long_term", "interview_cram":
-		threshold = min(3, threshold)
-	case "english_basic", "english_adaptive":
-		threshold = min(5, threshold)
+	return PoolPolicy{size, folderconfig.DefaultRefillThreshold(algorithm, size)}
+}
+func (p PoolPolicy) Validate() error {
+	if p.PoolSize < 1 || p.PoolSize > 100 {
+		return fmt.Errorf("pool_size must be 1..100")
 	}
-	return PoolPolicy{size, max(0, threshold)}
+	if p.RefillThreshold < 0 || p.RefillThreshold >= p.PoolSize {
+		return fmt.Errorf("refill_threshold must be >= 0 and less than pool_size")
+	}
+	return nil
 }
 func (p PoolPolicy) RefillSlots(active int) int {
 	if active > p.RefillThreshold {
@@ -23,13 +28,15 @@ func (p PoolPolicy) RefillSlots(active int) int {
 }
 func (p TrainingPlan) PoolPolicy() PoolPolicy {
 	policy := DefaultPoolPolicy(p.AlgorithmKey, p.Config.PoolSize)
-	if value := p.Config.RefillThreshold; value != nil && *value >= 0 && *value < p.Config.PoolSize {
-		policy.RefillThreshold = *value
+	if p.Config.RefillThreshold != nil {
+		policy.RefillThreshold = *p.Config.RefillThreshold
 	}
 	return policy
 }
 func (c *PlanConfig) SetPoolPolicy(algorithm string, size int) {
-	policy := DefaultPoolPolicy(algorithm, size)
 	c.PoolSize = size
-	c.RefillThreshold = &policy.RefillThreshold
+	if c.RefillThreshold == nil {
+		threshold := folderconfig.DefaultRefillThreshold(algorithm, size)
+		c.RefillThreshold = &threshold
+	}
 }

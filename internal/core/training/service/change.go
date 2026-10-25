@@ -17,6 +17,7 @@ import (
 )
 
 type ChangeRequest struct {
+	RefillThreshold  *int                 `json:"refill_threshold,omitempty"`
 	EndActiveSession bool                 `json:"end_active_session,omitempty"`
 	PoolSize         *int                 `json:"pool_size,omitempty"`
 	CommandID        uuid.UUID            `json:"command_id"`
@@ -45,7 +46,7 @@ func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, r
 	if req.CommandID == uuid.Nil || req.ExpectedVersion < 1 {
 		return out, ErrInvalid
 	}
-	if req.PoolSize != nil && (*req.PoolSize < 1 || *req.PoolSize > 50) {
+	if req.PoolSize != nil && (*req.PoolSize < 1 || *req.PoolSize > 100) {
 		return out, ErrInvalid
 	}
 	if req.Mode != algorithm.KeepStage && req.Mode != algorithm.ResetStage && req.Mode != algorithm.SetStage {
@@ -148,7 +149,13 @@ func (s *Service) ChangeAlgorithm(ctx context.Context, user, planID uuid.UUID, r
 		if req.PoolSize != nil {
 			plan.Config.PoolSize = *req.PoolSize
 		}
+		if req.RefillThreshold != nil {
+			plan.Config.RefillThreshold = req.RefillThreshold
+		}
 		plan.Config.SetPoolPolicy(plan.AlgorithmKey, plan.Config.PoolSize)
+		if err := plan.PoolPolicy().Validate(); err != nil {
+			return errors.Join(ErrInvalid, err)
+		}
 		plan.Version++
 		plan.UpdatedAt = now
 		if err = tx.UpdatePlan(plan, req.ExpectedVersion); err != nil {

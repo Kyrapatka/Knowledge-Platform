@@ -16,8 +16,8 @@ func TestPoolAdmissionPolicy(t *testing.T) {
 		{"english_basic", 8, 5, []int{0, 0, 0, 3, 4, 5, 6, 7, 8}},
 		{"english_adaptive", 8, 5, []int{0, 0, 0, 3, 4, 5, 6, 7, 8}},
 		{"formula_adaptive", 5, 4, []int{0, 1, 2, 3, 4, 5}},
-		{"english_basic", 2, 1, []int{0, 1, 2}},
-		{"interview_cram", 1, 0, []int{0, 1}},
+		{"english_basic", 2, 5, []int{0, 1, 2}},
+		{"interview_cram", 1, 3, []int{0, 1}},
 	} {
 		t.Run(tc.key+string(rune('0'+tc.size)), func(t *testing.T) {
 			p := DefaultPoolPolicy(tc.key, tc.size)
@@ -51,7 +51,34 @@ func TestPoolPolicyLegacyAndSnapshot(t *testing.T) {
 		t.Fatal("snapshot lost threshold", err)
 	}
 	loaded.SetPoolPolicy("english_basic", 3)
-	if *loaded.RefillThreshold != 2 {
-		t.Fatal("custom target invalid")
+	if *loaded.RefillThreshold != 5 {
+		t.Fatal("changing size recalculated the saved threshold")
+	}
+}
+
+func TestCustomPoolValidationAndPersistence(t *testing.T) {
+	for _, tc := range []struct {
+		size, threshold int
+		valid           bool
+	}{
+		{1, 0, true}, {5, 0, true}, {5, 3, true}, {5, 4, true}, {8, 5, true}, {12, 4, true}, {100, 99, true},
+		{0, 0, false}, {-1, 0, false}, {101, 5, false}, {5, -1, false}, {5, 5, false}, {5, 6, false},
+	} {
+		policy := PoolPolicy{tc.size, tc.threshold}
+		if (policy.Validate() == nil) != tc.valid {
+			t.Fatalf("validation: %+v", tc)
+		}
+		p := TrainingPlan{AlgorithmKey: "english_basic", Config: PlanConfig{PoolSize: tc.size, RefillThreshold: &tc.threshold}}
+		raw, err := json.Marshal(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var loaded TrainingPlan
+		if err = json.Unmarshal(raw, &loaded); err != nil {
+			t.Fatal(err)
+		}
+		if loaded.PoolPolicy() != policy {
+			t.Fatal("explicit settings were changed", loaded.PoolPolicy(), policy)
+		}
 	}
 }

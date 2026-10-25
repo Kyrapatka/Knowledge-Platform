@@ -1,0 +1,3377 @@
+[
+  {
+    "foreign": "abandon",
+    "native": "покидать",
+    "examples": []
+  },
+  {
+    "foreign": "absorb",
+    "native": "поглощать",
+    "examples": ["Consider absorb."]
+  },
+  {
+    "foreign": "accept",
+    "native": "принимать",
+    "examples": [
+      "Consider accept.",
+      "Our discussion concerned accept during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "accomplish",
+    "native": "выполнять",
+    "examples": [
+      "Consider accomplish.",
+      "Our discussion concerned accomplish during yesterday’s workshop.",
+      "Could you explain how accomplish fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "achieve",
+    "native": "достигать",
+    "examples": []
+  },
+  {
+    "foreign": "acknowledge",
+    "native": "признавать",
+    "examples": ["Consider acknowledge."]
+  },
+  {
+    "foreign": "adapt",
+    "native": "адаптировать",
+    "examples": [
+      "Consider adapt.",
+      "Our discussion concerned adapt during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "add",
+    "native": "добавлять",
+    "examples": [
+      "Consider add.",
+      "Our discussion concerned add during yesterday’s workshop.",
+      "Could you explain how add fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "adjust",
+    "native": "регулировать",
+    "examples": []
+  },
+  {
+    "foreign": "admire",
+    "native": "восхищаться",
+    "examples": ["Consider admire."]
+  },
+  {
+    "foreign": "admit",
+    "native": "допускать",
+    "examples": [
+      "Consider admit.",
+      "Our discussion concerned admit during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "adopt",
+    "native": "усыновлять",
+    "examples": [
+      "Consider adopt.",
+      "Our discussion concerned adopt during yesterday’s workshop.",
+      "Could you explain how adopt fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "advise",
+    "native": "советовать",
+    "examples": []
+  },
+  {
+    "foreign": "afford",
+    "native": "позволять себе",
+    "examples": ["Consider afford."]
+  },
+  {
+    "foreign": "agree",
+    "native": "соглашаться",
+    "examples": [
+      "Consider agree.",
+      "Our discussion concerned agree during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "allow",
+    "native": "разрешать",
+    "examples": [
+      "Consider allow.",
+      "Our discussion concerned allow during yesterday’s workshop.",
+      "Could you explain how allow fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "announce",
+    "native": "объявлять",
+    "examples": []
+  },
+  {
+    "foreign": "anticipate",
+    "native": "предвидеть",
+    "examples": ["Consider anticipate."]
+  },
+  {
+    "foreign": "apologize",
+    "native": "извиняться",
+    "examples": [
+      "Consider apologize.",
+      "Our discussion concerned apologize during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "appear",
+    "native": "появляться",
+    "examples": [
+      "Consider appear.",
+      "Our discussion concerned appear during yesterday’s workshop.",
+      "Could you explain how appear fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "apply",
+    "native": "применять",
+    "examples": []
+  },
+  {
+    "foreign": "appreciate",
+    "native": "ценить",
+    "examples": ["Consider appreciate."]
+  },
+  {
+    "foreign": "approach",
+    "native": "приближаться",
+    "examples": [
+      "Consider approach.",
+      "Our discussion concerned approach during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "approve",
+    "native": "одобрять",
+    "examples": [
+      "Consider approve.",
+      "Our discussion concerned approve during yesterday’s workshop.",
+      "Could you explain how approve fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "argue",
+    "native": "спорить",
+    "examples": []
+  },
+  {
+    "foreign": "arrange",
+    "native": "организовывать",
+    "examples": ["Consider arrange."]
+  },
+  {
+    "foreign": "arrive",
+    "native": "прибывать",
+    "examples": [
+      "Consider arrive.",
+      "Our discussion concerned arrive during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "ask",
+    "native": "спрашивать",
+    "examples": [
+      "Consider ask.",
+      "Our discussion concerned ask during yesterday’s workshop.",
+      "Could you explain how ask fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "assess",
+    "native": "оценивать",
+    "examples": []
+  },
+  {
+    "foreign": "assume",
+    "native": "предполагать",
+    "examples": ["Consider assume."]
+  },
+  {
+    "foreign": "attach",
+    "native": "прикреплять",
+    "examples": [
+      "Consider attach.",
+      "Our discussion concerned attach during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "attempt",
+    "native": "пытаться",
+    "examples": [
+      "Consider attempt.",
+      "Our discussion concerned attempt during yesterday’s workshop.",
+      "Could you explain how attempt fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "attend",
+    "native": "посещать",
+    "examples": []
+  },
+  {
+    "foreign": "attract",
+    "native": "привлекать",
+    "examples": ["Consider attract."]
+  },
+  {
+    "foreign": "avoid",
+    "native": "избегать",
+    "examples": [
+      "Consider avoid.",
+      "Our discussion concerned avoid during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "awake",
+    "native": "просыпаться",
+    "examples": [
+      "Consider awake.",
+      "Our discussion concerned awake during yesterday’s workshop.",
+      "Could you explain how awake fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "bake",
+    "native": "выпекать",
+    "examples": []
+  },
+  {
+    "foreign": "balance",
+    "native": "уравновешивать",
+    "examples": ["Consider balance."]
+  },
+  {
+    "foreign": "ban",
+    "native": "запрещать",
+    "examples": [
+      "Consider ban.",
+      "Our discussion concerned ban during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "bear",
+    "native": "выносить",
+    "examples": [
+      "Consider bear.",
+      "Our discussion concerned bear during yesterday’s workshop.",
+      "Could you explain how bear fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "beat",
+    "native": "бить",
+    "examples": []
+  },
+  {
+    "foreign": "become",
+    "native": "становиться",
+    "examples": ["Consider become."]
+  },
+  {
+    "foreign": "begin",
+    "native": "начинать",
+    "examples": [
+      "Consider begin.",
+      "Our discussion concerned begin during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "behave",
+    "native": "вести себя",
+    "examples": [
+      "Consider behave.",
+      "Our discussion concerned behave during yesterday’s workshop.",
+      "Could you explain how behave fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "believe",
+    "native": "верить",
+    "examples": []
+  },
+  {
+    "foreign": "belong",
+    "native": "принадлежать",
+    "examples": ["Consider belong."]
+  },
+  {
+    "foreign": "bend",
+    "native": "сгибать",
+    "examples": [
+      "Consider bend.",
+      "Our discussion concerned bend during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "bet",
+    "native": "держать пари",
+    "examples": [
+      "Consider bet.",
+      "Our discussion concerned bet during yesterday’s workshop.",
+      "Could you explain how bet fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "bind",
+    "native": "связывать",
+    "examples": []
+  },
+  {
+    "foreign": "bite",
+    "native": "кусать",
+    "examples": ["Consider bite."]
+  },
+  {
+    "foreign": "blame",
+    "native": "обвинять",
+    "examples": [
+      "Consider blame.",
+      "Our discussion concerned blame during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "bleed",
+    "native": "кровоточить",
+    "examples": [
+      "Consider bleed.",
+      "Our discussion concerned bleed during yesterday’s workshop.",
+      "Could you explain how bleed fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "bless",
+    "native": "благословлять",
+    "examples": []
+  },
+  {
+    "foreign": "blow",
+    "native": "дуть",
+    "examples": ["Consider blow."]
+  },
+  {
+    "foreign": "boil",
+    "native": "кипятить",
+    "examples": [
+      "Consider boil.",
+      "Our discussion concerned boil during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "borrow",
+    "native": "брать взаймы",
+    "examples": [
+      "Consider borrow.",
+      "Our discussion concerned borrow during yesterday’s workshop.",
+      "Could you explain how borrow fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "bounce",
+    "native": "отскакивать",
+    "examples": []
+  },
+  {
+    "foreign": "break",
+    "native": "ломать",
+    "examples": ["Consider break."]
+  },
+  {
+    "foreign": "breathe",
+    "native": "дышать",
+    "examples": [
+      "Consider breathe.",
+      "Our discussion concerned breathe during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "breed",
+    "native": "разводить",
+    "examples": [
+      "Consider breed.",
+      "Our discussion concerned breed during yesterday’s workshop.",
+      "Could you explain how breed fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "bring",
+    "native": "приносить",
+    "examples": []
+  },
+  {
+    "foreign": "broadcast",
+    "native": "транслировать",
+    "examples": ["Consider broadcast."]
+  },
+  {
+    "foreign": "brush",
+    "native": "чистить щёткой",
+    "examples": [
+      "Consider brush.",
+      "Our discussion concerned brush during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "build",
+    "native": "строить",
+    "examples": [
+      "Consider build.",
+      "Our discussion concerned build during yesterday’s workshop.",
+      "Could you explain how build fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "burn",
+    "native": "гореть",
+    "examples": []
+  },
+  {
+    "foreign": "burst",
+    "native": "лопаться",
+    "examples": ["Consider burst."]
+  },
+  {
+    "foreign": "bury",
+    "native": "хоронить",
+    "examples": [
+      "Consider bury.",
+      "Our discussion concerned bury during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "buy",
+    "native": "покупать",
+    "examples": [
+      "Consider buy.",
+      "Our discussion concerned buy during yesterday’s workshop.",
+      "Could you explain how buy fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "calculate",
+    "native": "вычислять",
+    "examples": []
+  },
+  {
+    "foreign": "call",
+    "native": "звать",
+    "examples": ["Consider call."]
+  },
+  {
+    "foreign": "cancel",
+    "native": "отменять",
+    "examples": [
+      "Consider cancel.",
+      "Our discussion concerned cancel during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "capture",
+    "native": "захватывать",
+    "examples": [
+      "Consider capture.",
+      "Our discussion concerned capture during yesterday’s workshop.",
+      "Could you explain how capture fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "care",
+    "native": "заботиться",
+    "examples": []
+  },
+  {
+    "foreign": "carry",
+    "native": "нести",
+    "examples": ["Consider carry."]
+  },
+  {
+    "foreign": "cast",
+    "native": "бросать",
+    "examples": [
+      "Consider cast.",
+      "Our discussion concerned cast during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "catch",
+    "native": "ловить",
+    "examples": [
+      "Consider catch.",
+      "Our discussion concerned catch during yesterday’s workshop.",
+      "Could you explain how catch fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "celebrate",
+    "native": "праздновать",
+    "examples": []
+  },
+  {
+    "foreign": "challenge",
+    "native": "оспаривать",
+    "examples": ["Consider challenge."]
+  },
+  {
+    "foreign": "change",
+    "native": "изменять",
+    "examples": [
+      "Consider change.",
+      "Our discussion concerned change during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "charge",
+    "native": "заряжать",
+    "examples": [
+      "Consider charge.",
+      "Our discussion concerned charge during yesterday’s workshop.",
+      "Could you explain how charge fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "chase",
+    "native": "преследовать",
+    "examples": []
+  },
+  {
+    "foreign": "check",
+    "native": "проверять",
+    "examples": ["Consider check."]
+  },
+  {
+    "foreign": "choose",
+    "native": "выбирать",
+    "examples": [
+      "Consider choose.",
+      "Our discussion concerned choose during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "claim",
+    "native": "утверждать",
+    "examples": [
+      "Consider claim.",
+      "Our discussion concerned claim during yesterday’s workshop.",
+      "Could you explain how claim fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "clap",
+    "native": "хлопать",
+    "examples": []
+  },
+  {
+    "foreign": "clarify",
+    "native": "уточнять",
+    "examples": ["Consider clarify."]
+  },
+  {
+    "foreign": "clean",
+    "native": "убирать",
+    "examples": [
+      "Consider clean.",
+      "Our discussion concerned clean during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "climb",
+    "native": "взбираться",
+    "examples": [
+      "Consider climb.",
+      "Our discussion concerned climb during yesterday’s workshop.",
+      "Could you explain how climb fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "close",
+    "native": "закрывать",
+    "examples": []
+  },
+  {
+    "foreign": "collect",
+    "native": "собирать",
+    "examples": ["Consider collect."]
+  },
+  {
+    "foreign": "combine",
+    "native": "сочетать",
+    "examples": [
+      "Consider combine.",
+      "Our discussion concerned combine during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "compare",
+    "native": "сравнивать",
+    "examples": [
+      "Consider compare.",
+      "Our discussion concerned compare during yesterday’s workshop.",
+      "Could you explain how compare fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "compete",
+    "native": "соревноваться",
+    "examples": []
+  },
+  {
+    "foreign": "complain",
+    "native": "жаловаться",
+    "examples": ["Consider complain."]
+  },
+  {
+    "foreign": "complete",
+    "native": "завершать",
+    "examples": [
+      "Consider complete.",
+      "Our discussion concerned complete during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "concentrate",
+    "native": "сосредоточиваться",
+    "examples": [
+      "Consider concentrate.",
+      "Our discussion concerned concentrate during yesterday’s workshop.",
+      "Could you explain how concentrate fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "confirm",
+    "native": "подтверждать",
+    "examples": []
+  },
+  {
+    "foreign": "connect",
+    "native": "соединять",
+    "examples": ["Consider connect."]
+  },
+  {
+    "foreign": "consider",
+    "native": "рассматривать",
+    "examples": [
+      "Consider consider.",
+      "Our discussion concerned consider during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "contain",
+    "native": "содержать",
+    "examples": [
+      "Consider contain.",
+      "Our discussion concerned contain during yesterday’s workshop.",
+      "Could you explain how contain fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "courage",
+    "native": "смелость",
+    "examples": []
+  },
+  {
+    "foreign": "curiosity",
+    "native": "любознательность",
+    "examples": ["Consider curiosity."]
+  },
+  {
+    "foreign": "patience",
+    "native": "терпение",
+    "examples": [
+      "Consider patience.",
+      "Our discussion concerned patience during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "honesty",
+    "native": "честность",
+    "examples": [
+      "Consider honesty.",
+      "Our discussion concerned honesty during yesterday’s workshop.",
+      "Could you explain how honesty fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "wisdom",
+    "native": "мудрость",
+    "examples": []
+  },
+  {
+    "foreign": "kindness",
+    "native": "доброта",
+    "examples": ["Consider kindness."]
+  },
+  {
+    "foreign": "freedom",
+    "native": "свобода",
+    "examples": [
+      "Consider freedom.",
+      "Our discussion concerned freedom during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "justice",
+    "native": "справедливость",
+    "examples": [
+      "Consider justice.",
+      "Our discussion concerned justice during yesterday’s workshop.",
+      "Could you explain how justice fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "knowledge",
+    "native": "знания",
+    "examples": []
+  },
+  {
+    "foreign": "experience",
+    "native": "опыт",
+    "examples": ["Consider experience."]
+  },
+  {
+    "foreign": "opportunity",
+    "native": "возможность",
+    "examples": [
+      "Consider opportunity.",
+      "Our discussion concerned opportunity during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "responsibility",
+    "native": "ответственность",
+    "examples": [
+      "Consider responsibility.",
+      "Our discussion concerned responsibility during yesterday’s workshop.",
+      "Could you explain how responsibility fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "decision",
+    "native": "решение",
+    "examples": []
+  },
+  {
+    "foreign": "consequence",
+    "native": "последствие",
+    "examples": ["Consider consequence."]
+  },
+  {
+    "foreign": "advantage",
+    "native": "преимущество",
+    "examples": [
+      "Consider advantage.",
+      "Our discussion concerned advantage during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "achievement",
+    "native": "достижение",
+    "examples": [
+      "Consider achievement.",
+      "Our discussion concerned achievement during yesterday’s workshop.",
+      "Could you explain how achievement fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "effort",
+    "native": "усилие",
+    "examples": []
+  },
+  {
+    "foreign": "purpose",
+    "native": "цель",
+    "examples": ["Consider purpose."]
+  },
+  {
+    "foreign": "intention",
+    "native": "намерение",
+    "examples": [
+      "Consider intention.",
+      "Our discussion concerned intention during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "habit",
+    "native": "привычка",
+    "examples": [
+      "Consider habit.",
+      "Our discussion concerned habit during yesterday’s workshop.",
+      "Could you explain how habit fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "belief",
+    "native": "убеждение",
+    "examples": []
+  },
+  {
+    "foreign": "attitude",
+    "native": "отношение",
+    "examples": ["Consider attitude."]
+  },
+  {
+    "foreign": "behaviour",
+    "native": "поведение",
+    "examples": [
+      "Consider behaviour.",
+      "Our discussion concerned behaviour during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "confidence",
+    "native": "уверенность",
+    "examples": [
+      "Consider confidence.",
+      "Our discussion concerned confidence during yesterday’s workshop.",
+      "Could you explain how confidence fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "doubt",
+    "native": "сомнение",
+    "examples": []
+  },
+  {
+    "foreign": "fear",
+    "native": "страх",
+    "examples": ["Consider fear."]
+  },
+  {
+    "foreign": "hope",
+    "native": "надежда",
+    "examples": [
+      "Consider hope.",
+      "Our discussion concerned hope during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "joy",
+    "native": "радость",
+    "examples": [
+      "Consider joy.",
+      "Our discussion concerned joy during yesterday’s workshop.",
+      "Could you explain how joy fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "sorrow",
+    "native": "печаль",
+    "examples": []
+  },
+  {
+    "foreign": "anger",
+    "native": "гнев",
+    "examples": ["Consider anger."]
+  },
+  {
+    "foreign": "surprise",
+    "native": "удивление",
+    "examples": [
+      "Consider surprise.",
+      "Our discussion concerned surprise during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "gratitude",
+    "native": "благодарность",
+    "examples": [
+      "Consider gratitude.",
+      "Our discussion concerned gratitude during yesterday’s workshop.",
+      "Could you explain how gratitude fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "respect",
+    "native": "уважение",
+    "examples": []
+  },
+  {
+    "foreign": "trust",
+    "native": "доверие",
+    "examples": ["Consider trust."]
+  },
+  {
+    "foreign": "friendship",
+    "native": "дружба",
+    "examples": [
+      "Consider friendship.",
+      "Our discussion concerned friendship during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "relationship",
+    "native": "взаимоотношение",
+    "examples": [
+      "Consider relationship.",
+      "Our discussion concerned relationship during yesterday’s workshop.",
+      "Could you explain how relationship fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "community",
+    "native": "сообщество",
+    "examples": []
+  },
+  {
+    "foreign": "society",
+    "native": "общество",
+    "examples": ["Consider society."]
+  },
+  {
+    "foreign": "culture",
+    "native": "культура",
+    "examples": [
+      "Consider culture.",
+      "Our discussion concerned culture during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "tradition",
+    "native": "традиция",
+    "examples": [
+      "Consider tradition.",
+      "Our discussion concerned tradition during yesterday’s workshop.",
+      "Could you explain how tradition fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "language",
+    "native": "язык",
+    "examples": []
+  },
+  {
+    "foreign": "education",
+    "native": "образование",
+    "examples": ["Consider education."]
+  },
+  {
+    "foreign": "health",
+    "native": "здоровье",
+    "examples": [
+      "Consider health.",
+      "Our discussion concerned health during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "wealth",
+    "native": "богатство",
+    "examples": [
+      "Consider wealth.",
+      "Our discussion concerned wealth during yesterday’s workshop.",
+      "Could you explain how wealth fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "poverty",
+    "native": "бедность",
+    "examples": []
+  },
+  {
+    "foreign": "environment",
+    "native": "окружающая среда",
+    "examples": ["Consider environment."]
+  },
+  {
+    "foreign": "nature",
+    "native": "природа",
+    "examples": [
+      "Consider nature.",
+      "Our discussion concerned nature during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "weather",
+    "native": "погода",
+    "examples": [
+      "Consider weather.",
+      "Our discussion concerned weather during yesterday’s workshop.",
+      "Could you explain how weather fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "climate",
+    "native": "климат",
+    "examples": []
+  },
+  {
+    "foreign": "landscape",
+    "native": "пейзаж",
+    "examples": ["Consider landscape."]
+  },
+  {
+    "foreign": "mountain",
+    "native": "гора",
+    "examples": [
+      "Consider mountain.",
+      "Our discussion concerned mountain during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "valley",
+    "native": "долина",
+    "examples": [
+      "Consider valley.",
+      "Our discussion concerned valley during yesterday’s workshop.",
+      "Could you explain how valley fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "forest",
+    "native": "лес",
+    "examples": []
+  },
+  {
+    "foreign": "desert",
+    "native": "пустыня",
+    "examples": ["Consider desert."]
+  },
+  {
+    "foreign": "ocean",
+    "native": "океан",
+    "examples": [
+      "Consider ocean.",
+      "Our discussion concerned ocean during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "river",
+    "native": "река",
+    "examples": [
+      "Consider river.",
+      "Our discussion concerned river during yesterday’s workshop.",
+      "Could you explain how river fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "lake",
+    "native": "озеро",
+    "examples": []
+  },
+  {
+    "foreign": "island",
+    "native": "остров",
+    "examples": ["Consider island."]
+  },
+  {
+    "foreign": "coast",
+    "native": "побережье",
+    "examples": [
+      "Consider coast.",
+      "Our discussion concerned coast during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "beach",
+    "native": "пляж",
+    "examples": [
+      "Consider beach.",
+      "Our discussion concerned beach during yesterday’s workshop.",
+      "Could you explain how beach fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "village",
+    "native": "деревня",
+    "examples": []
+  },
+  {
+    "foreign": "city",
+    "native": "город",
+    "examples": ["Consider city."]
+  },
+  {
+    "foreign": "street",
+    "native": "улица",
+    "examples": [
+      "Consider street.",
+      "Our discussion concerned street during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "bridge",
+    "native": "мост",
+    "examples": [
+      "Consider bridge.",
+      "Our discussion concerned bridge during yesterday’s workshop.",
+      "Could you explain how bridge fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "building",
+    "native": "здание",
+    "examples": []
+  },
+  {
+    "foreign": "roof",
+    "native": "крыша",
+    "examples": ["Consider roof."]
+  },
+  {
+    "foreign": "ceiling",
+    "native": "потолок",
+    "examples": [
+      "Consider ceiling.",
+      "Our discussion concerned ceiling during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "floor",
+    "native": "пол",
+    "examples": [
+      "Consider floor.",
+      "Our discussion concerned floor during yesterday’s workshop.",
+      "Could you explain how floor fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "wall",
+    "native": "стена",
+    "examples": []
+  },
+  {
+    "foreign": "window",
+    "native": "окно",
+    "examples": ["Consider window."]
+  },
+  {
+    "foreign": "door",
+    "native": "дверь",
+    "examples": [
+      "Consider door.",
+      "Our discussion concerned door during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "stairs",
+    "native": "лестница",
+    "examples": [
+      "Consider stairs.",
+      "Our discussion concerned stairs during yesterday’s workshop.",
+      "Could you explain how stairs fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "garden",
+    "native": "сад",
+    "examples": []
+  },
+  {
+    "foreign": "kitchen",
+    "native": "кухня",
+    "examples": ["Consider kitchen."]
+  },
+  {
+    "foreign": "bedroom",
+    "native": "спальня",
+    "examples": [
+      "Consider bedroom.",
+      "Our discussion concerned bedroom during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "bathroom",
+    "native": "ванная",
+    "examples": [
+      "Consider bathroom.",
+      "Our discussion concerned bathroom during yesterday’s workshop.",
+      "Could you explain how bathroom fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "furniture",
+    "native": "мебель",
+    "examples": []
+  },
+  {
+    "foreign": "cupboard",
+    "native": "шкаф",
+    "examples": ["Consider cupboard."]
+  },
+  {
+    "foreign": "drawer",
+    "native": "ящик",
+    "examples": [
+      "Consider drawer.",
+      "Our discussion concerned drawer during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "shelf",
+    "native": "полка",
+    "examples": [
+      "Consider shelf.",
+      "Our discussion concerned shelf during yesterday’s workshop.",
+      "Could you explain how shelf fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "mirror",
+    "native": "зеркало",
+    "examples": []
+  },
+  {
+    "foreign": "carpet",
+    "native": "ковёр",
+    "examples": ["Consider carpet."]
+  },
+  {
+    "foreign": "curtain",
+    "native": "занавеска",
+    "examples": [
+      "Consider curtain.",
+      "Our discussion concerned curtain during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "pillow",
+    "native": "подушка",
+    "examples": [
+      "Consider pillow.",
+      "Our discussion concerned pillow during yesterday’s workshop.",
+      "Could you explain how pillow fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "blanket",
+    "native": "одеяло",
+    "examples": []
+  },
+  {
+    "foreign": "towel",
+    "native": "полотенце",
+    "examples": ["Consider towel."]
+  },
+  {
+    "foreign": "bucket",
+    "native": "ведро",
+    "examples": [
+      "Consider bucket.",
+      "Our discussion concerned bucket during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "broom",
+    "native": "метла",
+    "examples": [
+      "Consider broom.",
+      "Our discussion concerned broom during yesterday’s workshop.",
+      "Could you explain how broom fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "hammer",
+    "native": "молоток",
+    "examples": []
+  },
+  {
+    "foreign": "nail",
+    "native": "гвоздь",
+    "examples": ["Consider nail."]
+  },
+  {
+    "foreign": "screw",
+    "native": "винт",
+    "examples": [
+      "Consider screw.",
+      "Our discussion concerned screw during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "ladder",
+    "native": "стремянка",
+    "examples": [
+      "Consider ladder.",
+      "Our discussion concerned ladder during yesterday’s workshop.",
+      "Could you explain how ladder fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "rope",
+    "native": "верёвка",
+    "examples": []
+  },
+  {
+    "foreign": "needle",
+    "native": "игла",
+    "examples": ["Consider needle."]
+  },
+  {
+    "foreign": "thread",
+    "native": "нить",
+    "examples": [
+      "Consider thread.",
+      "Our discussion concerned thread during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "scissors",
+    "native": "ножницы",
+    "examples": [
+      "Consider scissors.",
+      "Our discussion concerned scissors during yesterday’s workshop.",
+      "Could you explain how scissors fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "knife",
+    "native": "нож",
+    "examples": []
+  },
+  {
+    "foreign": "spoon",
+    "native": "ложка",
+    "examples": ["Consider spoon."]
+  },
+  {
+    "foreign": "fork",
+    "native": "вилка",
+    "examples": [
+      "Consider fork.",
+      "Our discussion concerned fork during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "accurate",
+    "native": "точный",
+    "examples": [
+      "Consider accurate.",
+      "Our discussion concerned accurate during yesterday’s workshop.",
+      "Could you explain how accurate fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "ancient",
+    "native": "древний",
+    "examples": []
+  },
+  {
+    "foreign": "anxious",
+    "native": "тревожный",
+    "examples": ["Consider anxious."]
+  },
+  {
+    "foreign": "appropriate",
+    "native": "подходящий",
+    "examples": [
+      "Consider appropriate.",
+      "Our discussion concerned appropriate during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "awkward",
+    "native": "неловкий",
+    "examples": [
+      "Consider awkward.",
+      "Our discussion concerned awkward during yesterday’s workshop.",
+      "Could you explain how awkward fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "bare",
+    "native": "голый",
+    "examples": []
+  },
+  {
+    "foreign": "bold",
+    "native": "смелый",
+    "examples": ["Consider bold."]
+  },
+  {
+    "foreign": "brief",
+    "native": "краткий",
+    "examples": [
+      "Consider brief.",
+      "Our discussion concerned brief during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "bright",
+    "native": "яркий",
+    "examples": [
+      "Consider bright.",
+      "Our discussion concerned bright during yesterday’s workshop.",
+      "Could you explain how bright fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "broad",
+    "native": "широкий",
+    "examples": []
+  },
+  {
+    "foreign": "calm",
+    "native": "спокойный",
+    "examples": ["Consider calm."]
+  },
+  {
+    "foreign": "capable",
+    "native": "способный",
+    "examples": [
+      "Consider capable.",
+      "Our discussion concerned capable during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "careful",
+    "native": "осторожный",
+    "examples": [
+      "Consider careful.",
+      "Our discussion concerned careful during yesterday’s workshop.",
+      "Could you explain how careful fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "casual",
+    "native": "повседневный",
+    "examples": []
+  },
+  {
+    "foreign": "certain",
+    "native": "определённый",
+    "examples": ["Consider certain."]
+  },
+  {
+    "foreign": "cheerful",
+    "native": "весёлый",
+    "examples": [
+      "Consider cheerful.",
+      "Our discussion concerned cheerful during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "clever",
+    "native": "умный",
+    "examples": [
+      "Consider clever.",
+      "Our discussion concerned clever during yesterday’s workshop.",
+      "Could you explain how clever fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "comfortable",
+    "native": "удобный",
+    "examples": []
+  },
+  {
+    "foreign": "complex",
+    "native": "сложный",
+    "examples": ["Consider complex."]
+  },
+  {
+    "foreign": "confident",
+    "native": "уверенный",
+    "examples": [
+      "Consider confident.",
+      "Our discussion concerned confident during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "conscious",
+    "native": "сознательный",
+    "examples": [
+      "Consider conscious.",
+      "Our discussion concerned conscious during yesterday’s workshop.",
+      "Could you explain how conscious fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "constant",
+    "native": "постоянный",
+    "examples": []
+  },
+  {
+    "foreign": "convenient",
+    "native": "удобный",
+    "examples": ["Consider convenient."]
+  },
+  {
+    "foreign": "crucial",
+    "native": "решающий",
+    "examples": [
+      "Consider crucial.",
+      "Our discussion concerned crucial during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "curious",
+    "native": "любопытный",
+    "examples": [
+      "Consider curious.",
+      "Our discussion concerned curious during yesterday’s workshop.",
+      "Could you explain how curious fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "damp",
+    "native": "сырой",
+    "examples": []
+  },
+  {
+    "foreign": "decent",
+    "native": "приличный",
+    "examples": ["Consider decent."]
+  },
+  {
+    "foreign": "deep",
+    "native": "глубокий",
+    "examples": [
+      "Consider deep.",
+      "Our discussion concerned deep during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "deliberate",
+    "native": "намеренный",
+    "examples": [
+      "Consider deliberate.",
+      "Our discussion concerned deliberate during yesterday’s workshop.",
+      "Could you explain how deliberate fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "delicate",
+    "native": "нежный",
+    "examples": []
+  },
+  {
+    "foreign": "dense",
+    "native": "плотный",
+    "examples": ["Consider dense."]
+  },
+  {
+    "foreign": "distant",
+    "native": "далёкий",
+    "examples": [
+      "Consider distant.",
+      "Our discussion concerned distant during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "distinct",
+    "native": "отчётливый",
+    "examples": [
+      "Consider distinct.",
+      "Our discussion concerned distinct during yesterday’s workshop.",
+      "Could you explain how distinct fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "diverse",
+    "native": "разнообразный",
+    "examples": []
+  },
+  {
+    "foreign": "dull",
+    "native": "скучный",
+    "examples": ["Consider dull."]
+  },
+  {
+    "foreign": "eager",
+    "native": "стремящийся",
+    "examples": [
+      "Consider eager.",
+      "Our discussion concerned eager during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "efficient",
+    "native": "эффективный",
+    "examples": [
+      "Consider efficient.",
+      "Our discussion concerned efficient during yesterday’s workshop.",
+      "Could you explain how efficient fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "elderly",
+    "native": "пожилой",
+    "examples": []
+  },
+  {
+    "foreign": "elegant",
+    "native": "элегантный",
+    "examples": ["Consider elegant."]
+  },
+  {
+    "foreign": "enormous",
+    "native": "огромный",
+    "examples": [
+      "Consider enormous.",
+      "Our discussion concerned enormous during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "entire",
+    "native": "целый",
+    "examples": [
+      "Consider entire.",
+      "Our discussion concerned entire during yesterday’s workshop.",
+      "Could you explain how entire fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "essential",
+    "native": "необходимый",
+    "examples": []
+  },
+  {
+    "foreign": "eventual",
+    "native": "конечный",
+    "examples": ["Consider eventual."]
+  },
+  {
+    "foreign": "evident",
+    "native": "очевидный",
+    "examples": [
+      "Consider evident.",
+      "Our discussion concerned evident during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "faint",
+    "native": "слабый",
+    "examples": [
+      "Consider faint.",
+      "Our discussion concerned faint during yesterday’s workshop.",
+      "Could you explain how faint fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "fair",
+    "native": "справедливый",
+    "examples": []
+  },
+  {
+    "foreign": "familiar",
+    "native": "знакомый",
+    "examples": ["Consider familiar."]
+  },
+  {
+    "foreign": "fancy",
+    "native": "причудливый",
+    "examples": [
+      "Consider fancy.",
+      "Our discussion concerned fancy during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "fierce",
+    "native": "свирепый",
+    "examples": [
+      "Consider fierce.",
+      "Our discussion concerned fierce during yesterday’s workshop.",
+      "Could you explain how fierce fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "firm",
+    "native": "твёрдый",
+    "examples": []
+  },
+  {
+    "foreign": "flexible",
+    "native": "гибкий",
+    "examples": ["Consider flexible."]
+  },
+  {
+    "foreign": "fragile",
+    "native": "хрупкий",
+    "examples": [
+      "Consider fragile.",
+      "Our discussion concerned fragile during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "frequent",
+    "native": "частый",
+    "examples": [
+      "Consider frequent.",
+      "Our discussion concerned frequent during yesterday’s workshop.",
+      "Could you explain how frequent fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "generous",
+    "native": "щедрый",
+    "examples": []
+  },
+  {
+    "foreign": "gentle",
+    "native": "мягкий",
+    "examples": ["Consider gentle."]
+  },
+  {
+    "foreign": "genuine",
+    "native": "подлинный",
+    "examples": [
+      "Consider genuine.",
+      "Our discussion concerned genuine during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "gradual",
+    "native": "постепенный",
+    "examples": [
+      "Consider gradual.",
+      "Our discussion concerned gradual during yesterday’s workshop.",
+      "Could you explain how gradual fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "grateful",
+    "native": "благодарный",
+    "examples": []
+  },
+  {
+    "foreign": "harsh",
+    "native": "суровый",
+    "examples": ["Consider harsh."]
+  },
+  {
+    "foreign": "hesitant",
+    "native": "нерешительный",
+    "examples": [
+      "Consider hesitant.",
+      "Our discussion concerned hesitant during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "hollow",
+    "native": "полый",
+    "examples": [
+      "Consider hollow.",
+      "Our discussion concerned hollow during yesterday’s workshop.",
+      "Could you explain how hollow fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "humble",
+    "native": "скромный",
+    "examples": []
+  },
+  {
+    "foreign": "immense",
+    "native": "необъятный",
+    "examples": ["Consider immense."]
+  },
+  {
+    "foreign": "independent",
+    "native": "независимый",
+    "examples": [
+      "Consider independent.",
+      "Our discussion concerned independent during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "inevitable",
+    "native": "неизбежный",
+    "examples": [
+      "Consider inevitable.",
+      "Our discussion concerned inevitable during yesterday’s workshop.",
+      "Could you explain how inevitable fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "initial",
+    "native": "начальный",
+    "examples": []
+  },
+  {
+    "foreign": "innocent",
+    "native": "невинный",
+    "examples": ["Consider innocent."]
+  },
+  {
+    "foreign": "intense",
+    "native": "интенсивный",
+    "examples": [
+      "Consider intense.",
+      "Our discussion concerned intense during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "jealous",
+    "native": "ревнивый",
+    "examples": [
+      "Consider jealous.",
+      "Our discussion concerned jealous during yesterday’s workshop.",
+      "Could you explain how jealous fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "keen",
+    "native": "увлечённый",
+    "examples": []
+  },
+  {
+    "foreign": "latter",
+    "native": "последний",
+    "examples": ["Consider latter."]
+  },
+  {
+    "foreign": "likely",
+    "native": "вероятный",
+    "examples": [
+      "Consider likely.",
+      "Our discussion concerned likely during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "loose",
+    "native": "свободный",
+    "examples": [
+      "Consider loose.",
+      "Our discussion concerned loose during yesterday’s workshop.",
+      "Could you explain how loose fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "loyal",
+    "native": "верный",
+    "examples": []
+  },
+  {
+    "foreign": "massive",
+    "native": "массивный",
+    "examples": ["Consider massive."]
+  },
+  {
+    "foreign": "mature",
+    "native": "зрелый",
+    "examples": [
+      "Consider mature.",
+      "Our discussion concerned mature during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "mild",
+    "native": "мягкий",
+    "examples": [
+      "Consider mild.",
+      "Our discussion concerned mild during yesterday’s workshop.",
+      "Could you explain how mild fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "modest",
+    "native": "скромный",
+    "examples": []
+  },
+  {
+    "foreign": "narrow",
+    "native": "узкий",
+    "examples": ["Consider narrow."]
+  },
+  {
+    "foreign": "neat",
+    "native": "аккуратный",
+    "examples": [
+      "Consider neat.",
+      "Our discussion concerned neat during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "obvious",
+    "native": "очевидный",
+    "examples": [
+      "Consider obvious.",
+      "Our discussion concerned obvious during yesterday’s workshop.",
+      "Could you explain how obvious fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "odd",
+    "native": "странный",
+    "examples": []
+  },
+  {
+    "foreign": "ordinary",
+    "native": "обычный",
+    "examples": ["Consider ordinary."]
+  },
+  {
+    "foreign": "patient",
+    "native": "терпеливый",
+    "examples": [
+      "Consider patient.",
+      "Our discussion concerned patient during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "peculiar",
+    "native": "своеобразный",
+    "examples": [
+      "Consider peculiar.",
+      "Our discussion concerned peculiar during yesterday’s workshop.",
+      "Could you explain how peculiar fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "permanent",
+    "native": "постоянный",
+    "examples": []
+  },
+  {
+    "foreign": "plain",
+    "native": "простой",
+    "examples": ["Consider plain."]
+  },
+  {
+    "foreign": "pleasant",
+    "native": "приятный",
+    "examples": [
+      "Consider pleasant.",
+      "Our discussion concerned pleasant during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "precise",
+    "native": "точный",
+    "examples": [
+      "Consider precise.",
+      "Our discussion concerned precise during yesterday’s workshop.",
+      "Could you explain how precise fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "previous",
+    "native": "предыдущий",
+    "examples": []
+  },
+  {
+    "foreign": "proud",
+    "native": "гордый",
+    "examples": ["Consider proud."]
+  },
+  {
+    "foreign": "reasonable",
+    "native": "разумный",
+    "examples": [
+      "Consider reasonable.",
+      "Our discussion concerned reasonable during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "reluctant",
+    "native": "неохотный",
+    "examples": [
+      "Consider reluctant.",
+      "Our discussion concerned reluctant during yesterday’s workshop.",
+      "Could you explain how reluctant fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "remote",
+    "native": "отдалённый",
+    "examples": []
+  },
+  {
+    "foreign": "rough",
+    "native": "грубый",
+    "examples": ["Consider rough."]
+  },
+  {
+    "foreign": "shallow",
+    "native": "мелкий",
+    "examples": [
+      "Consider shallow.",
+      "Our discussion concerned shallow during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "steady",
+    "native": "устойчивый",
+    "examples": [
+      "Consider steady.",
+      "Our discussion concerned steady during yesterday’s workshop.",
+      "Could you explain how steady fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "strict",
+    "native": "строгий",
+    "examples": []
+  },
+  {
+    "foreign": "subtle",
+    "native": "едва заметный",
+    "examples": ["Consider subtle."]
+  },
+  {
+    "foreign": "vague",
+    "native": "неясный",
+    "examples": [
+      "Consider vague.",
+      "Our discussion concerned vague during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "account for",
+    "native": "объяснять",
+    "examples": [
+      "Consider account for.",
+      "Our discussion concerned account for during yesterday’s workshop.",
+      "Could you explain how account for fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "act on",
+    "native": "действовать на основании",
+    "examples": []
+  },
+  {
+    "foreign": "add up",
+    "native": "складываться",
+    "examples": ["Consider add up."]
+  },
+  {
+    "foreign": "agree with",
+    "native": "соглашаться с",
+    "examples": [
+      "Consider agree with.",
+      "Our discussion concerned agree with during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "aim at",
+    "native": "стремиться к",
+    "examples": [
+      "Consider aim at.",
+      "Our discussion concerned aim at during yesterday’s workshop.",
+      "Could you explain how aim at fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "ask around",
+    "native": "расспрашивать",
+    "examples": []
+  },
+  {
+    "foreign": "back down",
+    "native": "отступать",
+    "examples": ["Consider back down."]
+  },
+  {
+    "foreign": "back up",
+    "native": "поддерживать",
+    "examples": [
+      "Consider back up.",
+      "Our discussion concerned back up during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "bank on",
+    "native": "рассчитывать на",
+    "examples": [
+      "Consider bank on.",
+      "Our discussion concerned bank on during yesterday’s workshop.",
+      "Could you explain how bank on fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "bear with",
+    "native": "потерпеть",
+    "examples": []
+  },
+  {
+    "foreign": "blow up",
+    "native": "взрываться",
+    "examples": ["Consider blow up."]
+  },
+  {
+    "foreign": "break down",
+    "native": "ломаться",
+    "examples": [
+      "Consider break down.",
+      "Our discussion concerned break down during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "break into",
+    "native": "врываться",
+    "examples": [
+      "Consider break into.",
+      "Our discussion concerned break into during yesterday’s workshop.",
+      "Could you explain how break into fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "break out",
+    "native": "вспыхивать",
+    "examples": []
+  },
+  {
+    "foreign": "bring about",
+    "native": "вызывать",
+    "examples": ["Consider bring about."]
+  },
+  {
+    "foreign": "bring up",
+    "native": "воспитывать",
+    "examples": [
+      "Consider bring up.",
+      "Our discussion concerned bring up during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "brush up on",
+    "native": "освежать знания",
+    "examples": [
+      "Consider brush up on.",
+      "Our discussion concerned brush up on during yesterday’s workshop.",
+      "Could you explain how brush up on fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "call back",
+    "native": "перезвонить",
+    "examples": []
+  },
+  {
+    "foreign": "call off",
+    "native": "отменить",
+    "examples": ["Consider call off."]
+  },
+  {
+    "foreign": "calm down",
+    "native": "успокоиться",
+    "examples": [
+      "Consider calm down.",
+      "Our discussion concerned calm down during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "carry on",
+    "native": "продолжать",
+    "examples": [
+      "Consider carry on.",
+      "Our discussion concerned carry on during yesterday’s workshop.",
+      "Could you explain how carry on fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "catch up",
+    "native": "догонять",
+    "examples": []
+  },
+  {
+    "foreign": "check in",
+    "native": "регистрироваться",
+    "examples": ["Consider check in."]
+  },
+  {
+    "foreign": "check out",
+    "native": "выписываться",
+    "examples": [
+      "Consider check out.",
+      "Our discussion concerned check out during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "cheer up",
+    "native": "взбодриться",
+    "examples": [
+      "Consider cheer up.",
+      "Our discussion concerned cheer up during yesterday’s workshop.",
+      "Could you explain how cheer up fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "come across",
+    "native": "наткнуться",
+    "examples": []
+  },
+  {
+    "foreign": "come along",
+    "native": "сопровождать",
+    "examples": ["Consider come along."]
+  },
+  {
+    "foreign": "come apart",
+    "native": "развалиться",
+    "examples": [
+      "Consider come apart.",
+      "Our discussion concerned come apart during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "come back",
+    "native": "вернуться",
+    "examples": [
+      "Consider come back.",
+      "Our discussion concerned come back during yesterday’s workshop.",
+      "Could you explain how come back fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "come down to",
+    "native": "сводиться к",
+    "examples": []
+  },
+  {
+    "foreign": "come forward",
+    "native": "выступить",
+    "examples": ["Consider come forward."]
+  },
+  {
+    "foreign": "come up with",
+    "native": "придумать",
+    "examples": [
+      "Consider come up with.",
+      "Our discussion concerned come up with during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "count on",
+    "native": "полагаться на",
+    "examples": [
+      "Consider count on.",
+      "Our discussion concerned count on during yesterday’s workshop.",
+      "Could you explain how count on fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "cut back on",
+    "native": "сократить",
+    "examples": []
+  },
+  {
+    "foreign": "cut off",
+    "native": "отрезать",
+    "examples": ["Consider cut off."]
+  },
+  {
+    "foreign": "deal with",
+    "native": "иметь дело с",
+    "examples": [
+      "Consider deal with.",
+      "Our discussion concerned deal with during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "do away with",
+    "native": "покончить с",
+    "examples": [
+      "Consider do away with.",
+      "Our discussion concerned do away with during yesterday’s workshop.",
+      "Could you explain how do away with fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "dress up",
+    "native": "нарядиться",
+    "examples": []
+  },
+  {
+    "foreign": "drop by",
+    "native": "зайти",
+    "examples": ["Consider drop by."]
+  },
+  {
+    "foreign": "drop off",
+    "native": "высадить",
+    "examples": [
+      "Consider drop off.",
+      "Our discussion concerned drop off during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "eat out",
+    "native": "есть вне дома",
+    "examples": [
+      "Consider eat out.",
+      "Our discussion concerned eat out during yesterday’s workshop.",
+      "Could you explain how eat out fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "end up",
+    "native": "оказаться",
+    "examples": []
+  },
+  {
+    "foreign": "fall apart",
+    "native": "развалиться",
+    "examples": ["Consider fall apart."]
+  },
+  {
+    "foreign": "fall behind",
+    "native": "отстать",
+    "examples": [
+      "Consider fall behind.",
+      "Our discussion concerned fall behind during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "figure out",
+    "native": "разобраться",
+    "examples": [
+      "Consider figure out.",
+      "Our discussion concerned figure out during yesterday’s workshop.",
+      "Could you explain how figure out fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "fill in",
+    "native": "заполнить",
+    "examples": []
+  },
+  {
+    "foreign": "find out",
+    "native": "выяснить",
+    "examples": ["Consider find out."]
+  },
+  {
+    "foreign": "get along",
+    "native": "ладить",
+    "examples": [
+      "Consider get along.",
+      "Our discussion concerned get along during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "get around",
+    "native": "передвигаться",
+    "examples": [
+      "Consider get around.",
+      "Our discussion concerned get around during yesterday’s workshop.",
+      "Could you explain how get around fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "get away",
+    "native": "сбежать",
+    "examples": []
+  },
+  {
+    "foreign": "get back",
+    "native": "вернуться",
+    "examples": ["Consider get back."]
+  },
+  {
+    "foreign": "get by",
+    "native": "справляться",
+    "examples": [
+      "Consider get by.",
+      "Our discussion concerned get by during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "get over",
+    "native": "преодолеть",
+    "examples": [
+      "Consider get over.",
+      "Our discussion concerned get over during yesterday’s workshop.",
+      "Could you explain how get over fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "get rid of",
+    "native": "избавиться от",
+    "examples": []
+  },
+  {
+    "foreign": "give away",
+    "native": "раздать",
+    "examples": ["Consider give away."]
+  },
+  {
+    "foreign": "give back",
+    "native": "отдать",
+    "examples": [
+      "Consider give back.",
+      "Our discussion concerned give back during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "give in",
+    "native": "уступить",
+    "examples": [
+      "Consider give in.",
+      "Our discussion concerned give in during yesterday’s workshop.",
+      "Could you explain how give in fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "give up",
+    "native": "сдаться",
+    "examples": []
+  },
+  {
+    "foreign": "go ahead",
+    "native": "продолжайте",
+    "examples": ["Consider go ahead."]
+  },
+  {
+    "foreign": "go through",
+    "native": "пройти через",
+    "examples": [
+      "Consider go through.",
+      "Our discussion concerned go through during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "grow up",
+    "native": "вырасти",
+    "examples": [
+      "Consider grow up.",
+      "Our discussion concerned grow up during yesterday’s workshop.",
+      "Could you explain how grow up fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "hand in",
+    "native": "сдать",
+    "examples": []
+  },
+  {
+    "foreign": "hang on",
+    "native": "подождать",
+    "examples": ["Consider hang on."]
+  },
+  {
+    "foreign": "hold back",
+    "native": "сдерживать",
+    "examples": [
+      "Consider hold back.",
+      "Our discussion concerned hold back during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "hold on",
+    "native": "держаться",
+    "examples": [
+      "Consider hold on.",
+      "Our discussion concerned hold on during yesterday’s workshop.",
+      "Could you explain how hold on fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "keep up with",
+    "native": "не отставать от",
+    "examples": []
+  },
+  {
+    "foreign": "leave out",
+    "native": "пропустить",
+    "examples": ["Consider leave out."]
+  },
+  {
+    "foreign": "let down",
+    "native": "подвести",
+    "examples": [
+      "Consider let down.",
+      "Our discussion concerned let down during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "look after",
+    "native": "присматривать за",
+    "examples": [
+      "Consider look after.",
+      "Our discussion concerned look after during yesterday’s workshop.",
+      "Could you explain how look after fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "look ahead",
+    "native": "смотреть вперёд",
+    "examples": []
+  },
+  {
+    "foreign": "look around",
+    "native": "осмотреться",
+    "examples": ["Consider look around."]
+  },
+  {
+    "foreign": "look back",
+    "native": "оглянуться",
+    "examples": [
+      "Consider look back.",
+      "Our discussion concerned look back during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "look for",
+    "native": "искать",
+    "examples": [
+      "Consider look for.",
+      "Our discussion concerned look for during yesterday’s workshop.",
+      "Could you explain how look for fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "look forward to",
+    "native": "ждать с нетерпением",
+    "examples": []
+  },
+  {
+    "foreign": "look into",
+    "native": "исследовать",
+    "examples": ["Consider look into."]
+  },
+  {
+    "foreign": "look out",
+    "native": "остерегаться",
+    "examples": [
+      "Consider look out.",
+      "Our discussion concerned look out during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "look up",
+    "native": "найти в справочнике",
+    "examples": [
+      "Consider look up.",
+      "Our discussion concerned look up during yesterday’s workshop.",
+      "Could you explain how look up fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "make up",
+    "native": "сочинить",
+    "examples": []
+  },
+  {
+    "foreign": "move on",
+    "native": "двигаться дальше",
+    "examples": ["Consider move on."]
+  },
+  {
+    "foreign": "pass away",
+    "native": "скончаться",
+    "examples": [
+      "Consider pass away.",
+      "Our discussion concerned pass away during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "pay back",
+    "native": "вернуть долг",
+    "examples": [
+      "Consider pay back.",
+      "Our discussion concerned pay back during yesterday’s workshop.",
+      "Could you explain how pay back fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "pick out",
+    "native": "выбрать",
+    "examples": []
+  },
+  {
+    "foreign": "point out",
+    "native": "указать",
+    "examples": ["Consider point out."]
+  },
+  {
+    "foreign": "put aside",
+    "native": "отложить",
+    "examples": [
+      "Consider put aside.",
+      "Our discussion concerned put aside during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "put off",
+    "native": "отложить на потом",
+    "examples": [
+      "Consider put off.",
+      "Our discussion concerned put off during yesterday’s workshop.",
+      "Could you explain how put off fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "put up with",
+    "native": "мириться с",
+    "examples": []
+  },
+  {
+    "foreign": "run into",
+    "native": "столкнуться с",
+    "examples": ["Consider run into."]
+  },
+  {
+    "foreign": "run out of",
+    "native": "исчерпать",
+    "examples": [
+      "Consider run out of.",
+      "Our discussion concerned run out of during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "set aside",
+    "native": "отложить",
+    "examples": [
+      "Consider set aside.",
+      "Our discussion concerned set aside during yesterday’s workshop.",
+      "Could you explain how set aside fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "set up",
+    "native": "организовать",
+    "examples": []
+  },
+  {
+    "foreign": "show up",
+    "native": "появиться",
+    "examples": ["Consider show up."]
+  },
+  {
+    "foreign": "sort out",
+    "native": "разобраться",
+    "examples": [
+      "Consider sort out.",
+      "Our discussion concerned sort out during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "stand by",
+    "native": "поддерживать",
+    "examples": [
+      "Consider stand by.",
+      "Our discussion concerned stand by during yesterday’s workshop.",
+      "Could you explain how stand by fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "stand for",
+    "native": "означать",
+    "examples": []
+  },
+  {
+    "foreign": "take after",
+    "native": "походить на",
+    "examples": ["Consider take after."]
+  },
+  {
+    "foreign": "take care of",
+    "native": "заботиться о",
+    "examples": [
+      "Consider take care of.",
+      "Our discussion concerned take care of during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "take off",
+    "native": "взлететь",
+    "examples": [
+      "Consider take off.",
+      "Our discussion concerned take off during yesterday’s workshop.",
+      "Could you explain how take off fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "turn down",
+    "native": "отклонить",
+    "examples": []
+  },
+  {
+    "foreign": "turn up",
+    "native": "появиться",
+    "examples": ["Consider turn up."]
+  },
+  {
+    "foreign": "work out",
+    "native": "тренироваться",
+    "examples": [
+      "Consider work out.",
+      "Our discussion concerned work out during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "algorithm",
+    "native": "алгоритм",
+    "examples": [
+      "Consider algorithm.",
+      "Our discussion concerned algorithm during yesterday’s workshop.",
+      "Could you explain how algorithm fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "array",
+    "native": "массив",
+    "examples": []
+  },
+  {
+    "foreign": "argument",
+    "native": "аргумент",
+    "examples": ["Consider argument."]
+  },
+  {
+    "foreign": "assertion",
+    "native": "утверждение",
+    "examples": [
+      "Consider assertion.",
+      "Our discussion concerned assertion during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "authentication",
+    "native": "аутентификация",
+    "examples": [
+      "Consider authentication.",
+      "Our discussion concerned authentication during yesterday’s workshop.",
+      "Could you explain how authentication fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "authorization",
+    "native": "авторизация",
+    "examples": []
+  },
+  {
+    "foreign": "availability",
+    "native": "доступность",
+    "examples": ["Consider availability."]
+  },
+  {
+    "foreign": "bandwidth",
+    "native": "пропускная способность",
+    "examples": [
+      "Consider bandwidth.",
+      "Our discussion concerned bandwidth during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "benchmark",
+    "native": "эталонный тест",
+    "examples": [
+      "Consider benchmark.",
+      "Our discussion concerned benchmark during yesterday’s workshop.",
+      "Could you explain how benchmark fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "binary",
+    "native": "двоичный",
+    "examples": []
+  },
+  {
+    "foreign": "bitwise",
+    "native": "побитовый",
+    "examples": ["Consider bitwise."]
+  },
+  {
+    "foreign": "boolean",
+    "native": "логический",
+    "examples": [
+      "Consider boolean.",
+      "Our discussion concerned boolean during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "breakpoint",
+    "native": "точка останова",
+    "examples": [
+      "Consider breakpoint.",
+      "Our discussion concerned breakpoint during yesterday’s workshop.",
+      "Could you explain how breakpoint fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "buffer",
+    "native": "буфер",
+    "examples": []
+  },
+  {
+    "foreign": "bytecode",
+    "native": "байт-код",
+    "examples": ["Consider bytecode."]
+  },
+  {
+    "foreign": "cache",
+    "native": "кеш",
+    "examples": [
+      "Consider cache.",
+      "Our discussion concerned cache during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "callback",
+    "native": "обратный вызов",
+    "examples": [
+      "Consider callback.",
+      "Our discussion concerned callback during yesterday’s workshop.",
+      "Could you explain how callback fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "checksum",
+    "native": "контрольная сумма",
+    "examples": []
+  },
+  {
+    "foreign": "cipher",
+    "native": "шифр",
+    "examples": ["Consider cipher."]
+  },
+  {
+    "foreign": "closure",
+    "native": "замыкание",
+    "examples": [
+      "Consider closure.",
+      "Our discussion concerned closure during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "cluster",
+    "native": "кластер",
+    "examples": [
+      "Consider cluster.",
+      "Our discussion concerned cluster during yesterday’s workshop.",
+      "Could you explain how cluster fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "collision",
+    "native": "коллизия",
+    "examples": []
+  },
+  {
+    "foreign": "compiler",
+    "native": "компилятор",
+    "examples": ["Consider compiler."]
+  },
+  {
+    "foreign": "compression",
+    "native": "сжатие",
+    "examples": [
+      "Consider compression.",
+      "Our discussion concerned compression during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "concurrency",
+    "native": "конкурентность",
+    "examples": [
+      "Consider concurrency.",
+      "Our discussion concerned concurrency during yesterday’s workshop.",
+      "Could you explain how concurrency fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "connection",
+    "native": "соединение",
+    "examples": []
+  },
+  {
+    "foreign": "constraint",
+    "native": "ограничение",
+    "examples": ["Consider constraint."]
+  },
+  {
+    "foreign": "container",
+    "native": "контейнер",
+    "examples": [
+      "Consider container.",
+      "Our discussion concerned container during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "coroutine",
+    "native": "сопрограмма",
+    "examples": [
+      "Consider coroutine.",
+      "Our discussion concerned coroutine during yesterday’s workshop.",
+      "Could you explain how coroutine fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "cryptography",
+    "native": "криптография",
+    "examples": []
+  },
+  {
+    "foreign": "cursor",
+    "native": "курсор",
+    "examples": ["Consider cursor."]
+  },
+  {
+    "foreign": "database",
+    "native": "база данных",
+    "examples": [
+      "Consider database.",
+      "Our discussion concerned database during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "deadlock",
+    "native": "взаимная блокировка",
+    "examples": [
+      "Consider deadlock.",
+      "Our discussion concerned deadlock during yesterday’s workshop.",
+      "Could you explain how deadlock fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "debugger",
+    "native": "отладчик",
+    "examples": []
+  },
+  {
+    "foreign": "declaration",
+    "native": "объявление",
+    "examples": ["Consider declaration."]
+  },
+  {
+    "foreign": "decryption",
+    "native": "расшифровка",
+    "examples": [
+      "Consider decryption.",
+      "Our discussion concerned decryption during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "dependency",
+    "native": "зависимость",
+    "examples": [
+      "Consider dependency.",
+      "Our discussion concerned dependency during yesterday’s workshop.",
+      "Could you explain how dependency fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "deployment",
+    "native": "развёртывание",
+    "examples": []
+  },
+  {
+    "foreign": "dereference",
+    "native": "разыменование",
+    "examples": ["Consider dereference."]
+  },
+  {
+    "foreign": "deserialization",
+    "native": "десериализация",
+    "examples": [
+      "Consider deserialization.",
+      "Our discussion concerned deserialization during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "deterministic",
+    "native": "детерминированный",
+    "examples": [
+      "Consider deterministic.",
+      "Our discussion concerned deterministic during yesterday’s workshop.",
+      "Could you explain how deterministic fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "digest",
+    "native": "дайджест",
+    "examples": []
+  },
+  {
+    "foreign": "directory",
+    "native": "каталог",
+    "examples": ["Consider directory."]
+  },
+  {
+    "foreign": "dispatcher",
+    "native": "диспетчер",
+    "examples": [
+      "Consider dispatcher.",
+      "Our discussion concerned dispatcher during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "distributed",
+    "native": "распределённый",
+    "examples": [
+      "Consider distributed.",
+      "Our discussion concerned distributed during yesterday’s workshop.",
+      "Could you explain how distributed fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "documentation",
+    "native": "документация",
+    "examples": []
+  },
+  {
+    "foreign": "encapsulation",
+    "native": "инкапсуляция",
+    "examples": ["Consider encapsulation."]
+  },
+  {
+    "foreign": "encoding",
+    "native": "кодирование",
+    "examples": [
+      "Consider encoding.",
+      "Our discussion concerned encoding during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "encryption",
+    "native": "шифрование",
+    "examples": [
+      "Consider encryption.",
+      "Our discussion concerned encryption during yesterday’s workshop.",
+      "Could you explain how encryption fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "endpoint",
+    "native": "конечная точка",
+    "examples": []
+  },
+  {
+    "foreign": "enumeration",
+    "native": "перечисление",
+    "examples": ["Consider enumeration."]
+  },
+  {
+    "foreign": "exception",
+    "native": "исключение",
+    "examples": [
+      "Consider exception.",
+      "Our discussion concerned exception during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "expression",
+    "native": "выражение",
+    "examples": [
+      "Consider expression.",
+      "Our discussion concerned expression during yesterday’s workshop.",
+      "Could you explain how expression fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "failover",
+    "native": "переключение при сбое",
+    "examples": []
+  },
+  {
+    "foreign": "filesystem",
+    "native": "файловая система",
+    "examples": ["Consider filesystem."]
+  },
+  {
+    "foreign": "firewall",
+    "native": "межсетевой экран",
+    "examples": [
+      "Consider firewall.",
+      "Our discussion concerned firewall during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "firmware",
+    "native": "прошивка",
+    "examples": [
+      "Consider firmware.",
+      "Our discussion concerned firmware during yesterday’s workshop.",
+      "Could you explain how firmware fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "framework",
+    "native": "каркас",
+    "examples": []
+  },
+  {
+    "foreign": "garbage collection",
+    "native": "сборка мусора",
+    "examples": ["Consider garbage collection."]
+  },
+  {
+    "foreign": "gateway",
+    "native": "шлюз",
+    "examples": [
+      "Consider gateway.",
+      "Our discussion concerned gateway during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "generics",
+    "native": "обобщения",
+    "examples": [
+      "Consider generics.",
+      "Our discussion concerned generics during yesterday’s workshop.",
+      "Could you explain how generics fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "goroutine",
+    "native": "горутина",
+    "examples": []
+  },
+  {
+    "foreign": "handshake",
+    "native": "рукопожатие",
+    "examples": ["Consider handshake."]
+  },
+  {
+    "foreign": "hash table",
+    "native": "хеш-таблица",
+    "examples": [
+      "Consider hash table.",
+      "Our discussion concerned hash table during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "heap",
+    "native": "куча",
+    "examples": [
+      "Consider heap.",
+      "Our discussion concerned heap during yesterday’s workshop.",
+      "Could you explain how heap fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "idempotency",
+    "native": "идемпотентность",
+    "examples": []
+  },
+  {
+    "foreign": "immutable",
+    "native": "неизменяемый",
+    "examples": ["Consider immutable."]
+  },
+  {
+    "foreign": "index",
+    "native": "индекс",
+    "examples": [
+      "Consider index.",
+      "Our discussion concerned index during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "inheritance",
+    "native": "наследование",
+    "examples": [
+      "Consider inheritance.",
+      "Our discussion concerned inheritance during yesterday’s workshop.",
+      "Could you explain how inheritance fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "interface",
+    "native": "интерфейс",
+    "examples": []
+  },
+  {
+    "foreign": "interpreter",
+    "native": "интерпретатор",
+    "examples": ["Consider interpreter."]
+  },
+  {
+    "foreign": "iteration",
+    "native": "итерация",
+    "examples": [
+      "Consider iteration.",
+      "Our discussion concerned iteration during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "latency",
+    "native": "задержка",
+    "examples": [
+      "Consider latency.",
+      "Our discussion concerned latency during yesterday’s workshop.",
+      "Could you explain how latency fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "load balancer",
+    "native": "балансировщик нагрузки",
+    "examples": []
+  },
+  {
+    "foreign": "locking",
+    "native": "блокировка",
+    "examples": ["Consider locking."]
+  },
+  {
+    "foreign": "logging",
+    "native": "журналирование",
+    "examples": [
+      "Consider logging.",
+      "Our discussion concerned logging during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "middleware",
+    "native": "промежуточный слой",
+    "examples": [
+      "Consider middleware.",
+      "Our discussion concerned middleware during yesterday’s workshop.",
+      "Could you explain how middleware fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "migration",
+    "native": "миграция",
+    "examples": []
+  },
+  {
+    "foreign": "mutex",
+    "native": "мьютекс",
+    "examples": ["Consider mutex."]
+  },
+  {
+    "foreign": "namespace",
+    "native": "пространство имён",
+    "examples": [
+      "Consider namespace.",
+      "Our discussion concerned namespace during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "normalization",
+    "native": "нормализация",
+    "examples": [
+      "Consider normalization.",
+      "Our discussion concerned normalization during yesterday’s workshop.",
+      "Could you explain how normalization fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "observability",
+    "native": "наблюдаемость",
+    "examples": []
+  },
+  {
+    "foreign": "overload",
+    "native": "перегрузка",
+    "examples": ["Consider overload."]
+  },
+  {
+    "foreign": "packet",
+    "native": "пакет",
+    "examples": [
+      "Consider packet.",
+      "Our discussion concerned packet during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "pagination",
+    "native": "постраничная выдача",
+    "examples": [
+      "Consider pagination.",
+      "Our discussion concerned pagination during yesterday’s workshop.",
+      "Could you explain how pagination fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "parallelism",
+    "native": "параллелизм",
+    "examples": []
+  },
+  {
+    "foreign": "parsing",
+    "native": "синтаксический анализ",
+    "examples": ["Consider parsing."]
+  },
+  {
+    "foreign": "payload",
+    "native": "полезная нагрузка",
+    "examples": [
+      "Consider payload.",
+      "Our discussion concerned payload during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "pipeline",
+    "native": "конвейер",
+    "examples": [
+      "Consider pipeline.",
+      "Our discussion concerned pipeline during yesterday’s workshop.",
+      "Could you explain how pipeline fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "pointer",
+    "native": "указатель",
+    "examples": []
+  },
+  {
+    "foreign": "polymorphism",
+    "native": "полиморфизм",
+    "examples": ["Consider polymorphism."]
+  },
+  {
+    "foreign": "predicate",
+    "native": "предикат",
+    "examples": [
+      "Consider predicate.",
+      "Our discussion concerned predicate during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "profiling",
+    "native": "профилирование",
+    "examples": [
+      "Consider profiling.",
+      "Our discussion concerned profiling during yesterday’s workshop.",
+      "Could you explain how profiling fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "protocol",
+    "native": "протокол",
+    "examples": []
+  },
+  {
+    "foreign": "query",
+    "native": "запрос",
+    "examples": ["Consider query."]
+  },
+  {
+    "foreign": "queue",
+    "native": "очередь",
+    "examples": [
+      "Consider queue.",
+      "Our discussion concerned queue during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "recursion",
+    "native": "рекурсия",
+    "examples": [
+      "Consider recursion.",
+      "Our discussion concerned recursion during yesterday’s workshop.",
+      "Could you explain how recursion fits this particular context?"
+    ]
+  },
+  {
+    "foreign": "reflection",
+    "native": "рефлексия",
+    "examples": []
+  },
+  {
+    "foreign": "replication",
+    "native": "репликация",
+    "examples": ["Consider replication."]
+  },
+  {
+    "foreign": "repository",
+    "native": "репозиторий",
+    "examples": [
+      "Consider repository.",
+      "Our discussion concerned repository during yesterday’s workshop."
+    ]
+  },
+  {
+    "foreign": "retry",
+    "native": "повтор",
+    "examples": [
+      "Consider retry.",
+      "Our discussion concerned retry during yesterday’s workshop.",
+      "Could you explain how retry fits this particular context?"
+    ]
+  }
+]

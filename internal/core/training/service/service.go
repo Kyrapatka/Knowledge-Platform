@@ -36,6 +36,7 @@ func NewServiceWithClock(store repository.RuntimeStore, clock func() time.Time) 
 }
 
 type CreatePlanRequest struct {
+	RefillThreshold *int        `json:"refill_threshold,omitempty"`
 	HorizonDays     int         `json:"horizon_days"`
 	SourceFolderIDs []uuid.UUID `json:"source_folder_ids"`
 	AlgorithmKey    *string     `json:"algorithm_key"`
@@ -61,12 +62,17 @@ func (s *Service) FolderDefaults(ctx context.Context, user, id uuid.UUID) (Folde
 }
 
 func (s *Service) UpdateDefaults(ctx context.Context, user, id uuid.UUID, c folderconfig.TrainingConfig, version int64) (FolderDefaults, error) {
-	if version < 1 || c.PoolSize < 1 || c.PoolSize > 50 {
+	if version < 1 {
 		return FolderDefaults{}, ErrInvalid
 	}
 	if _, err := s.registry.Get(c.DefaultAlgorithmKey, 1); err != nil {
 		return FolderDefaults{}, fmt.Errorf("%w: unsupported algorithm", ErrInvalid)
 	}
+	threshold := c.Threshold()
+	if err := (model.PoolPolicy{PoolSize: c.PoolSize, RefillThreshold: threshold}).Validate(); err != nil {
+		return FolderDefaults{}, errors.Join(ErrInvalid, err)
+	}
+	c.RefillThreshold = &threshold
 	out := FolderDefaults{c, version + 1}
 	err := s.transact(ctx, user, func(tx repository.Tx) error {
 		if _, err := tx.Folder(id); err != nil {
@@ -102,7 +108,7 @@ func (s *Service) createPlan(tx repository.Tx, user uuid.UUID, req CreatePlanReq
 	err := func() error {
 		cards := make(map[string]folderconfig.FolderConfig, len(seen))
 		var key string
-		var pool int
+		var pool, threshold int
 		for index, id := range req.SourceFolderIDs {
 			f, err := tx.Folder(id)
 			if err != nil {
@@ -119,9 +125,13 @@ func (s *Service) createPlan(tx repository.Tx, user uuid.UUID, req CreatePlanReq
 			if index == 0 {
 				key = defaults.DefaultAlgorithmKey
 				pool = defaults.PoolSize
+				threshold = defaults.Threshold()
 			}
 			if req.AlgorithmKey == nil && key != defaults.DefaultAlgorithmKey {
 				return fmt.Errorf("%w: choose algorithm explicitly for conflicting folder defaults", ErrInvalid)
+			}
+			if req.RefillThreshold == nil && threshold != defaults.Threshold() {
+				return fmt.Errorf("%w: choose refill_threshold explicitly for conflicting folder defaults", ErrInvalid)
 			}
 			if req.PoolSize == nil && pool != defaults.PoolSize {
 				return fmt.Errorf("%w: choose pool_size explicitly for conflicting folder defaults", ErrInvalid)
@@ -133,8 +143,11 @@ func (s *Service) createPlan(tx repository.Tx, user uuid.UUID, req CreatePlanReq
 		if req.PoolSize != nil {
 			pool = *req.PoolSize
 		}
-		if pool < 1 || pool > 50 {
-			return fmt.Errorf("%w: pool_size must be 1..50", ErrInvalid)
+		if req.RefillThreshold != nil {
+			threshold = *req.RefillThreshold
+		}
+		if err := (model.PoolPolicy{PoolSize: pool, RefillThreshold: threshold}).Validate(); err != nil {
+			return errors.Join(ErrInvalid, err)
 		}
 		if _, err := s.registry.Get(key, 1); err != nil {
 			return fmt.Errorf("%w: unsupported algorithm", ErrInvalid)
@@ -172,7 +185,7 @@ func (s *Service) createPlan(tx repository.Tx, user uuid.UUID, req CreatePlanReq
 		}
 		now := s.now().UTC()
 		out = model.TrainingPlan{Version: 1, ID: uuid.New(), UserID: user, Track: track, AlgorithmKey: key, AlgorithmVersion: 1, Status: model.StatusActive,
-			Config: model.PlanConfig{PoolSize: pool, HorizonDays: req.HorizonDays, Cards: cards}, SourceFolderIDs: append([]uuid.UUID(nil), req.SourceFolderIDs...), StartedAt: now, CreatedAt: now, UpdatedAt: now}
+			Config: model.PlanConfig{PoolSize: pool, RefillThreshold: &threshold, HorizonDays: req.HorizonDays, Cards: cards}, SourceFolderIDs: append([]uuid.UUID(nil), req.SourceFolderIDs...), StartedAt: now, CreatedAt: now, UpdatedAt: now}
 		out.Config.SetPoolPolicy(key, pool)
 		return tx.CreatePlan(out)
 	}()

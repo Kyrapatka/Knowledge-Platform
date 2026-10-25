@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run format:check && npm run openapi:check && npm run build",
-    "openapi:check": "node scripts/check-openapi.mjs"
+    "openapi:check": "node scripts/check-openapi.mjs",
+    "test:quick-import": "tsc -p tsconfig.quick-import.json && node --test tests/quick-import/*.test.mjs tests/quick-import/reference/*.test.mjs"
   },
   "dependencies": {
     "katex": "^0.16.22",

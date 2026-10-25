@@ -619,3 +619,14 @@ func applyPatch(
 		target[key] = value
 	}
 }
+
+// ValidateCreateInput exposes the same domain checks to read-only import previews.
+func ValidateCreateInput(config folderconfig.FolderConfig, input CreateInput) error {
+	if !input.Difficulty.Valid() {
+		return material.ErrInvalidDifficulty
+	}
+	if err := validateCreateFields(config.Schema.Fields, input.Values, material.ErrInvalidValues, false); err != nil {
+		return err
+	}
+	return validateCreateFields(config.MetadataSchema.Fields, input.Metadata, material.ErrInvalidMetadata, true)
+}

@@ -80,13 +80,13 @@ func smoke(ctx context.Context, conn *pgx.Conn, directory string) (result error)
 	if err := migrate(ctx, conn, directory, "up"); err != nil {
 		return err
 	}
-	// Latest (23) is conditionally reversible: the freshly migrated schema is empty.
+	// Latest (26) is conditionally reversible: the freshly migrated schema is empty.
 	// Review this allowlist when adding a migration instead of assuming every down is safe.
 	var version int64
 	if err := conn.QueryRow(ctx, "SELECT version FROM schema_migrations").Scan(&version); err != nil {
 		return err
 	}
-	if version == 23 {
+	if version == 26 {
 		if err := migrate(ctx, conn, directory, "down"); err != nil {
 			return err
 		}

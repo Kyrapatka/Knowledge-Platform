@@ -3,16 +3,35 @@ package config
 type TrainingConfig struct {
 	DefaultAlgorithmKey string `json:"default_algorithm_key"`
 	PoolSize            int    `json:"pool_size"`
+	RefillThreshold     *int   `json:"refill_threshold,omitempty"`
 }
 
-// These defaults are copied on folder creation, not consulted by running plans.
+func DefaultRefillThreshold(algorithm string, size int) int {
+	switch algorithm {
+	case "interview_long_term", "interview_cram":
+		return 3
+	case "english_basic", "english_adaptive":
+		return 5
+	default:
+		return size - 1
+	}
+}
+func (c TrainingConfig) Threshold() int {
+	if c.RefillThreshold != nil {
+		return *c.RefillThreshold
+	}
+	return DefaultRefillThreshold(c.DefaultAlgorithmKey, c.PoolSize)
+}
+
+// Defaults are copied on creation; explicit thresholds are never recalculated.
 func DefaultTrainingConfig(template string) TrainingConfig {
+	key, size := "english_basic", 8
 	switch template {
 	case "interview_questions":
-		return TrainingConfig{"interview_long_term", 5}
+		key, size = "interview_long_term", 5
 	case "formulas":
-		return TrainingConfig{"formula_adaptive", 5}
-	default:
-		return TrainingConfig{"english_basic", 8}
+		key, size = "formula_adaptive", 5
 	}
+	threshold := DefaultRefillThreshold(key, size)
+	return TrainingConfig{DefaultAlgorithmKey: key, PoolSize: size, RefillThreshold: &threshold}
 }

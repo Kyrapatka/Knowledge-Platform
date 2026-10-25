@@ -70,9 +70,9 @@ func TestPoolEngineOnlyQueriesQueueAtThreshold(t *testing.T) {
 		target, threshold, horizon int
 		track                      model.ProgressTrack
 	}{
-		{"english_basic", 8, 5, 0, model.ProgressTrackDefault}, {"interview_long_term", 5, 3, 90, model.ProgressTrackLongTerm},
+		{"english_basic", 8, 5, 0, model.ProgressTrackDefault}, {"english_basic", 12, 4, 0, model.ProgressTrackDefault}, {"english_basic", 1, 0, 0, model.ProgressTrackDefault}, {"english_basic", 100, 99, 0, model.ProgressTrackDefault}, {"interview_long_term", 5, 3, 90, model.ProgressTrackLongTerm},
 	} {
-		for _, extra := range []int{1, 8} {
+		for _, extra := range []int{0, 1, 8} {
 			t.Run(fmt.Sprintf("%s-%d", tc.key, extra), func(t *testing.T) {
 				now := time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC)
 				tx := &poolTx{materials: map[uuid.UUID]materialmodel.Material{}, items: map[uuid.UUID]model.SessionItem{}, progress: poolProgress{values: map[uuid.UUID]model.UserMaterialProgress{}}}
@@ -82,7 +82,7 @@ func TestPoolEngineOnlyQueriesQueueAtThreshold(t *testing.T) {
 				// Fields are read through the existing card schema, not hardcoded by the pool.
 				cfg.Schema.Fields = []folderconfig.FieldDefinition{{Key: "front", Active: true}, {Key: "back", Active: true}}
 				tx.folder = foldermodel.Folder{ID: uuid.New(), Config: cfg}
-				p := model.TrainingPlan{ID: uuid.New(), UserID: uuid.New(), AlgorithmKey: tc.key, AlgorithmVersion: 1, Track: tc.track, SourceFolderIDs: []uuid.UUID{tx.folder.ID}, Config: model.PlanConfig{PoolSize: tc.target, HorizonDays: tc.horizon, Cards: map[string]folderconfig.FolderConfig{tx.folder.ID.String(): cfg}}}
+				p := model.TrainingPlan{ID: uuid.New(), UserID: uuid.New(), AlgorithmKey: tc.key, AlgorithmVersion: 1, Track: tc.track, SourceFolderIDs: []uuid.UUID{tx.folder.ID}, Config: model.PlanConfig{PoolSize: tc.target, RefillThreshold: &tc.threshold, HorizonDays: tc.horizon, Cards: map[string]folderconfig.FolderConfig{tx.folder.ID.String(): cfg}}}
 				for i := 0; i < tc.target+extra; i++ {
 					q, a := fmt.Sprint(i), "answer"
 					m := materialmodel.Material{ID: uuid.New(), FolderID: tx.folder.ID, Values: map[string]*string{"front": &q, "back": &a}, Difficulty: materialmodel.DifficultyMedium}
@@ -143,6 +143,40 @@ func TestPoolEngineOnlyQueriesQueueAtThreshold(t *testing.T) {
 					t.Fatal("wrong refill batch", tx.requests)
 				}
 			})
+		}
+	}
+}
+
+func TestPoolShortageDoesNotLoopOrDuplicate(t *testing.T) {
+	for _, total := range []int{0, 3} {
+		now := time.Now().UTC()
+		threshold := 5
+		cfg := folderconfig.FolderConfig{}
+		cfg.Card.QuestionFields = []string{"front"}
+		cfg.Card.AnswerFields = []string{"back"}
+		cfg.Schema.Fields = []folderconfig.FieldDefinition{{Key: "front", Active: true}, {Key: "back", Active: true}}
+		tx := &poolTx{folder: foldermodel.Folder{ID: uuid.New(), Config: cfg}, materials: map[uuid.UUID]materialmodel.Material{}, items: map[uuid.UUID]model.SessionItem{}, progress: poolProgress{values: map[uuid.UUID]model.UserMaterialProgress{}}}
+		for i := 0; i < total; i++ {
+			q, a := fmt.Sprint(i), "answer"
+			m := materialmodel.Material{ID: uuid.New(), FolderID: tx.folder.ID, Values: map[string]*string{"front": &q, "back": &a}, Difficulty: materialmodel.DifficultyEasy}
+			tx.queue = append(tx.queue, m)
+			tx.materials[m.ID] = m
+		}
+		p := model.TrainingPlan{ID: uuid.New(), UserID: uuid.New(), AlgorithmKey: "english_basic", AlgorithmVersion: 1, Track: model.ProgressTrackDefault, SourceFolderIDs: []uuid.UUID{tx.folder.ID}, Config: model.PlanConfig{PoolSize: 8, RefillThreshold: &threshold, Cards: map[string]folderconfig.FolderConfig{tx.folder.ID.String(): cfg}}}
+		session := model.TrainingSession{ID: uuid.New()}
+		svc := NewServiceWithClock(nil, func() time.Time { return now })
+		for call := 1; call <= 2; call++ {
+			items, err := svc.preparePool(context.Background(), tx, p, session, false)
+			if err != nil || len(items) != total || len(tx.requests) != call {
+				t.Fatal("shortage loop", total, items, tx.requests, err)
+			}
+			seen := map[uuid.UUID]bool{}
+			for _, i := range items {
+				if seen[i.MaterialID] {
+					t.Fatal("duplicate")
+				}
+				seen[i.MaterialID] = true
+			}
 		}
 	}
 }

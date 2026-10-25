@@ -37,7 +37,7 @@ func TestCombinedMixedAlgorithmsTopicSelectionAndResume(t *testing.T) {
 	f.exec(t, `UPDATE materials SET metadata='{"topic":"Greetings"}' WHERE id=?`, english)
 	f.exec(t, `UPDATE materials SET metadata='{"topic":"Other"}' WHERE id=?`, excluded)
 	interviewFolder := uuid.New()
-	f.exec(t, `INSERT INTO folders(id,owner_id,title,template_key,config,training_config) SELECT ?,owner_id,'Interview','interview_questions',config,'{"default_algorithm_key":"interview_long_term","pool_size":2}' FROM folders WHERE id=?`, interviewFolder, englishFolder)
+	f.exec(t, `INSERT INTO folders(id,owner_id,title,template_key,config,training_config) SELECT ?,owner_id,'Interview','interview_questions',config,'{"default_algorithm_key":"interview_long_term","pool_size":2,"refill_threshold":1}' FROM folders WHERE id=?`, interviewFolder, englishFolder)
 	f.folder = interviewFolder
 	interview := f.material(t, "What is an index?")
 	f.exec(t, `UPDATE materials SET metadata='{"category":"SQL"}' WHERE id=?`, interview)

@@ -940,3 +940,181 @@
 .interview-conversation .markdown pre {
   font-size: 13px;
 }
+
+/* Presets and the shared section selector preserve room for touch and long titles. */
+.mock-presets {
+  display: grid;
+  gap: 14px;
+}
+.mock-preset-card {
+  border: 1px solid var(--border, #35423c);
+  border-radius: 16px;
+  padding: 18px;
+  min-width: 0;
+}
+.mock-preset-card.selected {
+  border-color: var(--accent, #9ee4cd);
+  background: #20342d;
+}
+.preset-choice {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  overflow-wrap: anywhere;
+}
+.preset-choice input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.mock-preset-card p {
+  margin: 10px 0;
+  color: #b9c6bd;
+}
+.mock-preset-card small {
+  display: block;
+  color: #a3aea9;
+  margin: 6px 0;
+}
+.mock-preset-card .button-row {
+  margin-top: 14px;
+}
+.mock-preset-card select {
+  width: auto;
+  min-width: 0;
+}
+.preset-list-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0 16px;
+}
+.preset-list-heading label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.preset-settings-actions {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+.mock-settings-panel .button {
+  white-space: normal;
+}
+.section-folder-selector {
+  border: 0;
+  padding: 0;
+  margin: 18px 0;
+  min-width: 0;
+}
+.section-folder-selector > label {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.selector-section {
+  border-bottom: 1px solid #36443c;
+  padding: 10px 0;
+}
+.selector-group-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.selector-group-heading input,
+.selector-folder-list input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.selector-group-heading button {
+  flex: 1;
+  text-align: left;
+  padding: 12px 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+.selector-folder-list {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0 8px 28px;
+}
+.selector-folder-list label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.selector-folder-list small {
+  display: block;
+  color: #a3aea9;
+  margin-top: 5px;
+}
+.selector-folder-list.collapsed,
+.selector-mobile-group,
+.selector-back,
+.mock-continue,
+.mock-back {
+  display: none;
+}
+@media (max-width: 700px) {
+  .mock-setup {
+    display: block;
+  }
+  .mock-setup.step-sources .mock-settings-panel,
+  .mock-setup.step-settings .mock-source-panel {
+    display: none;
+  }
+  .mock-continue,
+  .mock-back {
+    display: flex;
+    margin: 18px 0;
+  }
+  .mock-continue {
+    width: 100%;
+    justify-content: center;
+  }
+  .selector-desktop-group {
+    display: none;
+  }
+  .selector-mobile-group {
+    display: block;
+  }
+  .selector-folder-list {
+    display: none;
+  }
+  .section-folder-selector.drilled .selector-section:not(.active) {
+    display: none;
+  }
+  .section-folder-selector.drilled
+    .selector-section.active
+    .selector-folder-list {
+    display: grid;
+    padding-left: 0;
+  }
+  .selector-back {
+    display: flex;
+    margin: 10px 0;
+  }
+  .mock-source-panel > .button-row {
+    display: grid;
+  }
+  .preset-list-heading {
+    align-items: stretch;
+  }
+  .preset-list-heading label {
+    width: 100%;
+  }
+}
+
+.mock-settings-panel h2,
+.mock-settings-panel > p {
+  display: block;
+}
